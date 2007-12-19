@@ -1,0 +1,20 @@
+Source: thrift
+Section: unknown
+Priority: extra
+Maintainer: Todd Lipcon <todd@amiestreet.com>
+Build-Depends: debhelper (>= 5), automake, autoconf, flex, bison, libboost-dev
+Standards-Version: 3.7.2
+
+Package: thrift
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: software framework for scalable cross-language services development
+ Thrift is a software framework for scalable cross-language services
+ development. It combines a powerful software stack with a code generation
+ engine to build services that work efficiently and seamlessly between C++,
+ Java, Python, PHP, and Ruby.
+ .
+ Thrift allows you to define data types and service interfaces in a simple
+ definition file. Taking that file as input, the compiler generates code to be
+ used to easily build RPC clients and servers that communicate seamlessly
+ across programming languages.

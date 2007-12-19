@@ -1,0 +1,15 @@
+This package was debianized by Todd Lipcon <todd@amiestreet.com> on
+Tue, 18 Dec 2007 21:27:14 -0500.
+
+It was downloaded from Facebook public svn
+
+Upstream Author: Facebook
+
+Copyright: (c) 2006- Facebook, Inc. 
+
+License:
+
+Thrift Software License
+
+The Debian packaging is (C) 2007, Todd Lipcon <todd@amiestreet.com> and
+is licensed under the GPL, see `/usr/share/common-licenses/GPL'.
