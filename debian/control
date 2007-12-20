@@ -1,8 +1,8 @@
 Source: thrift
-Section: unknown
+Section: web
 Priority: extra
 Maintainer: Todd Lipcon <todd@amiestreet.com>
-Build-Depends: debhelper (>= 5), automake, autoconf, flex, bison, libboost-dev
+Build-Depends: debhelper (>= 5), automake, autoconf, flex, bison, libboost-dev, libevent-dev, python-dev
 Standards-Version: 3.7.2
 
 Package: thrift
