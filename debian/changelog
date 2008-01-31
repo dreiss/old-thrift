@@ -1,3 +1,10 @@
+thrift (20080131.amie.1-1) etch; urgency=low
+
+  * Includes up through r1519 (facebook r80499)
+  * Includes alternative erlang bindings (thrift -alterl)
+
+ -- Todd Lipcon <amiest@janus.corp.amiestreet.com>  Thu, 31 Jan 2008 16:14:03 -0500
+
 thrift (20071220.amie.1-2) etch; urgency=low
 
   * Change package info so reprepro is happier about importing this
