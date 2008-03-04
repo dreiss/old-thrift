@@ -36,6 +36,31 @@ class TProcessor {
   TProcessor() {}
 };
 
+/**
+ * A TCobProcessor is like a TProcessor, but the server cannot assume that
+ * the processing is done when process returns.  Instead, it passes a
+ * Continuation OBject as a parameter.  The processor must call this object
+ * when it is finished.
+ *
+ * @author David Reiss <dreiss@facebook.com>
+ */
+class TCobProcessor {
+ public:
+  virtual ~TCobProcessor() {}
+
+  virtual void process(std::tr1::function<void(bool success)> cob,
+                       boost::shared_ptr<protocol::TProtocol> in,
+                       boost::shared_ptr<protocol::TProtocol> out) = 0;
+
+  bool process(std::tr1::function<void(bool success)> cob,
+               boost::shared_ptr<facebook::thrift::protocol::TProtocol> io) {
+    return process(cob, io, io);
+  }
+
+ protected:
+  TCobProcessor() {}
+};
+
 }} // facebook::thrift
 
 #endif // #ifndef _THRIFT_PROCESSOR_H_
