@@ -5,6 +5,7 @@
 // http://developers.facebook.com/thrift/
 
 #include <Thrift.h>
+#include <TApplicationException.h>
 #include <protocol/TProtocol.h>
 
 namespace facebook { namespace thrift {

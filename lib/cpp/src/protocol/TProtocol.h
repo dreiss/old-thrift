@@ -102,9 +102,10 @@ enum TMessageType {
  *
  * @author Mark Slee <mcslee@facebook.com>
  */
-class TProtocol {
+template <class Transport_>
+class TProtocolT {
  public:
-  virtual ~TProtocol() {}
+  virtual ~TProtocolT() {}
 
   /**
    * Writing functions.
@@ -215,6 +216,7 @@ class TProtocol {
 
   /**
    * Method to arbitrarily skip over data.
+   * TODO(dreiss): Templatize this later?
    */
   uint32_t skip(TType type) {
     switch (type) {
@@ -314,31 +316,34 @@ class TProtocol {
     }
   }
 
-  inline boost::shared_ptr<TTransport> getTransport() {
+  inline boost::shared_ptr<Transport_> getTransport() {
     return ptrans_;
   }
 
   // TODO: remove these two calls, they are for backwards
   // compatibility
-  inline boost::shared_ptr<TTransport> getInputTransport() {
+  inline boost::shared_ptr<Transport_> getInputTransport() {
     return ptrans_;
   }
-  inline boost::shared_ptr<TTransport> getOutputTransport() {
+  inline boost::shared_ptr<Transport_> getOutputTransport() {
     return ptrans_;
   }
 
  protected:
-  TProtocol(boost::shared_ptr<TTransport> ptrans):
+  TProtocolT(boost::shared_ptr<Transport_> ptrans):
     ptrans_(ptrans) {
     trans_ = ptrans.get();
   }
 
-  boost::shared_ptr<TTransport> ptrans_;
-  TTransport* trans_;
+  boost::shared_ptr<Transport_> ptrans_;
+  Transport_* trans_;
 
  private:
-  TProtocol() {}
+  TProtocolT() {}
 };
+
+typedef TProtocolT<TTransport> TProtocol;
+
 
 /**
  * Constructs input and output protocol objects given transports.
