@@ -40,7 +40,7 @@ class TVirtualTransport : public TTransport {
   }
 
   virtual uint32_t readAll_virt(uint8_t* buf, uint32_t len) {
-    return static_cast<Transport_*>(this)->readAll(buf, len);
+    return facebook::thrift::transport::readAll(*static_cast<Transport_*>(this), buf, len);
   }
 
   virtual void readEnd_virt() {
