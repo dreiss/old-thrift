@@ -50,7 +50,10 @@ class TTransport {
   /**
    * Whether this transport is open.
    */
-  virtual bool isOpen() {
+  bool isOpen() {
+    return isOpen_virt();
+  }
+  virtual bool isOpen_virt() {
     return false;
   }
 
@@ -62,7 +65,10 @@ class TTransport {
    * This is used by a server to check if it should listen for another
    * request.
    */
-  virtual bool peek() {
+  bool peek() {
+    return peek_virt();
+  }
+  virtual bool peek_virt() {
     return isOpen();
   }
 
@@ -72,14 +78,20 @@ class TTransport {
    * @return bool Whether the transport was successfully opened
    * @throws TTransportException if opening failed
    */
-  virtual void open() {
+  void open() {
+    open_virt();
+  }
+  virtual void open_virt() {
     throw TTransportException(TTransportException::NOT_OPEN, "Cannot open base TTransport.");
   }
 
   /**
    * Closes the transport.
    */
-  virtual void close() {
+  void close() {
+    close_virt();
+  }
+  virtual void close_virt() {
     throw TTransportException(TTransportException::NOT_OPEN, "Cannot close base TTransport.");
   }
 
@@ -91,7 +103,10 @@ class TTransport {
    * @return How many bytes were actually read
    * @throws TTransportException If an error occurs
    */
-  virtual uint32_t read(uint8_t* /* buf */, uint32_t /* len */) {
+  virtual uint32_t read(uint8_t* buf, uint32_t len) {
+    return read_virt(buf, len);
+  }
+  virtual uint32_t read_virt(uint8_t* /* buf */, uint32_t /* len */) {
     throw TTransportException(TTransportException::NOT_OPEN, "Base TTransport cannot read.");
   }
 
@@ -103,7 +118,10 @@ class TTransport {
    * @return How many bytes read, which must be equal to size
    * @throws TTransportException If insufficient data was read
    */
-  virtual uint32_t readAll(uint8_t* buf, uint32_t len) {
+  uint32_t readAll(uint8_t* buf, uint32_t len) {
+    return readAll_virt(buf, len);
+  }
+  virtual uint32_t readAll_virt(uint8_t* buf, uint32_t len) {
     return facebook::thrift::transport::readAll(*this, buf, len);
   }
 
@@ -113,9 +131,12 @@ class TTransport {
    * e.g. logging the request to a file
    *
    */
-  virtual void readEnd() {
+  void readEnd() {
     // default behaviour is to do nothing
     return;
+  }
+  virtual void readEnd_virt() {
+    readEnd_virt();
   }
 
   /**
@@ -124,7 +145,10 @@ class TTransport {
    * @param buf  The data to write out
    * @throws TTransportException if an error occurs
    */
-  virtual void write(const uint8_t* /* buf */, uint32_t /* len */) {
+  void write(const uint8_t* buf, uint32_t len) {
+    write_virt(buf, len);
+  }
+  virtual void write_virt(const uint8_t* /* buf */, uint32_t /* len */) {
     throw TTransportException(TTransportException::NOT_OPEN, "Base TTransport cannot write.");
   }
 
@@ -134,7 +158,10 @@ class TTransport {
    * at the end of a request.
    *
    */
-  virtual void writeEnd() {
+  void writeEnd() {
+    return writeEnd_virt();
+  }
+  virtual void writeEnd_virt() {
     // default behaviour is to do nothing
     return;
   }
@@ -145,7 +172,10 @@ class TTransport {
    *
    * @throws TTransportException if an error occurs
    */
-  virtual void flush() {}
+  void flush() {
+    flush_virt();
+  }
+  virtual void flush_virt() {}
 
   /**
    * Attempts to return a pointer to \c len bytes, possibly copied into \c buf.
@@ -171,7 +201,10 @@ class TTransport {
    *         the transport's internal buffers.
    * @throws TTransportException if an error occurs
    */
-  virtual const uint8_t* borrow(uint8_t* /* buf */, uint32_t* /* len */) {
+  const uint8_t* borrow(uint8_t* buf, uint32_t* len) {
+    return borrow_virt(buf, len);
+  }
+  virtual const uint8_t* borrow_virt(uint8_t* /* buf */, uint32_t* /* len */) {
     return NULL;
   }
 
@@ -184,7 +217,10 @@ class TTransport {
    * @param len  How many bytes to consume
    * @throws TTransportException If an error occurs
    */
-  virtual void consume(uint32_t /* len */) {
+  void consume(uint32_t len) {
+    consume(len);
+  }
+  virtual void consume_virt(uint32_t /* len */) {
     throw TTransportException(TTransportException::NOT_OPEN, "Base TTransport cannot consume.");
   }
 

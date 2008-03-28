@@ -9,6 +9,7 @@
 
 #include <boost/lexical_cast.hpp>
 #include <transport/TTransport.h>
+#include <transport/TVirtualTransport.h>
 
 struct z_stream_s;
 
@@ -57,7 +58,7 @@ class TZlibTransportException : public TTransportException {
  *
  * @author David Reiss <dreiss@facebook.com>
  */
-class TZlibTransport : public TTransport {
+class TZlibTransport : public TVirtualTransport<TZlibTransport> {
  public:
 
   /**

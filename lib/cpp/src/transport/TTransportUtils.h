@@ -11,6 +11,7 @@
 #include <string>
 #include <algorithm>
 #include <transport/TTransport.h>
+#include <transport/TVirtualTransport.h>
 #include <transport/TFileTransport.h>
 
 namespace facebook { namespace thrift { namespace transport {
@@ -23,7 +24,7 @@ namespace facebook { namespace thrift { namespace transport {
  *
  * @author Mark Slee <mcslee@facebook.com>
  */
-class TNullTransport : public TTransport {
+class TNullTransport : public TVirtualTransport<TNullTransport> {
  public:
   TNullTransport() {}
 
@@ -49,7 +50,7 @@ class TNullTransport : public TTransport {
  *
  * @author Mark Slee <mcslee@facebook.com>
  */
-class TBufferedTransport : public TTransport {
+class TBufferedTransport : public TVirtualTransport<TBufferedTransport> {
  public:
   TBufferedTransport(boost::shared_ptr<TTransport> transport) :
     transport_(transport),
@@ -166,7 +167,7 @@ class TBufferedTransportFactory : public TTransportFactory {
  *
  * @author Mark Slee <mcslee@facebook.com>
  */
-class TFramedTransport : public TTransport {
+class TFramedTransport : public TVirtualTransport<TFramedTransport> {
  public:
   TFramedTransport(boost::shared_ptr<TTransport> transport) :
     transport_(transport),
@@ -295,7 +296,7 @@ class TFramedTransportFactory : public TTransportFactory {
  * @author Mark Slee <mcslee@facebook.com>
  * @author David Reiss <dreiss@facebook.com>
  */
-class TMemoryBuffer : public TTransport {
+class TMemoryBuffer : public TVirtualTransport<TMemoryBuffer> {
  private:
 
   // Common initialization done by all constructors.
@@ -640,6 +641,44 @@ class TPipedTransport : virtual public TTransport {
 
   boost::shared_ptr<TTransport> getTargetTransport() {
     return dstTrans_;
+  }
+
+  // Stupid virtual inheritance.
+  virtual bool isOpen_virt() {
+    return isOpen();
+  }
+  virtual bool peek_virt() {
+    return peek();
+  }
+  virtual void open_virt() {
+    open();
+  }
+  virtual void close_virt() {
+    close();
+  }
+  virtual uint32_t read_virt(uint8_t* buf, uint32_t len) {
+    return read(buf, len);
+  }
+  virtual uint32_t readAll_virt(uint8_t* buf, uint32_t len) {
+    return readAll(buf, len);
+  }
+  virtual void readEnd_virt() {
+    return readEnd();
+  }
+  virtual void write_virt(const uint8_t* buf, uint32_t len) {
+    write(buf, len);
+  }
+  virtual void writeEnd_virt() {
+    writeEnd();
+  }
+  virtual void flush_virt() {
+    flush();
+  }
+  virtual const uint8_t* borrow_virt(uint8_t* buf, uint32_t* len) {
+    return borrow(buf, len);
+  }
+  virtual void consume(uint32_t len) {
+    consume(len);
   }
 
  protected:

@@ -11,6 +11,7 @@
 #include <sys/time.h>
 
 #include "TTransport.h"
+#include "TVirtualTransport.h"
 #include "TServerSocket.h"
 
 namespace facebook { namespace thrift { namespace transport {
@@ -21,7 +22,7 @@ namespace facebook { namespace thrift { namespace transport {
  * @author Mark Slee <mcslee@facebook.com>
  * @author Aditya Agarwal <aditya@facebook.com>
  */
-class TSocket : public TTransport {
+class TSocket : public TVirtualTransport<TSocket> {
   /**
    * We allow the TServerSocket acceptImpl() method to access the private
    * members of a socket so that it can access the TSocket(int socket)

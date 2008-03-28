@@ -20,7 +20,7 @@ namespace facebook { namespace thrift { namespace transport {
  *
  * @author Mark Slee <mcslee@facebook.com>
  */
-class THttpClient : public TTransport {
+class THttpClient : public TVirtualTransport<THttpClient> {
  public:
   THttpClient(boost::shared_ptr<TTransport> transport, std::string host, std::string path="");
 
