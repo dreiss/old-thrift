@@ -7,7 +7,7 @@
 #ifndef _THRIFT_TRANSPORT_TVIRTUALTRANSPORT_H_
 #define _THRIFT_TRANSPORT_TVIRTUALTRANSPORT_H_ 1
 
-#include <TTransport.h>
+#include <transport/TTransport.h>
 
 namespace facebook { namespace thrift { namespace transport {
 
@@ -17,59 +17,54 @@ namespace facebook { namespace thrift { namespace transport {
  * @author Chad Walters <chad@powerst.com>
  */
 template <class Transport_>
-  class TVirtualTransport : public TTransport {
+class TVirtualTransport : public TTransport {
  public:
-  /**
-   * Virtual deconstructor.
-   */
-  virtual ~TVirtualTransport() {}
-
   virtual bool isOpen_virt() {
-    return ((Transport_*)this)->isOpen();
+    return static_cast<Transport_*>(this)->isOpen();
   }
 
   virtual bool peek_virt() {
-    return ((Transport_*)this)->peek();
+    return static_cast<Transport_*>(this)->peek();
   }
 
   virtual void open_virt() {
-    ((Transport_*)this)->open();
+    static_cast<Transport_*>(this)->open();
   }
 
   virtual void close_virt() {
-    ((Transport_*)this)->close();
+    static_cast<Transport_*>(this)->close();
   }
 
   virtual uint32_t read_virt(uint8_t* buf, uint32_t len) {
-    return ((Transport_*)this)->read(buf, len);    
+    return static_cast<Transport_*>(this)->read(buf, len);
   }
 
   virtual uint32_t readAll_virt(uint8_t* buf, uint32_t len) {
-    return ((Transport_*)this)->readAll(buf, len);
+    return static_cast<Transport_*>(this)->readAll(buf, len);
   }
 
   virtual void readEnd_virt() {
-    return ((Transport_*)this)->readEnd();
+    return static_cast<Transport_*>(this)->readEnd();
   }
 
   virtual void write_virt(const uint8_t* buf, uint32_t len) {
-    ((Transport_*)this)->write(buf, len);
+    static_cast<Transport_*>(this)->write(buf, len);
   }
 
   virtual void writeEnd_virt() {
-    ((Transport_*)this)->writeEnd();
+    static_cast<Transport_*>(this)->writeEnd();
   }
 
   virtual void flush_virt() {
-    ((Transport_*)this)->flush();
+    static_cast<Transport_*>(this)->flush();
   }
 
   virtual const uint8_t* borrow_virt(uint8_t* buf, uint32_t* len) {
-    ((Transport_*)this)->borrow(buf, len);    
+    return static_cast<Transport_*>(this)->borrow(buf, len);
   }
 
   virtual void consume(uint32_t len) {
-    ((Transport_*)this)->consume(len);    
+    static_cast<Transport_*>(this)->consume(len);
   }
 
  protected:
