@@ -267,6 +267,7 @@ void t_cpp_generator::init_generator() {
   // Include base types
   f_types_ <<
     "#include <Thrift.h>" << endl <<
+    "#include <TApplicationException.h>" << endl <<
     "#include <reflection_limited_types.h>" << endl <<
     "#include <protocol/TProtocol.h>" << endl <<
     "#include <transport/TTransport.h>" << endl <<
