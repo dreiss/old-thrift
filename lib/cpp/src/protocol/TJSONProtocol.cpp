@@ -344,6 +344,7 @@ public:
 
 TJSONProtocol::TJSONProtocol(boost::shared_ptr<TTransport> ptrans) :
   TProtocol(ptrans),
+  trans_(ptrans.get()),
   context_(new TJSONContext()),
   reader_(*ptrans) {
 }

@@ -281,6 +281,8 @@ class TJSONProtocol : public TProtocol {
 
  private:
 
+  TTransport *trans_;
+
   std::stack<boost::shared_ptr<TJSONContext> > contexts_;
   boost::shared_ptr<TJSONContext> context_;
   LookaheadReader reader_;

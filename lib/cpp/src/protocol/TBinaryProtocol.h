@@ -30,6 +30,7 @@ class TBinaryProtocolT : public TProtocol {
  public:
   TBinaryProtocolT(boost::shared_ptr<Transport_> trans) :
     TProtocol(trans),
+    trans_(trans.get()),
     string_limit_(0),
     container_limit_(0),
     strict_read_(false),
@@ -180,6 +181,8 @@ class TBinaryProtocolT : public TProtocol {
 
  protected:
   uint32_t readStringBody(std::string& str, int32_t sz);
+
+  Transport_ *trans_;
 
   int32_t string_limit_;
   int32_t container_limit_;
