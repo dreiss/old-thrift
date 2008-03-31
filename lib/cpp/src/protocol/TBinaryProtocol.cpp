@@ -8,7 +8,7 @@
 
 #include <boost/static_assert.hpp>
 
-using std::string;
+namespace detail {
 
 // Use this to get around strict aliasing rules.
 // For example, uint64_t i = bitwise_cast<uint64_t>(returns_double());
@@ -49,6 +49,8 @@ static inline To bitwise_cast(From from) {
   return u.t;
 }
 
+} // detail
+
 
 namespace facebook { namespace thrift { namespace protocol {
 
@@ -78,7 +80,7 @@ uint32_t TBinaryProtocolT<Transport_>::writeMessageEnd() {
 }
 
 template <class Transport_>
-uint32_t TBinaryProtocolT<Transport_>::writeStructBegin(const string& name) {
+uint32_t TBinaryProtocolT<Transport_>::writeStructBegin(const std::string& name) {
   return 0;
 }
 
@@ -88,7 +90,7 @@ uint32_t TBinaryProtocolT<Transport_>::writeStructEnd() {
 }
 
 template <class Transport_>
-uint32_t TBinaryProtocolT<Transport_>::writeFieldBegin(const string& name,
+uint32_t TBinaryProtocolT<Transport_>::writeFieldBegin(const std::string& name,
                                                        const TType fieldType,
                                                        const int16_t fieldId) {
   uint32_t wsize = 0;
@@ -191,7 +193,7 @@ uint32_t TBinaryProtocolT<Transport_>::writeDouble(const double dub) {
   BOOST_STATIC_ASSERT(sizeof(double) == sizeof(uint64_t));
   BOOST_STATIC_ASSERT(std::numeric_limits<double>::is_iec559);
 
-  uint64_t bits = bitwise_cast<uint64_t>(dub);
+  uint64_t bits = detail::bitwise_cast<uint64_t>(dub);
   bits = htonll(bits);
   this->trans_->write((uint8_t*)&bits, 8);
   return 8;
@@ -199,7 +201,7 @@ uint32_t TBinaryProtocolT<Transport_>::writeDouble(const double dub) {
 
 
 template <class Transport_>
-uint32_t TBinaryProtocolT<Transport_>::writeString(const string& str) {
+uint32_t TBinaryProtocolT<Transport_>::writeString(const std::string& str) {
   uint32_t size = str.size();
   uint32_t result = writeI32((int32_t)size);
   if (size > 0) {
@@ -209,7 +211,7 @@ uint32_t TBinaryProtocolT<Transport_>::writeString(const string& str) {
 }
 
 template <class Transport_>
-uint32_t TBinaryProtocolT<Transport_>::writeBinary(const string& str) {
+uint32_t TBinaryProtocolT<Transport_>::writeBinary(const std::string& str) {
   return TBinaryProtocolT<Transport_>::writeString(str);
 }
 
@@ -255,7 +257,7 @@ uint32_t TBinaryProtocolT<Transport_>::readMessageEnd() {
 }
 
 template <class Transport_>
-uint32_t TBinaryProtocolT<Transport_>::readStructBegin(string& name) {
+uint32_t TBinaryProtocolT<Transport_>::readStructBegin(std::string& name) {
   name = "";
   return 0;
 }
@@ -266,7 +268,7 @@ uint32_t TBinaryProtocolT<Transport_>::readStructEnd() {
 }
 
 template <class Transport_>
-uint32_t TBinaryProtocolT<Transport_>::readFieldBegin(string& name,
+uint32_t TBinaryProtocolT<Transport_>::readFieldBegin(std::string& name,
                                                       TType& fieldType,
                                                       int16_t& fieldId) {
   uint32_t result = 0;
@@ -411,12 +413,12 @@ uint32_t TBinaryProtocolT<Transport_>::readDouble(double& dub) {
   this->trans_->readAll(b, 8);
   bits = *(uint64_t*)b;
   bits = ntohll(bits);
-  dub = bitwise_cast<double>(bits);
+  dub = detail::bitwise_cast<double>(bits);
   return 8;
 }
 
 template <class Transport_>
-uint32_t TBinaryProtocolT<Transport_>::readString(string& str) {
+uint32_t TBinaryProtocolT<Transport_>::readString(std::string& str) {
   uint32_t result;
   int32_t size;
   result = readI32(size);
@@ -424,12 +426,12 @@ uint32_t TBinaryProtocolT<Transport_>::readString(string& str) {
 }
 
 template <class Transport_>
-uint32_t TBinaryProtocolT<Transport_>::readBinary(string& str) {
+uint32_t TBinaryProtocolT<Transport_>::readBinary(std::string& str) {
   return TBinaryProtocolT<Transport_>::readString(str);
 }
 
 template <class Transport_>
-uint32_t TBinaryProtocolT<Transport_>::readStringBody(string& str, int32_t size) {
+uint32_t TBinaryProtocolT<Transport_>::readStringBody(std::string& str, int32_t size) {
   uint32_t result = 0;
 
   // Catch error cases
@@ -456,7 +458,7 @@ uint32_t TBinaryProtocolT<Transport_>::readStringBody(string& str, int32_t size)
     string_buf_size_ = size;
   }
   this->trans_->readAll(string_buf_, size);
-  str = string((char*)string_buf_, size);
+  str = std::string((char*)string_buf_, size);
   return (uint32_t)size;
 }
 
