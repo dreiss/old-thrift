@@ -10,6 +10,7 @@
 #include "TProtocol.h"
 
 #include <boost/shared_ptr.hpp>
+#include <boost/static_assert.hpp>
 
 namespace facebook { namespace thrift { namespace protocol {
 
@@ -20,7 +21,7 @@ namespace facebook { namespace thrift { namespace protocol {
  * @author Mark Slee <mcslee@facebook.com>
  */
 template <class Transport_>
-class TBinaryProtocolT : public TProtocolT<Transport_> {
+class TBinaryProtocolT : public TProtocol {
  protected:
   static const int32_t VERSION_MASK = 0xffff0000;
   static const int32_t VERSION_1 = 0x80010000;
@@ -28,7 +29,7 @@ class TBinaryProtocolT : public TProtocolT<Transport_> {
 
  public:
   TBinaryProtocolT(boost::shared_ptr<Transport_> trans) :
-    TProtocolT<Transport_>(trans),
+    TProtocol(trans),
     string_limit_(0),
     container_limit_(0),
     strict_read_(false),
@@ -41,7 +42,7 @@ class TBinaryProtocolT : public TProtocolT<Transport_> {
                    int32_t container_limit,
                    bool strict_read,
                    bool strict_write) :
-    TProtocolT<Transport_>(trans),
+    TProtocol(trans),
     string_limit_(string_limit),
     container_limit_(container_limit),
     strict_read_(strict_read),
@@ -240,6 +241,8 @@ class TBinaryProtocolFactory : public TProtocolFactory {
 
 };
 
-}}} // facebook::thrift::protocol
+}}}
+
+#include "TBinaryProtocol.tcc"
 
 #endif // #ifndef _THRIFT_PROTOCOL_TBINARYPROTOCOL_H_

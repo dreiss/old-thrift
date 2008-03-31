@@ -102,10 +102,9 @@ enum TMessageType {
  *
  * @author Mark Slee <mcslee@facebook.com>
  */
-template <class Transport_>
-class TProtocolT {
+class TProtocol {
  public:
-  virtual ~TProtocolT() {}
+  virtual ~TProtocol() {}
 
   /**
    * Writing functions.
@@ -316,33 +315,31 @@ class TProtocolT {
     }
   }
 
-  inline boost::shared_ptr<Transport_> getTransport() {
+  inline boost::shared_ptr<TTransport> getTransport() {
     return ptrans_;
   }
 
   // TODO: remove these two calls, they are for backwards
   // compatibility
-  inline boost::shared_ptr<Transport_> getInputTransport() {
+  inline boost::shared_ptr<TTransport> getInputTransport() {
     return ptrans_;
   }
-  inline boost::shared_ptr<Transport_> getOutputTransport() {
+  inline boost::shared_ptr<TTransport> getOutputTransport() {
     return ptrans_;
   }
 
  protected:
-  TProtocolT(boost::shared_ptr<Transport_> ptrans):
+  TProtocol(boost::shared_ptr<TTransport> ptrans):
     ptrans_(ptrans) {
     trans_ = ptrans.get();
   }
 
-  boost::shared_ptr<Transport_> ptrans_;
-  Transport_* trans_;
+  boost::shared_ptr<TTransport> ptrans_;
+  TTransport* trans_;
 
  private:
-  TProtocolT() {}
+  TProtocol() {}
 };
-
-typedef TProtocolT<TTransport> TProtocol;
 
 
 /**
