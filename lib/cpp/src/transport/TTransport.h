@@ -103,7 +103,7 @@ class TTransport {
    * @return How many bytes were actually read
    * @throws TTransportException If an error occurs
    */
-  virtual uint32_t read(uint8_t* buf, uint32_t len) {
+  uint32_t read(uint8_t* buf, uint32_t len) {
     return read_virt(buf, len);
   }
   virtual uint32_t read_virt(uint8_t* /* buf */, uint32_t /* len */) {

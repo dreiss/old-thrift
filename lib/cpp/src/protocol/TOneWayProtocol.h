@@ -25,6 +25,7 @@ class TWriteOnlyProtocol : public TProtocol {
   TWriteOnlyProtocol(boost::shared_ptr<TTransport> trans,
                      const std::string& subclass_name)
     : TProtocol(trans)
+    , trans_(trans.get())
     , subclass_(subclass_name)
   {}
 
@@ -142,6 +143,8 @@ class TWriteOnlyProtocol : public TProtocol {
         subclass_ + " does not support reading (yet).");
   }
 
+ protected:
+  TTransport *trans_;
  private:
   std::string subclass_;
 };

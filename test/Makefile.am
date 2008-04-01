@@ -8,7 +8,8 @@ check_PROGRAMS = \
 	DebugProtoTest \
 	JSONProtoTest \
 	OptionalRequiredTest \
-	ReflectionTest
+	ReflectionTest \
+	SpecializationTest
 
 TESTS = \
 	$(check_PROGRAMS)
@@ -59,6 +60,15 @@ ReflectionTest_SOURCES = \
 ReflectionTest_LDADD = \
 	$(top_srcdir)/lib/cpp/libthrift.la
 
+#
+# SpecializationTest
+#
+SpecializationTest_SOURCES = \
+	gen-cpp/DebugProtoTest_types.cpp \
+	SpecializationTest.cpp
+
+SpecializationTest_LDADD = \
+	$(top_srcdir)/lib/cpp/libthrift.la
 
 #
 # Common thrift code generation rules
