@@ -19,7 +19,6 @@ namespace facebook { namespace thrift { namespace transport {
  */
 template <class Transport_>
 static uint32_t readAll(Transport_ &trans, uint8_t* buf, uint32_t len) {
-  printf("%s\n", __PRETTY_FUNCTION__);
   uint32_t have = 0;
   uint32_t get = 0;
 
@@ -105,11 +104,9 @@ class TTransport {
    * @throws TTransportException If an error occurs
    */
   uint32_t read(uint8_t* buf, uint32_t len) {
-    printf("TTransport::read: %s\n", __PRETTY_FUNCTION__);
     return read_virt(buf, len);
   }
   virtual uint32_t read_virt(uint8_t* /* buf */, uint32_t /* len */) {
-    printf("TTransport::read_virt: %s\n", __PRETTY_FUNCTION__);
     throw TTransportException(TTransportException::NOT_OPEN, "Base TTransport cannot read.");
   }
 
@@ -122,11 +119,9 @@ class TTransport {
    * @throws TTransportException If insufficient data was read
    */
   uint32_t readAll(uint8_t* buf, uint32_t len) {
-    printf("TTransport::readAll: %s\n", __PRETTY_FUNCTION__);
     return readAll_virt(buf, len);
   }
   virtual uint32_t readAll_virt(uint8_t* buf, uint32_t len) {
-    printf("TTransport::readAll_virt: %s\n", __PRETTY_FUNCTION__);
     return facebook::thrift::transport::readAll(*this, buf, len);
   }
 

@@ -252,7 +252,6 @@ void TFramedTransport::consume(uint32_t len) {
 }
 
 uint32_t TMemoryBuffer::read(uint8_t* buf, uint32_t len) {
-  printf("%s\n", __PRETTY_FUNCTION__);
   // Check avaible data for reading
   uint32_t avail = wPos_ - rPos_;
   if (avail == 0) {

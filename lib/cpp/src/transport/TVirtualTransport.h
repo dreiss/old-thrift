@@ -36,12 +36,10 @@ class TVirtualTransport : public TTransport {
   }
 
   virtual uint32_t read_virt(uint8_t* buf, uint32_t len) {
-    printf("TVirtualTransport::read_virt: %s\n", __PRETTY_FUNCTION__);
     return static_cast<Transport_*>(this)->read(buf, len);
   }
 
   virtual uint32_t readAll_virt(uint8_t* buf, uint32_t len) {
-    printf("TVirtualTransport::readAll_virt: %s\n", __PRETTY_FUNCTION__);
     return readAll(buf, len);
   }
 
