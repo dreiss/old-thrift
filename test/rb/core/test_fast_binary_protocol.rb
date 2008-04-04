@@ -5,11 +5,7 @@ require 'thrift/transport/ttransport'
 require 'thrift/protocol/tbinaryprotocol'
 require 'thrift/protocol/c/tfastbinaryprotocol'
 
-require 'benchmark'
-require 'set'
-require 'pp'
-
-class TProtocolTest < Test::Unit::TestCase
+class TFastBinaryProtocolCompatablityTest < Test::Unit::TestCase
   I8_MIN = -128
   I8_MAX = 127
   I16_MIN = -32768
