@@ -193,31 +193,47 @@ module ThriftStruct
   end
 
   def read(iprot)
-    iprot.readStructBegin()
-    loop do
-      fname, ftype, fid = iprot.readFieldBegin()
-      break if (ftype === TType::STOP)
-      handle_message(iprot, fid, ftype)
-      iprot.readFieldEnd()
+    case iprot
+    # TODO: Make sure transport is C readable
+    when iprot.respond_to? :decode_binary
+      # TODO: Implement
+      # .decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
+      raise NotImplementedError
+    else
+      iprot.readStructBegin()
+      loop do
+        fname, ftype, fid = iprot.readFieldBegin()
+        break if (ftype === TType::STOP)
+        handle_message(iprot, fid, ftype)
+        iprot.readFieldEnd()
+      end
+      iprot.readStructEnd()
     end
-    iprot.readStructEnd()
   end
 
   def write(oprot)
-    oprot.writeStructBegin(self.class.name)
-    each_field do |fid, type, name|
-      if ((value = instance_variable_get("@#{name}")) != nil)
-        if is_container? type
-          oprot.writeFieldBegin(name, type, fid)
-          write_container(oprot, value, struct_fields[fid])
-          oprot.writeFieldEnd
-        else
-          oprot.write_field(name, type, fid, value)
+    case oprot
+    when oprot.respond_to? :encode_binary
+      # TODO: Clean this so I don't have to access the transport.
+      # TODO: Also, implement.
+      raise NotImplementedError
+      oprot.trans.write oprot.encode_binary(self, self.class, self.struct_fields)
+    else
+      oprot.writeStructBegin(self.class.name)
+      each_field do |fid, type, name|
+        if ((value = instance_variable_get("@#{name}")) != nil)
+          if is_container? type
+            oprot.writeFieldBegin(name, type, fid)
+            write_container(oprot, value, struct_fields[fid])
+            oprot.writeFieldEnd
+          else
+            oprot.write_field(name, type, fid, value)
+          end
         end
       end
+      oprot.writeFieldStop()
+      oprot.writeStructEnd()
     end
-    oprot.writeFieldStop()
-    oprot.writeStructEnd()
   end
 
   protected
