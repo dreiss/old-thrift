@@ -178,7 +178,13 @@ end
 module ThriftStruct
   def initialize(d={})
     each_field do |fid, type, name, default|
-      instance_variable_set("@#{name}", d[name.to_s] || d[name.intern] || default)
+      if !d[name.to_s].nil?
+        instance_variable_set("@#{name}", d[name.to_s])
+      elsif !d[name.to_sym].nil?
+        instance_variable_set("@#{name}", d[name.to_sym])
+      else
+        instance_variable_set("@#{name}", default)
+      end
     end
   end
 
