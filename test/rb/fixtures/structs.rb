@@ -18,6 +18,30 @@ module Fixtures
       }
     end
     
+    class OneI16
+      include ThriftStruct
+      attr_accessor :i16
+      FIELDS = {
+        1 => {:type => TType::I16, :name => 'i16'}
+      }
+    end
+    
+    class OneI32
+      include ThriftStruct
+      attr_accessor :i32
+      FIELDS = {
+        1 => {:type => TType::I32, :name => 'i32'}
+      }
+    end
+    
+    class OneI64
+      include ThriftStruct
+      attr_accessor :i64
+      FIELDS = {
+        1 => {:type => TType::I64, :name => 'i64'}
+      }
+    end
+    
     # struct OneOfEach {
     #   1: bool im_true,
     #   2: bool im_false,

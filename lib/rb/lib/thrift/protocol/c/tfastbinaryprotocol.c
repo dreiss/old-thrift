@@ -186,12 +186,8 @@ static void binary_encoding(VALUE buf, VALUE obj, int type) {
     case T_I32:
       write_i32(buf, NUM2INT(obj));
       break;
-      
+    
     case T_I64: {
-      char data[sizeof(int64_t)];
-      int32_t *hi = (int32_t *)data;
-      int32_t *lo = (int32_t *)(data + sizeof(int32_t));
-
       int64_t val;
       switch (TYPE(obj)) {
         case T_FIXNUM:
@@ -204,13 +200,17 @@ static void binary_encoding(VALUE buf, VALUE obj, int type) {
           rb_raise(rb_eArgError, "Argument is not a Fixnum or Bignum");
       }
 
+      char data[sizeof(int64_t)];
+      int32_t *hi = (int32_t *)data;
+      int32_t *lo = (int32_t *)(data + sizeof(int32_t));
+      
       *hi = val >> 32;
-      *lo = val & UINT32_MAX;
-
+      *lo = (int32_t)(val & UINT32_MAX);
+      
       *hi = htonl(*hi);
       *lo = htonl(*lo);
-    
-      write_i64(buf, (int64_t)*data);
+      
+      write_i64(buf, *(int64_t *)data);
       break;
     }
     

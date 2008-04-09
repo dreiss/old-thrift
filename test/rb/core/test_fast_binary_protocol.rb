@@ -6,18 +6,60 @@ require 'thrift/protocol/tbinaryprotocol'
 require 'thrift/protocol/c/tfastbinaryprotocol'
 
 class TFastBinaryProtocolTest < Test::Unit::TestCase
+  I8_MIN = -128
+  I8_MAX = 127
+  I16_MIN = -32768
+  I16_MAX = 32767
+  I32_MIN = -2147483648
+  I32_MAX = 2147483647
+  I64_MIN = -9223372036854775808
+  I64_MAX = 9223372036854775807
+  DBL_MIN = Float::MIN
+  DBL_MAX = Float::MAX
+
+  # booleans might be read back differently, so we supply a list [write_value, read_value]
+  BOOL_VALUES = [[0,true], [14,true], [-14,true], [true,true], [false,false], ["",true], [nil,false]]
+  BYTE_VALUES = [14, -14, I8_MIN, I8_MAX]
+  I16_VALUES = [400, 0, -234, I16_MIN, I16_MAX]
+  I32_VALUES = [325, 0, -1, -1073741825, -278, -4352388, I32_MIN, I32_MAX]
+  I64_VALUES = [15, 0, -33, I64_MIN, I64_MAX]
+  DBL_VALUES = [DBL_MIN, -33.8755, 0, 3658.1279, DBL_MAX]
+  STR_VALUES = ["", "welcome to my test"]
+  
+  def setup
+    @trans = TMemoryBuffer.new
+    @proto = TFastBinaryProtocol.new(@trans)
+  end
+  
   def test_encodes_and_decodes_bools
-    trans = TMemoryBuffer.new
-    proto = TFastBinaryProtocol.new(trans)
-    obj = Fixtures::Structs::OneBool.new(:bool => true)
-    assert_equal "\001", proto.encode_binary(obj)
+    BOOL_VALUES.each do |(write_val, read_val)|
+      obj = Fixtures::Structs::OneBool.new(:bool => write_val)
+      if read_val
+        assert_equal "\x1", @proto.encode_binary(obj)
+      else
+        assert_equal "\x0", @proto.encode_binary(obj)
+      end
+    end
   end
   
   def test_encodes_and_decodes_bytes
-    trans = TMemoryBuffer.new
-    proto = TFastBinaryProtocol.new(trans)
     obj = Fixtures::Structs::OneByte.new(:byte => 0x5a)
-    assert_equal "\x5a", proto.encode_binary(obj)
+    assert_equal "\x5a", @proto.encode_binary(obj)
+  end
+  
+  def test_encodes_and_decodes_i16
+    obj = Fixtures::Structs::OneI16.new(:i16 => 0x5)
+    assert_equal "\x0\x5", @proto.encode_binary(obj)
+  end
+  
+  def test_encodes_and_decodes_i32
+    obj = Fixtures::Structs::OneI32.new(:i32 => I32_MAX)
+    assert_equal "\177\377\377\377", @proto.encode_binary(obj)
+  end
+  
+  def test_encodes_and_decodes_i64
+    obj = Fixtures::Structs::OneI64.new(:i64 => I64_MAX)
+    assert_equal "\177\377\377\377\377\377\377\377", @proto.encode_binary(obj)
   end
 end
 
