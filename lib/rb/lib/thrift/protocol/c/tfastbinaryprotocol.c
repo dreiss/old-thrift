@@ -102,11 +102,37 @@ static void write_string(VALUE buf, char* str) {
 // TFastBinaryProtocol's main encoding loop
 // -----------------------------------------------------------------------------
 
+static void binary_encoding(VALUE buf, VALUE obj, int type);
+
+static int encode_field(VALUE fid, VALUE data, VALUE ary) {
+  // each_field do |fid, type, name|
+  //   if ((value = instance_variable_get("@#{name}")) != nil)
+  //     if is_container? type
+  //       oprot.writeFieldBegin(name, type, fid)
+  //       write_container(oprot, value, struct_fields[fid])
+  //       oprot.writeFieldEnd
+  //     else
+  //       oprot.write_field(name, type, fid, value)
+  //     end
+  //   end
+  // end
+  int type = NUM2INT(rb_hash_aref(data, ID2SYM(rb_intern("type")) ));
+  VALUE buf = rb_ary_entry(ary, 0);
+  VALUE obj = rb_ary_entry(ary, 1);
+  
+  if (type == T_STRCT || type == T_MAP || type == T_SET || type == T_LIST) {
+    // Deal with containers
+  } else {
+    binary_encoding(buf, obj, type);
+  }
+  
+  return 0;
+}
 
 // TODO: I'm using NUM2INT here in testing because it essentially does a type assert
 // We should go back and test how much of a speedup we get by using FIX2INT (and friends)
 // instead - Kevin Clark 4/8/08
-void binary_encoding(VALUE buf, VALUE obj, VALUE type) {
+static void binary_encoding(VALUE buf, VALUE obj, int type) {
   switch(type) {
     case T_BOOL:
       if RTEST(obj) {
@@ -130,9 +156,32 @@ void binary_encoding(VALUE buf, VALUE obj, VALUE type) {
       write_i32(buf, NUM2INT(obj));
       break;
       
-    case T_I64:
-      write_i64(buf, NUM2LONG(obj));
+    case T_I64: {
+      char data[sizeof(int64_t)];
+      int32_t *hi = (int32_t *)data;
+      int32_t *lo = (int32_t *)(data + sizeof(int32_t));
+
+      int64_t val;
+      switch (TYPE(obj)) {
+        case T_FIXNUM:
+          val = NUM2INT(obj);
+          break;
+        case T_BIGNUM:
+          val = rb_num2ll(obj);
+          break;
+        default:
+          rb_raise(rb_eArgError, "Argument is not a Fixnum or Bignum");
+      }
+
+      *hi = val >> 32;
+      *lo = val & UINT32_MAX;
+
+      *hi = htonl(*hi);
+      *lo = htonl(*lo);
+    
+      write_i64(buf, (int64_t)*data);
       break;
+    }
     
     case T_DBL:
       write_double(buf, NUM2DBL(obj));
@@ -141,8 +190,24 @@ void binary_encoding(VALUE buf, VALUE obj, VALUE type) {
     case T_STR:
       write_string(buf, STR2CSTR(obj));
       break;
-    
-      // T_STRCT      = 12,
+          
+    case T_STRCT: {
+      // FIELDS = {
+      //   1 => {:type => TType::BOOL, :name => 'im_true'},
+      //   2 => {:type => TType::BOOL, :name => 'im_false'},
+      //   3 => {:type => TType::BYTE, :name => 'a_bite'},
+      //   4 => {:type => TType::I16, :name => 'integer16'},
+      //   5 => {:type => TType::I32, :name => 'integer32'}
+      // }
+      VALUE args = rb_ary_new3(2, buf, obj);
+      VALUE fields = rb_const_get(CLASS_OF(obj), rb_intern("FIELDS"));
+      
+      rb_hash_foreach(fields, encode_field, args);
+      
+      break;
+    }
+      
+
       // T_MAP        = 13,
       // T_SET        = 14,
       // T_LIST       = 15
