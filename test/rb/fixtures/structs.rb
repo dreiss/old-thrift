@@ -42,6 +42,23 @@ module Fixtures
       }
     end
     
+    class OneDouble
+      include ThriftStruct
+      attr_accessor :double
+      FIELDS = {
+        1 => {:type => TType::DOUBLE, :name => 'double'}
+      }
+    end
+    
+    class OneString
+      include ThriftStruct
+      attr_accessor :string
+      FIELDS = {
+        1 => {:type => TType::STRING, :name => 'string'}
+      }
+    end
+    
+    
     # struct OneOfEach {
     #   1: bool im_true,
     #   2: bool im_false,
