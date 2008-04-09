@@ -5,6 +5,19 @@ require 'thrift/transport/ttransport'
 require 'thrift/protocol/tbinaryprotocol'
 require 'thrift/protocol/c/tfastbinaryprotocol'
 
+class TFastBinaryProtocolTest < Test::Unit::TestCase
+  def test_encodes_and_decodes_bools
+    trans = TMemoryBuffer.new
+    proto = TFastBinaryProtocol.new(trans)
+    obj = Fixtures::Structs::OneBool.new
+    assert_equal "\001", proto.encode_binary(obj)
+  end
+end
+
+# This class tests that the read_* and write_* methods on 
+# TFastBinaryProtocol do the same as TProtocol. This should be phased out
+# for a class which tests that a thrift struct is properly serialized and
+# deserialized
 class TFastBinaryProtocolCompatablityTest < Test::Unit::TestCase
   I8_MIN = -128
   I8_MAX = 127

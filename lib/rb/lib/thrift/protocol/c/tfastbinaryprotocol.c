@@ -1,3 +1,5 @@
+// Half of this file comes from contributions from Nitay Joffe (nitay@powerset.com)
+// Much of the rest (almost) directly ported (or pulled) from fastbinary.c
 #include <stdint.h>
 
 #include <ruby.h>
@@ -30,6 +32,23 @@ enum TType {
   // T_UTF16      = 17
 };
 
+// Same comment as the enum.  Sorry.
+#if __BYTE_ORDER == __BIG_ENDIAN
+# define ntohll(n) (n)
+# define htonll(n) (n)
+#elif __BYTE_ORDER == __LITTLE_ENDIAN
+# if defined(__GNUC__) && defined(__GLIBC__)
+#  include <byteswap.h>
+#  define ntohll(n) bswap_64(n)
+#  define htonll(n) bswap_64(n)
+# else /* GNUC & GLIBC */
+#  define ntohll(n) ( (((unsigned long long)ntohl(n)) << 32) + ntohl(n >> 32) )
+#  define htonll(n) ( (((unsigned long long)htonl(n)) << 32) + htonl(n >> 32) )
+# endif /* GNUC & GLIBC */
+#else /* __BYTE_ORDER */
+# error "Can't define htonll or ntohll!"
+#endif
+
 
 static VALUE class_tfbp;
 static ID id_write;
@@ -39,6 +58,104 @@ static ID id_trans;
 static const uint32_t VERSION_MASK = 0xffff0000;
 static const uint32_t VERSION_1 = 0x80010000;
 
+
+// -----------------------------------------------------------------------------
+// Write output stuff
+// -----------------------------------------------------------------------------
+
+static void write_byte(VALUE buf, int8_t val) {
+  rb_str_buf_cat(buf, (char*)&val, sizeof(int8_t));
+}
+
+static void write_i16(VALUE buf, int16_t val) {
+  int16_t net = (int16_t)htons(val);
+  rb_str_buf_cat(buf, (char*)&net, sizeof(int16_t));
+}
+
+static void write_i32(VALUE buf, int32_t val) {
+  int32_t net = (int32_t)htonl(val);
+  rb_str_buf_cat(buf, (char*)&net, sizeof(int32_t));
+}
+
+static void write_i64(VALUE buf, int64_t val) {
+  int64_t net = (int64_t)htonll(val);
+  rb_str_buf_cat(buf, (char*)&net, sizeof(int64_t));
+}
+
+static void write_double(VALUE buf, double dub) {
+  // Unfortunately, bitwise_cast doesn't work in C.  Bad C!
+  union {
+    double f;
+    int64_t t;
+  } transfer;
+  transfer.f = dub;
+  write_i64(buf, transfer.t);
+}
+
+static void write_string(VALUE buf, char* str) {
+  int32_t len = strlen(str);
+  write_i32(buf, len);
+  rb_str_buf_cat2(buf, str);
+}
+
+// -----------------------------------------------------------------------------
+// TFastBinaryProtocol's main encoding loop
+// -----------------------------------------------------------------------------
+
+
+// TODO: I'm using NUM2INT here in testing because it essentially does a type assert
+// We should go back and test how much of a speedup we get by using FIX2INT (and friends)
+// instead - Kevin Clark 4/8/08
+void binary_encoding(VALUE buf, VALUE obj, VALUE type) {
+  switch(type) {
+    case T_BOOL:
+      if RTEST(obj) {
+        write_byte(buf, 1);
+      }
+      else {
+        write_byte(buf, 0);
+      }
+      
+      break;
+    
+    case T_BYTE:
+      write_byte(buf, NUM2INT(obj));
+      break;
+    
+    case T_I16:
+      write_i16(buf, NUM2INT(obj));
+      break;
+    
+    case T_I32:
+      write_i32(buf, NUM2INT(obj));
+      break;
+      
+    case T_I64:
+      write_i64(buf, NUM2LONG(obj));
+      break;
+    
+    case T_DBL:
+      write_double(buf, NUM2DBL(obj));
+      break;
+
+    case T_STR:
+      write_string(buf, STR2CSTR(obj));
+      break;
+    
+      // T_STRCT      = 12,
+      // T_MAP        = 13,
+      // T_SET        = 14,
+      // T_LIST       = 15
+    
+  }
+}
+
+// obj is always going to be a TSTRCT
+VALUE tfbp_encode_binary(VALUE self, VALUE obj) {
+  VALUE buf = rb_str_buf_new(1024);
+  binary_encoding(buf, obj, T_STRCT);
+  return buf;
+}
 
 // -----------------------------------------------------------------------------
 // TFastBinaryProtocol read functions
@@ -982,12 +1099,15 @@ VALUE tfbp_skip(VALUE self, VALUE type)
 void Init_tfastbinaryprotocol()
 {
   class_tfbp = rb_define_class("TFastBinaryProtocol", rb_cObject);
-
+  
   id_write = rb_intern("write");
   id_read_all = rb_intern("readAll");
   id_trans = rb_intern("@trans");
 
   rb_define_singleton_method(class_tfbp, "new", tfbp_new, 1);
+
+  // For fast access
+  rb_define_method(class_tfbp, "encode_binary", tfbp_encode_binary, 1);
 
   rb_define_method(class_tfbp, "skip", tfbp_skip, 1);
   rb_define_method(class_tfbp, "trans", tfbp_trans, 0);

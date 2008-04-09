@@ -2,6 +2,14 @@ require 'thrift/thrift'
 
 module Fixtures
   module Structs
+    class OneBool
+      include ThriftStruct
+      attr_accessor :bool
+      FIELDS = {
+        1 => {:type => TType::BOOL, :name => 'bool'}
+      }
+    end
+    
     # struct OneOfEach {
     #   1: bool im_true,
     #   2: bool im_false,

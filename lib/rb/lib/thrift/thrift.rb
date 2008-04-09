@@ -195,7 +195,7 @@ module ThriftStruct
   def read(iprot)
     case iprot
     # TODO: Make sure transport is C readable
-    when iprot.respond_to? :decode_binary
+    when iprot.respond_to?(:decode_binary)
       # TODO: Implement
       # .decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
       raise NotImplementedError
@@ -213,7 +213,7 @@ module ThriftStruct
 
   def write(oprot)
     case oprot
-    when oprot.respond_to? :encode_binary
+    when oprot.respond_to?(:encode_binary)
       # TODO: Clean this so I don't have to access the transport.
       # TODO: Also, implement.
       raise NotImplementedError
