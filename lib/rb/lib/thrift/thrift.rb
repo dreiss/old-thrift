@@ -215,9 +215,7 @@ module ThriftStruct
     case oprot
     when oprot.respond_to?(:encode_binary)
       # TODO: Clean this so I don't have to access the transport.
-      # TODO: Also, implement.
-      raise NotImplementedError
-      oprot.trans.write oprot.encode_binary(self, self.class, self.struct_fields)
+      oprot.trans.write oprot.encode_binary(self)
     else
       oprot.writeStructBegin(self.class.name)
       each_field do |fid, type, name|

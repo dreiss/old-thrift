@@ -4,6 +4,7 @@
 
 #include <ruby.h>
 
+// #define __DEBUG__
 
 #define dbg() fprintf(stderr, "%s:%d\n", __FUNCTION__, __LINE__)
 
@@ -116,14 +117,37 @@ static int encode_field(VALUE fid, VALUE data, VALUE ary) {
   //     end
   //   end
   // end
+#ifdef __DEBUG__
+  rb_p(rb_str_new2("Encoding field!"));
+  rb_p(rb_inspect(data));
+#endif
+
   int type = NUM2INT(rb_hash_aref(data, ID2SYM(rb_intern("type")) ));
+  VALUE name = rb_hash_aref(data, ID2SYM(rb_intern("name")));
   VALUE buf = rb_ary_entry(ary, 0);
   VALUE obj = rb_ary_entry(ary, 1);
-  
+
+#ifdef __DEBUG__  
+  rb_p(rb_str_new2("Type is:"));
+  rb_p(rb_hash_aref(data, ID2SYM(rb_intern("type"))));
+#endif
+ 
   if (type == T_STRCT || type == T_MAP || type == T_SET || type == T_LIST) {
     // Deal with containers
   } else {
-    binary_encoding(buf, obj, type);
+#ifdef __DEBUG__
+    rb_p(rb_str_new2("String value of name was: "));
+    rb_p(StringValue(name));
+#endif
+
+    VALUE value = rb_ivar_get(obj, rb_intern(STR2CSTR(rb_str_concat(rb_str_new2("@"), name))));
+
+#ifdef __DEBUG__
+    rb_p(rb_str_new2("And value is: "));
+    rb_p(rb_inspect(value));
+#endif
+  
+    binary_encoding(buf, value, type);
   }
   
   return 0;
@@ -133,6 +157,13 @@ static int encode_field(VALUE fid, VALUE data, VALUE ary) {
 // We should go back and test how much of a speedup we get by using FIX2INT (and friends)
 // instead - Kevin Clark 4/8/08
 static void binary_encoding(VALUE buf, VALUE obj, int type) {
+#ifdef __DEBUG__
+  rb_p(rb_str_new2("Encoding binary"));
+  rb_p(rb_inspect(buf));
+  rb_p(rb_inspect(obj));
+  rb_p(rb_inspect(INT2FIX(type)));
+#endif
+
   switch(type) {
     case T_BOOL:
       if RTEST(obj) {

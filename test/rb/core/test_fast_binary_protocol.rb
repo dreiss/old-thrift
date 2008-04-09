@@ -9,8 +9,15 @@ class TFastBinaryProtocolTest < Test::Unit::TestCase
   def test_encodes_and_decodes_bools
     trans = TMemoryBuffer.new
     proto = TFastBinaryProtocol.new(trans)
-    obj = Fixtures::Structs::OneBool.new
+    obj = Fixtures::Structs::OneBool.new(:bool => true)
     assert_equal "\001", proto.encode_binary(obj)
+  end
+  
+  def test_encodes_and_decodes_bytes
+    trans = TMemoryBuffer.new
+    proto = TFastBinaryProtocol.new(trans)
+    obj = Fixtures::Structs::OneByte.new(:byte => 0x5a)
+    assert_equal "\x5a", proto.encode_binary(obj)
   end
 end
 
