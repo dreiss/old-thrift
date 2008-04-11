@@ -220,7 +220,7 @@ module ThriftStruct
   def write(oprot)
     case oprot
     when oprot.respond_to?(:encode_binary)
-      # TODO: Clean this so I don't have to access the transport.
+      # TODO(kevinclark): Clean this so I don't have to access the transport.
       oprot.trans.write oprot.encode_binary(self)
     else
       oprot.writeStructBegin(self.class.name)

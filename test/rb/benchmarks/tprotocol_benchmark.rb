@@ -9,18 +9,17 @@ require 'rubygems'
 require 'set'
 require 'pp'
 
-require 'ruby-debug'
-require 'ruby-prof'
+# require 'ruby-debug'
+# require 'ruby-prof'
 
-require 'test_helper'
-
+require File.join(File.dirname(__FILE__), '../fixtures/structs')
 
 transport = TMemoryBuffer.new
 ruby_binary_protocol = TBinaryProtocol.new(transport)
 c_fast_binary_protocol = TFastBinaryProtocol.new(transport)
 
 
-ooe = ThriftStructs::OneOfEach.new
+ooe = Fixtures::Structs::OneOfEach.new
 ooe.im_true   = true
 ooe.im_false  = false
 ooe.a_bite    = -42
@@ -31,7 +30,7 @@ ooe.double_precision = Math::PI
 ooe.some_characters  = "Debug THIS!"
 ooe.zomg_unicode     = "\xd7\n\a\t"
 
-n1 = ThriftStructs::Nested1.new
+n1 = Fixtures::Structs::Nested1.new
 n1.a_list = []
 n1.a_list << ooe << ooe << ooe << ooe
 n1.i32_map = {}
@@ -48,7 +47,7 @@ n1.str_map = {}
 n1.str_map['sdoperuix'] = ooe
 n1.str_map['pwoerxclmn'] = ooe
 
-n2 = ThriftStructs::Nested2.new
+n2 = Fixtures::Structs::Nested2.new
 n2.a_list = []
 n2.a_list << n1 << n1 << n1 << n1 << n1
 n2.i32_map = {}
@@ -68,7 +67,7 @@ n2.str_map[''] = n1
 n2.str_map['sdflkertpioux'] = n1
 n2.str_map['sdfwepwdcjpoi'] = n1
 
-n3 = ThriftStructs::Nested3.new
+n3 = Fixtures::Structs::Nested3.new
 n3.a_list = []
 n3.a_list << n2 << n2 << n2 << n2 << n2
 n3.i32_map = {}
@@ -88,7 +87,7 @@ n3.str_map[''] = n2
 n3.str_map['sdflkertpioux'] = n2
 n3.str_map['sdfwepwdcjpoi'] = n2
 
-n4 = ThriftStructs::Nested4.new
+n4 = Fixtures::Structs::Nested4.new
 n4.a_list = []
 n4.a_list << n3
 n4.i32_map = {}
@@ -111,11 +110,20 @@ n4.str_map[''] = n3
 
 Benchmark.bmbm do |x|
   x.report("ruby") do
-    n4.write(ruby_binary_protocol)
-    ThriftStructs::Nested4.new.read(ruby_binary_protocol)
+    10_000.times do
+      ooe.write(ruby_binary_protocol)
+      Fixtures::Structs::OneOfEach.new.read(ruby_binary_protocol)
+    end
+    # n4.write(ruby_binary_protocol)
+    # Fixtures::Structs::Nested4.new.read(ruby_binary_protocol)
   end
   x.report("c") do
-    n4.write(c_fast_binary_protocol)
-    ThriftStructs::Nested4.new.read(c_fast_binary_protocol)
+    10_000.times do
+      ooe.write(c_fast_binary_protocol)
+      Fixtures::Structs::OneOfEach.new.read(c_fast_binary_protocol)
+    end
+    
+    # n4.write(c_fast_binary_protocol)
+    # Fixtures::Structs::Nested4.new.read(c_fast_binary_protocol)
   end
 end

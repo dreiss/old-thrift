@@ -58,6 +58,30 @@ module Fixtures
       }
     end
     
+    class OneMap
+      include ThriftStruct
+      attr_accessor :map
+      FIELDS = {
+        1 => {:type => TType::MAP, :name => 'map', :key => {:type => TType::STRING}, :value => {:type => TType::STRING}}
+      }
+    end
+    
+    class OneList
+      include ThriftStruct
+      attr_accessor :list
+      FIELDS = {
+        1 => {:type => TType::LIST, :name => 'list', :element => {:type => TType::STRING}}
+      }
+    end
+    
+    class OneSet
+      include ThriftStruct
+      attr_accessor :set
+      FIELDS = {
+        1 => {:type => TType::SET, :name => 'set', :element => {:type => TType::STRING}}
+      }
+    end
+    
     
     # struct OneOfEach {
     #   1: bool im_true,

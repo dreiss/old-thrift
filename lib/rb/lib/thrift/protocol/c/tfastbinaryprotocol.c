@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 #include <ruby.h>
+#include <st.h>
 
 // #define __DEBUG__
 
@@ -73,15 +74,98 @@ static ID id_trans;
 static const uint32_t VERSION_MASK = 0xffff0000;
 static const uint32_t VERSION_1 = 0x80010000;
 
+// -----------------------------------------------------------------------------
+// Structs so I don't have to keep calling rb_hash_aref
+// -----------------------------------------------------------------------------
+
+// { :type => field[:type],
+//   :class => field[:class],
+//   :key => field[:key],
+//   :value => field[:value],
+//   :element => field[:element] }
+
+struct _thrift_map;
+struct _field_spec;
+
+typedef union {
+  VALUE klass;
+  struct _thrift_map* map;
+  struct _field_spec* element;
+} container_data;
+
+typedef struct _field_spec{
+  int type;
+  char* name;
+  container_data data;
+} field_spec;
+
+typedef struct _thrift_map {
+  field_spec* key;
+  field_spec* value; 
+} thrift_map;
+
+
+static void parse_field_spec(field_spec* spec, VALUE field_data) {
+  int type = NUM2INT(rb_hash_aref(field_data, ID2SYM(rb_intern("type"))));
+  VALUE name = rb_hash_aref(field_data, ID2SYM(rb_intern("name")));
+  
+  spec->type = type;
+  
+  if (Qnil != name) {
+    spec->name = STR2CSTR(name);
+  } else {
+    spec->name = NULL;
+  }
+  
+  switch(type) {
+    case T_STRCT: {
+      spec->data.klass = rb_hash_aref(field_data, ID2SYM(rb_intern("class")));
+      break;
+    }
+    
+    case T_MAP: {
+      VALUE key_fields = rb_hash_aref(field_data, ID2SYM(rb_intern("key")));
+      VALUE value_fields = rb_hash_aref(field_data, ID2SYM(rb_intern("value")));
+      field_spec* key;
+      field_spec* val;
+      thrift_map* map;
+      
+      // TODO(kevinclark): Someone needs to free these
+      map = (thrift_map *) malloc(sizeof(thrift_map));
+      key = (field_spec *) malloc(sizeof(field_spec));
+      val = (field_spec *) malloc(sizeof(field_spec));
+      
+      parse_field_spec(key, key_fields);
+      parse_field_spec(val, value_fields);
+      
+      map->key = key;
+      map->value = val;
+      spec->data.map = map;
+      
+      break;
+    }
+    
+    case T_LIST: 
+    case T_SET:
+    {
+      VALUE list_fields = rb_hash_aref(field_data, ID2SYM(rb_intern("element")));
+      field_spec* element;
+      
+      // TODO(kevinclark): Free this
+      element = (field_spec *) malloc(sizeof(field_spec));
+      parse_field_spec(element, list_fields);
+      spec->data.element = element;
+      break;
+    }
+  }
+}
+
 
 // -----------------------------------------------------------------------------
 // Write output stuff
 // -----------------------------------------------------------------------------
 
 static void write_byte(VALUE buf, int8_t val) {
-#ifdef __DEBUG__
-  fprintf(stderr, "In write byte, writing: %d\n", val);
-#endif
   rb_str_buf_cat(buf, (char*)&val, sizeof(int8_t));
 }
 
@@ -134,54 +218,122 @@ static void write_field_stop(VALUE buf) {
   write_byte(buf, T_STOP);
 }
 
-// -----------------------------------------------------------------------------
-// TFastBinaryProtocol's main encoding loop
-// -----------------------------------------------------------------------------
+static void write_map_begin(VALUE buf, int8_t ktype, int8_t vtype, int32_t sz) {
+  write_byte(buf, ktype);
+  write_byte(buf, vtype);
+  write_i32(buf, sz);
+}
+
+#define write_map_end(buf);
+
+static void write_list_begin(VALUE buf, int type, int sz) {
+  write_byte(buf, type);
+  write_i32(buf, sz);
+}
+
+#define write_list_end(buf)
+
+static void write_set_begin(VALUE buf, int type, int sz) {
+  write_byte(buf, type);
+  write_i32(buf, sz);
+}
+
+#define write_set_end(buf)
 
 static void binary_encoding(VALUE buf, VALUE obj, int type);
 
-static int encode_field(VALUE fid, VALUE data, VALUE ary) {
-#ifdef __DEBUG__
-  rb_p(rb_str_new2("Encoding field!"));
-  rb_p(rb_inspect(data));
-#endif
-
-  int type = NUM2INT(rb_hash_aref(data, ID2SYM(rb_intern("type")) ));
-  VALUE name = rb_hash_aref(data, ID2SYM(rb_intern("name")));
+static int write_map_data(VALUE key, VALUE val, VALUE ary) {
   VALUE buf = rb_ary_entry(ary, 0);
-  VALUE obj = rb_ary_entry(ary, 1);
-
-#ifdef __DEBUG__  
-  rb_p(rb_str_new2("Type is:"));
-  rb_p(rb_hash_aref(data, ID2SYM(rb_intern("type"))));
-#endif
- 
-  if (type == T_STRCT || type == T_MAP || type == T_SET || type == T_LIST) {
-    // Deal with containers
-  } else {
-#ifdef __DEBUG__
-    rb_p(rb_str_new2("String value of name was: "));
-    rb_p(StringValue(name));
-#endif
-
-    VALUE value = rb_ivar_get(obj, rb_intern(STR2CSTR(rb_str_concat(rb_str_new2("@"), name))));
-
-#ifdef __DEBUG__
-    rb_p(rb_str_new2("And value is: "));
-    rb_p(rb_inspect(value));
-#endif
+  int key_type = FIX2INT(rb_ary_entry(ary, 1));
+  int val_type = FIX2INT(rb_ary_entry(ary, 2));
   
-    write_field_begin(buf, STR2CSTR(name), type, NUM2INT(fid));
-    binary_encoding(buf, value, type);
-    write_field_end(buf);
-  }
+  binary_encoding(buf, key, key_type);
+  binary_encoding(buf, val, val_type);
   
   return 0;
 }
 
-// TODO: I'm using NUM2INT here in testing because it essentially does a type assert
-// We should go back and test how much of a speedup we get by using FIX2INT (and friends)
-// instead - Kevin Clark 4/8/08
+static int write_set_data(VALUE val, VALUE truth, VALUE ary) {
+  VALUE buf = rb_ary_entry(ary, 0);
+  int type = FIX2INT(rb_ary_entry(ary, 1));
+  
+  binary_encoding(buf, val, type);
+  
+  return 0;
+}
+
+static void write_container(VALUE buf, VALUE value, field_spec* spec) {
+  int sz;
+  
+  switch(spec->type) {
+    case T_MAP: {
+      sz = RHASH(value)->tbl->num_entries;
+      
+      // TODO(kevinclark): Yuck. Yuck yuck yuck. Figure out how to not convert types over and over. 
+      VALUE args = rb_ary_new3(3, buf, INT2FIX(spec->data.map->key->type), INT2FIX(spec->data.map->value->type));
+      
+      write_map_begin(buf, spec->data.map->key->type, spec->data.map->value->type, sz);
+      rb_hash_foreach(value, write_map_data, args);
+      write_map_end(buf);
+      break;
+    }
+    
+    case T_LIST: {
+      sz = RARRAY(value)->len;
+      int i;
+      
+      write_list_begin(buf, spec->data.element->type, sz);
+      for (i = 0; i < sz; ++i) {
+        binary_encoding(buf, rb_ary_entry(value, i), spec->data.element->type);
+      }
+      write_list_end(buf);
+      break;
+    }
+    
+    case T_SET: {
+      sz = RHASH(value)->tbl->num_entries;
+      
+      VALUE args = rb_ary_new3(2, buf, INT2FIX(spec->data.element->type));
+      write_set_begin(buf, spec->data.element->type, sz);
+      rb_hash_foreach(value, write_set_data, args);
+      write_set_end(buf);
+      break;
+    }
+  }
+}
+
+#define IS_CONTAINER(x) (x == T_STRCT || x == T_MAP || x == T_SET || x == T_LIST)
+
+static int encode_field(VALUE fid, VALUE data, VALUE ary) {
+  field_spec spec;
+  parse_field_spec(&spec, data);
+  
+  VALUE buf = rb_ary_entry(ary, 0);
+  VALUE obj = rb_ary_entry(ary, 1);
+  VALUE value = rb_ivar_get(obj, rb_intern(STR2CSTR(rb_str_concat(rb_str_new2("@"), rb_str_new2(spec.name)))));
+
+  if (Qnil == value)
+    return 0;
+     
+  write_field_begin(buf, spec.name, spec.type, NUM2INT(fid));
+  
+  if (IS_CONTAINER(spec.type)) {
+    write_container(buf, value, &spec);
+  } else {
+    binary_encoding(buf, value, spec.type);
+  }
+  write_field_end(buf);
+  
+  
+  return 0;
+}
+
+// -----------------------------------------------------------------------------
+// TFastBinaryProtocol's main encoding loop
+// -----------------------------------------------------------------------------
+
+// TODO(kevinclark): I'm using NUM2INT here in testing because it essentially does a type assert
+// We should go back and test how much of a speedup we get by using FIX2INT (and friends) instead
 static void binary_encoding(VALUE buf, VALUE obj, int type) {
 #ifdef __DEBUG__
   rb_p(rb_str_new2("Encoding binary (buf, obj, type)"));
@@ -258,11 +410,6 @@ static void binary_encoding(VALUE buf, VALUE obj, int type) {
       write_struct_end(buf);
       break;
     }
-      
-
-      // T_MAP        = 13,
-      // T_SET        = 14,
-      // T_LIST       = 15
   }
 }
 
