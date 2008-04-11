@@ -105,9 +105,13 @@ typedef struct _thrift_map {
 } thrift_map;
 
 
-static void parse_field_spec(field_spec* spec, VALUE field_data) {
+static field_spec* parse_field_spec(VALUE field_data) {
   int type = NUM2INT(rb_hash_aref(field_data, ID2SYM(rb_intern("type"))));
   VALUE name = rb_hash_aref(field_data, ID2SYM(rb_intern("name")));
+  
+  // TODO(kevinclark): Free this
+  field_spec* spec = (field_spec *) malloc(sizeof(field_spec));
+  bzero(spec, sizeof(field_spec));
   
   spec->type = type;
   
@@ -126,17 +130,12 @@ static void parse_field_spec(field_spec* spec, VALUE field_data) {
     case T_MAP: {
       VALUE key_fields = rb_hash_aref(field_data, ID2SYM(rb_intern("key")));
       VALUE value_fields = rb_hash_aref(field_data, ID2SYM(rb_intern("value")));
-      field_spec* key;
-      field_spec* val;
+      field_spec* key = parse_field_spec(key_fields);;
+      field_spec* val = parse_field_spec(value_fields);;
       thrift_map* map;
       
       // TODO(kevinclark): Someone needs to free these
       map = (thrift_map *) malloc(sizeof(thrift_map));
-      key = (field_spec *) malloc(sizeof(field_spec));
-      val = (field_spec *) malloc(sizeof(field_spec));
-      
-      parse_field_spec(key, key_fields);
-      parse_field_spec(val, value_fields);
       
       map->key = key;
       map->value = val;
@@ -149,15 +148,13 @@ static void parse_field_spec(field_spec* spec, VALUE field_data) {
     case T_SET:
     {
       VALUE list_fields = rb_hash_aref(field_data, ID2SYM(rb_intern("element")));
-      field_spec* element;
-      
-      // TODO(kevinclark): Free this
-      element = (field_spec *) malloc(sizeof(field_spec));
-      parse_field_spec(element, list_fields);
+      field_spec* element = parse_field_spec(list_fields);
       spec->data.element = element;
       break;
     }
   }
+  
+  return spec;
 }
 
 
@@ -305,22 +302,21 @@ static void write_container(VALUE buf, VALUE value, field_spec* spec) {
 #define IS_CONTAINER(x) (x == T_STRCT || x == T_MAP || x == T_SET || x == T_LIST)
 
 static int encode_field(VALUE fid, VALUE data, VALUE ary) {
-  field_spec spec;
-  parse_field_spec(&spec, data);
+  field_spec *spec = parse_field_spec(data);
   
   VALUE buf = rb_ary_entry(ary, 0);
   VALUE obj = rb_ary_entry(ary, 1);
-  VALUE value = rb_ivar_get(obj, rb_intern(STR2CSTR(rb_str_concat(rb_str_new2("@"), rb_str_new2(spec.name)))));
+  VALUE value = rb_ivar_get(obj, rb_intern(STR2CSTR(rb_str_concat(rb_str_new2("@"), rb_str_new2(spec->name)))));
 
   if (Qnil == value)
     return 0;
      
-  write_field_begin(buf, spec.name, spec.type, NUM2INT(fid));
+  write_field_begin(buf, spec->name, spec->type, NUM2INT(fid));
   
-  if (IS_CONTAINER(spec.type)) {
-    write_container(buf, value, &spec);
+  if (IS_CONTAINER(spec->type)) {
+    write_container(buf, value, spec);
   } else {
-    binary_encoding(buf, value, spec.type);
+    binary_encoding(buf, value, spec->type);
   }
   write_field_end(buf);
   
