@@ -105,11 +105,31 @@ typedef struct _thrift_map {
 } thrift_map;
 
 
+static void free_field_spec(field_spec* spec) {
+  switch(spec->type) {
+    case T_STRCT:
+      free(spec);
+      break;
+    
+    case T_LIST:
+    case T_SET:
+      free_field_spec(spec->data.element);
+      free(spec);
+      break;
+    
+    case T_MAP:
+      free_field_spec(spec->data.map->key);
+      free_field_spec(spec->data.map->value);
+      free(spec->data.map);
+      free(spec);
+      break;
+  }
+}
+
 static field_spec* parse_field_spec(VALUE field_data) {
   int type = NUM2INT(rb_hash_aref(field_data, ID2SYM(rb_intern("type"))));
   VALUE name = rb_hash_aref(field_data, ID2SYM(rb_intern("name")));
   
-  // TODO(kevinclark): Free this
   field_spec* spec = (field_spec *) malloc(sizeof(field_spec));
   bzero(spec, sizeof(field_spec));
   
@@ -134,7 +154,6 @@ static field_spec* parse_field_spec(VALUE field_data) {
       field_spec* val = parse_field_spec(value_fields);;
       thrift_map* map;
       
-      // TODO(kevinclark): Someone needs to free these
       map = (thrift_map *) malloc(sizeof(thrift_map));
       
       map->key = key;
@@ -320,6 +339,7 @@ static int encode_field(VALUE fid, VALUE data, VALUE ary) {
   }
   write_field_end(buf);
   
+  free_field_spec(spec);
   
   return 0;
 }
