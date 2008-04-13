@@ -318,7 +318,7 @@ static void write_container(VALUE buf, VALUE value, field_spec* spec) {
   }
 }
 
-#define IS_CONTAINER(x) (x == T_STRCT || x == T_MAP || x == T_SET || x == T_LIST)
+#define IS_CONTAINER(x) (x == T_MAP || x == T_SET || x == T_LIST)
 
 static int encode_field(VALUE fid, VALUE data, VALUE ary) {
   field_spec *spec = parse_field_spec(data);
