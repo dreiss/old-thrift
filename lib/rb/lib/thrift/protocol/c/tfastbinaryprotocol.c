@@ -455,6 +455,11 @@ typedef struct {
   int8_t len;
 } decode_buffer;
 
+typedef struct {
+  char* ptr;
+  int len;
+} thrift_string;
+
 #define read_struct_begin(buf)
 #define read_struct_end(buf)
 
@@ -467,6 +472,37 @@ static int8_t read_byte(decode_buffer* buf) {
 static int16_t read_int16(decode_buffer* buf) {
   int16_t data = ntohs(*(int16_t*)(buf->data + buf->pos));
   buf->pos += sizeof(int16_t);
+  return data;
+}
+
+static int32_t read_int32(decode_buffer* buf) {
+  int32_t data = ntohl(*(int32_t*)(buf->data + buf->pos));
+  buf->pos += sizeof(int32_t);
+  return data;
+}
+
+static int64_t read_int64(decode_buffer* buf) {
+  int64_t data = ntohll(*(int64_t*)(buf->data + buf->pos));
+  buf->pos += sizeof(int64_t);
+  return data;
+}
+
+static double read_double(decode_buffer* buf) {
+  union {
+    double f;
+    int64_t t;
+  } transfer;
+  
+  transfer.t = read_int64(buf);
+  return transfer.f;
+}
+
+static thrift_string read_string(decode_buffer* buf) {
+  thrift_string data;
+  data.len = read_int32(buf);
+  data.ptr = buf->data + buf->pos;
+  buf->pos += data.len;
+  
   return data;
 }
 
@@ -497,42 +533,25 @@ static VALUE read_type(int type, decode_buffer* buf) {
       }
     }
     
-    // case T_BYTE:
-    //   write_byte(buf, NUM2INT(obj));
-    //   break;
-    // 
-    // case T_I16:
-    //   write_i16(buf, NUM2INT(obj));
-    //   break;
-    // 
-    // case T_I32:
-    //   write_i32(buf, NUM2INT(obj));
-    //   break;
-    // 
-    // case T_I64: {
-    //   int64_t val;
-    //   switch (TYPE(obj)) {
-    //     case T_FIXNUM:
-    //       val = NUM2INT(obj);
-    //       break;
-    //     case T_BIGNUM:
-    //       val = rb_num2ll(obj);
-    //       break;
-    //     default:
-    //       rb_raise(rb_eArgError, "Argument is not a Fixnum or Bignum");
-    //   }
-    // 
-    //   write_i64(buf, val);
-    //   break;
-    // }
-    // 
-    // case T_DBL:
-    //   write_double(buf, NUM2DBL(obj));
-    //   break;
-    // 
-    // case T_STR:
-    //   write_string(buf, STR2CSTR(obj));
-    //   break;
+    case T_BYTE:
+      return INT2FIX(read_byte(buf));
+    
+    case T_I16:
+      return INT2FIX(read_int16(buf));
+
+    case T_I32:
+      return INT2NUM(read_int32(buf));
+
+    case T_I64:
+      return rb_ll2inum(read_int64(buf));
+    
+    case T_DBL:
+      return rb_float_new(read_double(buf));
+
+    case T_STR: {
+      thrift_string str = read_string(buf);
+      return rb_str_new(str.ptr, str.len);
+    }
   }
   
   return Qnil;

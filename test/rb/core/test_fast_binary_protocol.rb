@@ -45,7 +45,7 @@ class TFastBinaryProtocolTest < Test::Unit::TestCase
     assert_equal (eql_obj || obj), @fast_proto.decode_binary(obj.class.new, @trans)
   end
   
-  def test_encodes_bools
+  def test_encodes_and_decodes_bools
     BOOL_VALUES.each do |(write_val, read_val)|
       obj = Fixtures::Structs::OneBool.new(:bool => write_val)
       assert_encodes_struct obj
@@ -53,38 +53,43 @@ class TFastBinaryProtocolTest < Test::Unit::TestCase
     end
   end
   
-  def test_encodes_bytes
+  def test_encodes_and_decodes_bytes
     BYTE_VALUES.each do |val|
       obj = Fixtures::Structs::OneByte.new(:byte => val)
       assert_encodes_struct obj
+      assert_decodes_struct obj
     end
   end
   
-  def test_encodes_i16
+  def test_encodes_and_decodes_i16
     I16_VALUES.each do |val|
       obj = Fixtures::Structs::OneI16.new(:i16 => val)
       assert_encodes_struct obj
+      assert_decodes_struct obj
     end
   end
   
-  def test_encodes_i32
+  def test_encodes_and_decodes_i32
     I32_VALUES.each do |val|
       obj = Fixtures::Structs::OneI32.new(:i32 => val)
       assert_encodes_struct obj
+      assert_decodes_struct obj
     end
   end
   
-  def test_encodes_i64
+  def test_encodes_and_decodes_i64
     I64_VALUES.each do |val|
       obj = Fixtures::Structs::OneI64.new(:i64 => val)
       assert_encodes_struct obj
+      assert_decodes_struct obj
     end
   end
   
-  def test_encodes_double
+  def test_encodes_and_decodes_double
     DBL_VALUES.each do |val|
       obj = Fixtures::Structs::OneDouble.new(:double => val)
       assert_encodes_struct obj
+      assert_decodes_struct obj
     end
   end
   
@@ -92,6 +97,7 @@ class TFastBinaryProtocolTest < Test::Unit::TestCase
     STR_VALUES.each do |val|
       obj = Fixtures::Structs::OneString.new(:string => val)
       assert_encodes_struct obj
+      assert_decodes_struct obj
     end
   end
   
