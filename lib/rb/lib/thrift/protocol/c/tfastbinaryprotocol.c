@@ -1,6 +1,7 @@
 // Half of this file comes from contributions from Nitay Joffe (nitay@powerset.com)
 // Much of the rest (almost) directly ported (or pulled) from fastbinary.c
 #include <stdint.h>
+#include <stdbool.h>
 
 #include <ruby.h>
 #include <st.h>
@@ -70,6 +71,7 @@ static VALUE class_tfbp;
 static ID id_write;
 static ID id_read_all;
 static ID id_trans;
+static ID type_sym;
 
 static const uint32_t VERSION_MASK = 0xffff0000;
 static const uint32_t VERSION_1 = 0x80010000;
@@ -88,7 +90,7 @@ struct _thrift_map;
 struct _field_spec;
 
 typedef union {
-  VALUE klass;
+  VALUE class;
   struct _thrift_map* map;
   struct _field_spec* element;
 } container_data;
@@ -127,7 +129,7 @@ static void free_field_spec(field_spec* spec) {
 }
 
 static field_spec* parse_field_spec(VALUE field_data) {
-  int type = NUM2INT(rb_hash_aref(field_data, ID2SYM(rb_intern("type"))));
+  int type = NUM2INT(rb_hash_aref(field_data, type_sym));
   VALUE name = rb_hash_aref(field_data, ID2SYM(rb_intern("name")));
   
   field_spec* spec = (field_spec *) malloc(sizeof(field_spec));
@@ -143,7 +145,7 @@ static field_spec* parse_field_spec(VALUE field_data) {
   
   switch(type) {
     case T_STRCT: {
-      spec->data.klass = rb_hash_aref(field_data, ID2SYM(rb_intern("class")));
+      spec->data.class = rb_hash_aref(field_data, ID2SYM(rb_intern("class")));
       break;
     }
     
@@ -435,6 +437,276 @@ VALUE tfbp_encode_binary(VALUE self, VALUE obj) {
   binary_encoding(buf, obj, T_STRCT);
   return buf;
 }
+
+
+// -----------------------------------------------------------------------------
+// Read stuff
+// -----------------------------------------------------------------------------
+
+typedef struct {
+  char* name;
+  int8_t type;
+  int16_t id;
+} field_header;
+
+typedef struct {
+  char* data;
+  int8_t pos;
+  int8_t len;
+} decode_buffer;
+
+#define read_struct_begin(buf)
+#define read_struct_end(buf)
+
+static int8_t read_byte(decode_buffer* buf) {
+  int8_t data = buf->data[buf->pos];
+  buf->pos++;
+  return data;
+}
+
+static int16_t read_int16(decode_buffer* buf) {
+  int16_t data = ntohs(*(int16_t*)(buf->data + buf->pos));
+  buf->pos += sizeof(int16_t);
+  return data;
+}
+
+static field_header* read_field_begin(decode_buffer* buf) {
+  field_header* header = (field_header*) malloc(sizeof(field_header));
+  bzero(header, sizeof(field_header));
+  
+  header->type = read_byte(buf);
+  if (header->type == T_STOP) {
+    header->id = 0;
+  } else {
+    header->id = read_int16(buf);
+  }
+  
+  return header;
+}
+
+#define read_field_end(buf)
+
+static VALUE read_type(int type, decode_buffer* buf) {
+  switch(type) {
+    case T_BOOL: {
+      int8_t byte = read_byte(buf);
+      if (0 == byte) {
+        return Qfalse;
+      } else {
+        return Qtrue;
+      }
+    }
+    
+    // case T_BYTE:
+    //   write_byte(buf, NUM2INT(obj));
+    //   break;
+    // 
+    // case T_I16:
+    //   write_i16(buf, NUM2INT(obj));
+    //   break;
+    // 
+    // case T_I32:
+    //   write_i32(buf, NUM2INT(obj));
+    //   break;
+    // 
+    // case T_I64: {
+    //   int64_t val;
+    //   switch (TYPE(obj)) {
+    //     case T_FIXNUM:
+    //       val = NUM2INT(obj);
+    //       break;
+    //     case T_BIGNUM:
+    //       val = rb_num2ll(obj);
+    //       break;
+    //     default:
+    //       rb_raise(rb_eArgError, "Argument is not a Fixnum or Bignum");
+    //   }
+    // 
+    //   write_i64(buf, val);
+    //   break;
+    // }
+    // 
+    // case T_DBL:
+    //   write_double(buf, NUM2DBL(obj));
+    //   break;
+    // 
+    // case T_STR:
+    //   write_string(buf, STR2CSTR(obj));
+    //   break;
+  }
+  
+  return Qnil;
+}
+
+VALUE read_struct(VALUE obj, decode_buffer* buf);
+
+static VALUE read_field(decode_buffer* buf, field_spec* spec) {
+  if (IS_CONTAINER(spec->type)) {
+    return Qnil;
+  }
+  else if (T_STRCT == spec->type) {
+    VALUE obj = rb_class_new_instance(0, NULL, spec->data.class);
+    return read_struct(obj, buf);
+  }
+  else {
+    return read_type(spec->type, buf);
+  }
+}
+
+// def read_field(iprot, field = {})
+//   if field[:type] == TType::STRUCT
+//     value = field[:class].new
+//     value.read(iprot)
+//   elsif field[:type] == TType::MAP
+//     key_type, val_type, size = iprot.readMapBegin
+//     value = {}
+//     size.times do
+//       k = read_field(iprot, field_info(field[:key]))
+//       v = read_field(iprot, field_info(field[:value]))
+//       value[k] = v
+//     end
+//     iprot.readMapEnd
+//   elsif field[:type] == TType::LIST
+//     e_type, size = iprot.readListBegin
+//     value = Array.new(size) do |n|
+//       read_field(iprot, field_info(field[:element]))
+//     end
+//     iprot.readListEnd
+//   elsif field[:type] == TType::SET
+//     e_type, size = iprot.readSetBegin
+//     value = {}
+//     size.times do
+//       element = read_field(iprot, field_info(field[:element]))
+//       value[element] = true
+//     end
+//     iprot.readSetEnd
+//   else
+//     value = iprot.read_type(field[:type])
+//   end
+//   value
+// end
+
+
+static void skip_type() {
+  
+}
+
+VALUE read_struct(VALUE obj, decode_buffer* buf) {
+  VALUE field;
+  field_header* f_header;
+  VALUE value = Qnil;
+  VALUE fields = rb_const_get(CLASS_OF(obj), rb_intern("FIELDS"));
+  field_spec* spec;
+  char name_buf[128];
+  
+  read_struct_begin(buf);
+  
+  while(true) {
+    f_header = read_field_begin(buf);
+    if (T_STOP == f_header->type) {
+      break;
+    }
+    
+    field = rb_hash_aref(fields, INT2FIX(f_header->id));
+    
+    if (NIL_P(field)) {
+      skip_type();
+    } 
+    else {
+      spec = parse_field_spec(field);
+
+      if (spec->type != f_header->type) {
+        skip_type();
+      } else {
+        value = read_field(buf, spec);
+        bzero(name_buf, 128); // Full size of the char[]
+        name_buf[0] = '@';
+        strncat(name_buf, spec->name, strlen(spec->name));
+        rb_iv_set(obj, name_buf, value);
+      }
+    }
+    
+    read_field_end(buf);
+  }
+  
+  read_struct_end(buf);
+  
+  return obj;
+}
+
+VALUE tfbp_decode_binary(VALUE self, VALUE obj, VALUE transport) {
+  decode_buffer buf;
+  
+  VALUE str_buf = rb_funcall(transport, rb_intern("string_buffer"), 0);
+
+  buf.pos = 0;  
+  buf.data = STR2CSTR(str_buf);
+  buf.len = RSTRING(str_buf)->len; //TODO(kevinclark): Make sure we don't overrun this.
+
+#ifdef __DEBUG__
+  rb_p(rb_str_new2("Running decode binary with data:"));
+  rb_p(rb_inspect(rb_str_new2(buf.data)));
+#endif
+ 
+  return read_struct(obj, &buf);
+}
+
+
+// Read
+// iprot.readStructBegin()
+// loop do
+//   fname, ftype, fid = iprot.readFieldBegin()
+//   break if (ftype === TType::STOP)
+//   field = struct_fields[fid]
+//
+//   if field && field[:type] == ftype
+//     value = read_field(iprot, field)
+//     instance_variable_set("@#{field[:name]}", value)
+//   else
+//     iprot.skip(ftype)
+//   end
+//
+//   iprot.readFieldEnd()
+// end
+// iprot.readStructEnd()
+
+// def read_field(iprot, field = {})
+//   if field[:type] == TType::STRUCT
+//     value = field[:class].new
+//     value.read(iprot)
+//   elsif field[:type] == TType::MAP
+//     key_type, val_type, size = iprot.readMapBegin
+//     value = {}
+//     size.times do
+//       k = read_field(iprot, field_info(field[:key]))
+//       v = read_field(iprot, field_info(field[:value]))
+//       value[k] = v
+//     end
+//     iprot.readMapEnd
+//   elsif field[:type] == TType::LIST
+//     e_type, size = iprot.readListBegin
+//     value = Array.new(size) do |n|
+//       read_field(iprot, field_info(field[:element]))
+//     end
+//     iprot.readListEnd
+//   elsif field[:type] == TType::SET
+//     e_type, size = iprot.readSetBegin
+//     value = {}
+//     size.times do
+//       element = read_field(iprot, field_info(field[:element]))
+//       value[element] = true
+//     end
+//     iprot.readSetEnd
+//   else
+//     value = iprot.read_type(field[:type])
+//   end
+//   value
+// end
+
+
+// -----------------------------------------------------------------------------
+// Straight C translations of the ruby methods follow
+// -----------------------------------------------------------------------------
 
 // -----------------------------------------------------------------------------
 // TFastBinaryProtocol read functions
@@ -1382,12 +1654,14 @@ void Init_tfastbinaryprotocol()
   id_write = rb_intern("write");
   id_read_all = rb_intern("readAll");
   id_trans = rb_intern("@trans");
-
+  type_sym = ID2SYM(rb_intern("type"));
+  
   rb_define_singleton_method(class_tfbp, "new", tfbp_new, 1);
 
   // For fast access
   rb_define_method(class_tfbp, "encode_binary", tfbp_encode_binary, 1);
-
+  rb_define_method(class_tfbp, "decode_binary", tfbp_decode_binary, 2);
+  
   rb_define_method(class_tfbp, "skip", tfbp_skip, 1);
   rb_define_method(class_tfbp, "trans", tfbp_trans, 0);
 

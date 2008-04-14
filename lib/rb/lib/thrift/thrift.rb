@@ -202,9 +202,7 @@ module ThriftStruct
     case iprot
     # TODO: Make sure transport is C readable
     when iprot.respond_to?(:decode_binary)
-      # TODO: Implement
-      # .decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
-      raise NotImplementedError
+      iprot.decode_binary(self, iprot.trans)
     else
       iprot.readStructBegin()
       loop do

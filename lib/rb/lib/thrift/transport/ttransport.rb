@@ -268,6 +268,11 @@ class TMemoryBuffer < TTransport
 
   def flush
   end
+  
+  # For fast binary protocol access
+  def string_buffer
+    read available
+  end
 end
 
 ## Very very simple implementation of wrapping two objects, one with a #read

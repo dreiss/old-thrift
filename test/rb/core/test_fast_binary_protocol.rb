@@ -39,15 +39,17 @@ class TFastBinaryProtocolTest < Test::Unit::TestCase
   end
   
   # Assumes encode works
-  def assert_decodes_struct(obj)
+  def assert_decodes_struct(obj, eql_obj = nil)
     data = @fast_proto.encode_binary(obj)
-    assert_equal obj, @fast_proto.decode_binary(data)
+    @trans.write data
+    assert_equal (eql_obj || obj), @fast_proto.decode_binary(obj.class.new, @trans)
   end
   
   def test_encodes_bools
     BOOL_VALUES.each do |(write_val, read_val)|
       obj = Fixtures::Structs::OneBool.new(:bool => write_val)
       assert_encodes_struct obj
+      assert_decodes_struct obj, Fixtures::Structs::OneBool.new(:bool => read_val)
     end
   end
   
@@ -110,88 +112,88 @@ class TFastBinaryProtocolTest < Test::Unit::TestCase
   
   unless ENV['FAST_TEST']
     def test_encodes_and_decodes_nested_maps_and_lists
-    ooe = Fixtures::Structs::OneOfEach.new
-    ooe.im_true   = true
-    ooe.im_false  = false
-    ooe.a_bite    = -42
-    ooe.integer16 = 27000
-    ooe.integer32 = 1<<24
-    ooe.integer64 = 6000 * 1000 * 1000
-    ooe.double_precision = Math::PI
-    ooe.some_characters  = "Debug THIS!"
-    ooe.zomg_unicode     = "\xd7\n\a\t"
-
-    n1 = Fixtures::Structs::Nested1.new
-    n1.a_list = []
-    n1.a_list << ooe << ooe << ooe << ooe
-    n1.i32_map = {}
-    n1.i32_map[1234] = ooe
-    n1.i32_map[46345] = ooe
-    n1.i32_map[-34264] = ooe
-    n1.i64_map = {}
-    n1.i64_map[43534986783945] = ooe
-    n1.i64_map[-32434639875122] = ooe
-    n1.dbl_map = {}
-    n1.dbl_map[324.65469834] = ooe
-    n1.dbl_map[-9458672340.4986798345112] = ooe
-    n1.str_map = {}
-    n1.str_map['sdoperuix'] = ooe
-    n1.str_map['pwoerxclmn'] = ooe
+      ooe = Fixtures::Structs::OneOfEach.new
+      ooe.im_true   = true
+      ooe.im_false  = false
+      ooe.a_bite    = -42
+      ooe.integer16 = 27000
+      ooe.integer32 = 1<<24
+      ooe.integer64 = 6000 * 1000 * 1000
+      ooe.double_precision = Math::PI
+      ooe.some_characters  = "Debug THIS!"
+      ooe.zomg_unicode     = "\xd7\n\a\t"
+  
+      n1 = Fixtures::Structs::Nested1.new
+      n1.a_list = []
+      n1.a_list << ooe << ooe << ooe << ooe
+      n1.i32_map = {}
+      n1.i32_map[1234] = ooe
+      n1.i32_map[46345] = ooe
+      n1.i32_map[-34264] = ooe
+      n1.i64_map = {}
+      n1.i64_map[43534986783945] = ooe
+      n1.i64_map[-32434639875122] = ooe
+      n1.dbl_map = {}
+      n1.dbl_map[324.65469834] = ooe
+      n1.dbl_map[-9458672340.4986798345112] = ooe
+      n1.str_map = {}
+      n1.str_map['sdoperuix'] = ooe
+      n1.str_map['pwoerxclmn'] = ooe
     
-    n2 = Fixtures::Structs::Nested2.new
-    n2.a_list = []
-    n2.a_list << n1 << n1 << n1 << n1 << n1
-    n2.i32_map = {}
-    n2.i32_map[398345] = n1
-    n2.i32_map[-2345] = n1
-    n2.i32_map[12312] = n1
-    n2.i64_map = {}
-    n2.i64_map[2349843765934] = n1
-    n2.i64_map[-123234985495] = n1
-    n2.i64_map[0] = n1
-    n2.dbl_map = {}
-    n2.dbl_map[23345345.38927834] = n1
-    n2.dbl_map[-1232349.5489345] = n1
-    n2.dbl_map[-234984574.23498725] = n1
-    n2.str_map = {}
-    n2.str_map[''] = n1
-    n2.str_map['sdflkertpioux'] = n1
-    n2.str_map['sdfwepwdcjpoi'] = n1
-
-    n3 = Fixtures::Structs::Nested3.new
-    n3.a_list = []
-    n3.a_list << n2 << n2 << n2 << n2 << n2
-    n3.i32_map = {}
-    n3.i32_map[398345] = n2
-    n3.i32_map[-2345] = n2
-    n3.i32_map[12312] = n2
-    n3.i64_map = {}
-    n3.i64_map[2349843765934] = n2
-    n3.i64_map[-123234985495] = n2
-    n3.i64_map[0] = n2
-    n3.dbl_map = {}
-    n3.dbl_map[23345345.38927834] = n2
-    n3.dbl_map[-1232349.5489345] = n2
-    n3.dbl_map[-234984574.23498725] = n2
-    n3.str_map = {}
-    n3.str_map[''] = n2
-    n3.str_map['sdflkertpioux'] = n2
-    n3.str_map['sdfwepwdcjpoi'] = n2
-
-    n4 = Fixtures::Structs::Nested4.new
-    n4.a_list = []
-    n4.a_list << n3
-    n4.i32_map = {}
-    n4.i32_map[-2345] = n3
-    n4.i64_map = {}
-    n4.i64_map[2349843765934] = n3
-    n4.dbl_map = {}
-    n4.dbl_map[-1232349.5489345] = n3
-    n4.str_map = {}
-    n4.str_map[''] = n3
+      n2 = Fixtures::Structs::Nested2.new
+      n2.a_list = []
+      n2.a_list << n1 << n1 << n1 << n1 << n1
+      n2.i32_map = {}
+      n2.i32_map[398345] = n1
+      n2.i32_map[-2345] = n1
+      n2.i32_map[12312] = n1
+      n2.i64_map = {}
+      n2.i64_map[2349843765934] = n1
+      n2.i64_map[-123234985495] = n1
+      n2.i64_map[0] = n1
+      n2.dbl_map = {}
+      n2.dbl_map[23345345.38927834] = n1
+      n2.dbl_map[-1232349.5489345] = n1
+      n2.dbl_map[-234984574.23498725] = n1
+      n2.str_map = {}
+      n2.str_map[''] = n1
+      n2.str_map['sdflkertpioux'] = n1
+      n2.str_map['sdfwepwdcjpoi'] = n1
+  
+      n3 = Fixtures::Structs::Nested3.new
+      n3.a_list = []
+      n3.a_list << n2 << n2 << n2 << n2 << n2
+      n3.i32_map = {}
+      n3.i32_map[398345] = n2
+      n3.i32_map[-2345] = n2
+      n3.i32_map[12312] = n2
+      n3.i64_map = {}
+      n3.i64_map[2349843765934] = n2
+      n3.i64_map[-123234985495] = n2
+      n3.i64_map[0] = n2
+      n3.dbl_map = {}
+      n3.dbl_map[23345345.38927834] = n2
+      n3.dbl_map[-1232349.5489345] = n2
+      n3.dbl_map[-234984574.23498725] = n2
+      n3.str_map = {}
+      n3.str_map[''] = n2
+      n3.str_map['sdflkertpioux'] = n2
+      n3.str_map['sdfwepwdcjpoi'] = n2
+  
+      n4 = Fixtures::Structs::Nested4.new
+      n4.a_list = []
+      n4.a_list << n3
+      n4.i32_map = {}
+      n4.i32_map[-2345] = n3
+      n4.i64_map = {}
+      n4.i64_map[2349843765934] = n3
+      n4.dbl_map = {}
+      n4.dbl_map[-1232349.5489345] = n3
+      n4.str_map = {}
+      n4.str_map[''] = n3
     
-    assert_encodes_struct n4
-  end
+      assert_encodes_struct n4
+    end
   end
 end
 
