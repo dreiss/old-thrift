@@ -1,5 +1,6 @@
 // Half of this file comes from contributions from Nitay Joffe (nitay@powerset.com)
-// Much of the rest (almost) directly ported (or pulled) from fastbinary.c
+// Much of the rest (almost) directly ported (or pulled) from thrift-py's fastbinary.c
+// Everything else via Kevin Clark (kevin@powerset.com)
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -355,8 +356,6 @@ static int encode_field(VALUE fid, VALUE data, VALUE ary) {
 // TFastBinaryProtocol's main encoding loop
 // -----------------------------------------------------------------------------
 
-// TODO(kevinclark): I'm using NUM2INT here in testing because it essentially does a type assert
-// We should go back and test how much of a speedup we get by using FIX2INT (and friends) instead
 static void binary_encoding(VALUE buf, VALUE obj, int type) {
 #ifdef __DEBUG__
   rb_p(rb_str_new2("Encoding binary (buf, obj, type)"));
