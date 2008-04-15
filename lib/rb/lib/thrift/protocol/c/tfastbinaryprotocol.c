@@ -68,10 +68,14 @@ enum TType {
 
 
 static VALUE class_tfbp;
-static ID id_write;
-static ID id_read_all;
-static ID id_trans;
 static ID type_sym;
+static ID class_sym;
+static ID key_sym;
+static ID value_sym;
+static ID element_sym;
+static ID name_sym;
+static ID fields_id;
+
 
 static const uint32_t VERSION_MASK = 0xffff0000;
 static const uint32_t VERSION_1 = 0x80010000;
@@ -95,7 +99,7 @@ typedef union {
   struct _field_spec* element;
 } container_data;
 
-typedef struct _field_spec{
+typedef struct _field_spec {
   int type;
   char* name;
   container_data data;
@@ -130,7 +134,7 @@ static void free_field_spec(field_spec* spec) {
 
 static field_spec* parse_field_spec(VALUE field_data) {
   int type = NUM2INT(rb_hash_aref(field_data, type_sym));
-  VALUE name = rb_hash_aref(field_data, ID2SYM(rb_intern("name")));
+  VALUE name = rb_hash_aref(field_data, name_sym);
   
   field_spec* spec = (field_spec *) malloc(sizeof(field_spec));
   bzero(spec, sizeof(field_spec));
@@ -145,15 +149,16 @@ static field_spec* parse_field_spec(VALUE field_data) {
   
   switch(type) {
     case T_STRCT: {
-      spec->data.class = rb_hash_aref(field_data, ID2SYM(rb_intern("class")));
+      spec->data.class = rb_hash_aref(field_data, class_sym);
       break;
     }
     
     case T_MAP: {
-      VALUE key_fields = rb_hash_aref(field_data, ID2SYM(rb_intern("key")));
-      VALUE value_fields = rb_hash_aref(field_data, ID2SYM(rb_intern("value")));
-      field_spec* key = parse_field_spec(key_fields);;
-      field_spec* val = parse_field_spec(value_fields);;
+      VALUE key_fields = rb_hash_aref(field_data, key_sym);
+      VALUE value_fields = rb_hash_aref(field_data, value_sym);
+
+      field_spec* key = parse_field_spec(key_fields);
+      field_spec* val = parse_field_spec(value_fields);
       thrift_map* map;
       
       map = (thrift_map *) malloc(sizeof(thrift_map));
@@ -168,7 +173,7 @@ static field_spec* parse_field_spec(VALUE field_data) {
     case T_LIST: 
     case T_SET:
     {
-      VALUE list_fields = rb_hash_aref(field_data, ID2SYM(rb_intern("element")));
+      VALUE list_fields = rb_hash_aref(field_data, element_sym);
       field_spec* element = parse_field_spec(list_fields);
       spec->data.element = element;
       break;
@@ -410,7 +415,7 @@ static void binary_encoding(VALUE buf, VALUE obj, int type) {
           
     case T_STRCT: {      
       VALUE args = rb_ary_new3(2, buf, obj);
-      VALUE fields = rb_const_get(CLASS_OF(obj), rb_intern("FIELDS"));
+      VALUE fields = rb_const_get(CLASS_OF(obj), fields_id);
       
       write_struct_begin(buf);
       
@@ -656,7 +661,7 @@ VALUE read_struct(VALUE obj, decode_buffer* buf) {
   VALUE field;
   field_header f_header;
   VALUE value = Qnil;
-  VALUE fields = rb_const_get(CLASS_OF(obj), rb_intern("FIELDS"));
+  VALUE fields = rb_const_get(CLASS_OF(obj), fields_id);
   field_spec* spec;
   char name_buf[128];
     
@@ -716,9 +721,17 @@ VALUE tfbp_decode_binary(VALUE self, VALUE obj, VALUE transport) {
 
 void Init_tfastbinaryprotocol()
 {
-  class_tfbp = rb_define_class("TFastBinaryProtocol", rb_cObject);
+  VALUE class_tbinproto = rb_const_get(rb_cObject, rb_intern("TBinaryProtocol"));
+  class_tfbp = rb_define_class("TFastBinaryProtocol", class_tbinproto);
   type_sym = ID2SYM(rb_intern("type"));
-
+  class_sym = ID2SYM(rb_intern("class"));
+  key_sym = ID2SYM(rb_intern("key"));
+  value_sym = ID2SYM(rb_intern("value"));
+  name_sym = ID2SYM(rb_intern("name"));
+  fields_id = rb_intern("FIELDS");
+  element_sym = ID2SYM(rb_intern("element"));
+  
+  
   // For fast access
   rb_define_method(class_tfbp, "encode_binary", tfbp_encode_binary, 1);
   rb_define_method(class_tfbp, "decode_binary", tfbp_decode_binary, 2);
