@@ -14,9 +14,11 @@ require 'pp'
 
 require File.join(File.dirname(__FILE__), '../fixtures/structs')
 
-transport = TMemoryBuffer.new
-ruby_binary_protocol = TBinaryProtocol.new(transport)
-c_fast_binary_protocol = TFastBinaryProtocol.new(transport)
+transport1 = TMemoryBuffer.new
+ruby_binary_protocol = TBinaryProtocol.new(transport1)
+
+transport2 = TMemoryBuffer.new
+c_fast_binary_protocol = TFastBinaryProtocol.new(transport2)
 
 
 ooe = Fixtures::Structs::OneOfEach.new
@@ -109,21 +111,46 @@ n4.str_map[''] = n3
 # printer.print(STDOUT, :min_percent=>0)
 
 Benchmark.bmbm do |x|
-  x.report("ruby") do
+  x.report("ruby write large (1MB) structure once") do
+    n4.write(ruby_binary_protocol)
+  end
+  
+  x.report("ruby read large (1MB) structure once") do
+    Fixtures::Structs::Nested4.new.read(ruby_binary_protocol)
+  end
+  
+  x.report("c write large (1MB) structure once") do    
+    n4.write(c_fast_binary_protocol)
+  end
+  
+  x.report("c read large (1MB) structure once") do
+    Fixtures::Structs::Nested4.new.read(c_fast_binary_protocol)
+  end
+  
+  
+  
+  x.report("ruby write 10_000 small structures") do
     10_000.times do
       ooe.write(ruby_binary_protocol)
+    end
+  end
+  
+  x.report("ruby read 10_000 small structures") do
+    10_000.times do
       Fixtures::Structs::OneOfEach.new.read(ruby_binary_protocol)
     end
-    # n4.write(ruby_binary_protocol)
-    # Fixtures::Structs::Nested4.new.read(ruby_binary_protocol)
   end
-  x.report("c") do
+  
+  x.report("c write 10_000 small structures") do
     10_000.times do
       ooe.write(c_fast_binary_protocol)
+    end
+  end
+  
+  x.report("c read 10_000 small structures") do
+    10_000.times do
       Fixtures::Structs::OneOfEach.new.read(c_fast_binary_protocol)
     end
-    
-    # n4.write(c_fast_binary_protocol)
-    # Fixtures::Structs::Nested4.new.read(c_fast_binary_protocol)
   end
+  
 end

@@ -104,16 +104,19 @@ class TFastBinaryProtocolTest < Test::Unit::TestCase
   def test_encodes_maps
     obj = Fixtures::Structs::OneMap.new(:map => {"a" => "b", "c" => "d"})
     assert_encodes_struct obj
+    assert_decodes_struct obj
   end
   
   def test_encodes_lists
     obj = Fixtures::Structs::OneList.new(:list => ["a", "b", "c", "d"])
     assert_encodes_struct obj
+    assert_decodes_struct obj
   end
   
   def test_encodes_sets
     obj = Fixtures::Structs::OneSet.new(:set => {"a" => true, "b" => true, "c" => true})
     assert_encodes_struct obj
+    assert_decodes_struct obj
   end
   
   unless ENV['FAST_TEST']
@@ -199,6 +202,7 @@ class TFastBinaryProtocolTest < Test::Unit::TestCase
       n4.str_map[''] = n3
     
       assert_encodes_struct n4
+      assert_decodes_struct n4
     end
   end
 end
