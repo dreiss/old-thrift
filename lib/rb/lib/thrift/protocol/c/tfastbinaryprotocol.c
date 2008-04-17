@@ -136,10 +136,12 @@ static void free_field_spec(field_spec* spec) {
 static field_spec* parse_field_spec(VALUE field_data) {
   int type = NUM2INT(rb_hash_aref(field_data, type_sym));
   VALUE name = rb_hash_aref(field_data, name_sym);
-  
   field_spec* spec = (field_spec *) malloc(sizeof(field_spec));
+
+#ifdef __DEBUG__ // No need for this in prod since I set all the fields
   bzero(spec, sizeof(field_spec));
-  
+#endif
+
   spec->type = type;
   
   if (Qnil != name) {
@@ -157,15 +159,10 @@ static field_spec* parse_field_spec(VALUE field_data) {
     case T_MAP: {
       VALUE key_fields = rb_hash_aref(field_data, key_sym);
       VALUE value_fields = rb_hash_aref(field_data, value_sym);
-
-      field_spec* key = parse_field_spec(key_fields);
-      field_spec* val = parse_field_spec(value_fields);
-      thrift_map* map;
+      thrift_map* map = (thrift_map *) malloc(sizeof(thrift_map));
       
-      map = (thrift_map *) malloc(sizeof(thrift_map));
-      
-      map->key = key;
-      map->value = val;
+      map->key = parse_field_spec(key_fields);
+      map->value = parse_field_spec(value_fields);
       spec->data.map = map;
       
       break;
@@ -175,8 +172,7 @@ static field_spec* parse_field_spec(VALUE field_data) {
     case T_SET:
     {
       VALUE list_fields = rb_hash_aref(field_data, element_sym);
-      field_spec* element = parse_field_spec(list_fields);
-      spec->data.element = element;
+      spec->data.element = parse_field_spec(list_fields);
       break;
     }
   }
@@ -333,8 +329,14 @@ static int encode_field(VALUE fid, VALUE data, VALUE ary) {
   
   VALUE buf = rb_ary_entry(ary, 0);
   VALUE obj = rb_ary_entry(ary, 1);
-  VALUE value = rb_ivar_get(obj, rb_intern(STR2CSTR(rb_str_concat(rb_str_new2("@"), rb_str_new2(spec->name)))));
-
+  char name_buf[128];
+  
+  name_buf[0] = '@';
+  strlcpy(&name_buf[1], spec->name, sizeof(name_buf) - 1);
+  
+  // TODO(kevinclark): Replace with the strlcpy method used in read
+  VALUE value = rb_ivar_get(obj, rb_intern(name_buf));
+  
   if (Qnil == value)
     return 0;
      
@@ -516,8 +518,11 @@ static thrift_string read_string(decode_buffer* buf) {
 }
 
 static void read_field_begin(decode_buffer* buf, field_header* header) {
+#ifdef __DEBUG__ // No need for this in prod since I set all the fields
   bzero(header, sizeof(field_header));
-  
+#endif
+
+  header->name = NULL;
   header->type = read_byte(buf);
   if (header->type == T_STOP) {
     header->id = 0;
@@ -529,7 +534,9 @@ static void read_field_begin(decode_buffer* buf, field_header* header) {
 #define read_field_end(buf)
 
 static void read_map_begin(decode_buffer* buf, map_header* header) {
+#ifdef __DEBUG__ // No need for this in prod since I set all the fields
   bzero(header, sizeof(map_header));
+#endif
   
   header->key_type = read_byte(buf);
   header->val_type = read_byte(buf);
@@ -539,7 +546,9 @@ static void read_map_begin(decode_buffer* buf, map_header* header) {
 #define read_map_end(buf)
 
 static void read_list_begin(decode_buffer* buf, list_header* header) {
+#ifdef __DEBUG__ // No need for this in prod since I set all the fields
   bzero(header, sizeof(list_header));
+#endif
   
   header->type = read_byte(buf);
   header->num_elements = read_int32(buf);
@@ -684,9 +693,9 @@ VALUE read_struct(VALUE obj, decode_buffer* buf) {
         skip_type(spec->type, buf);
       } else {
         value = read_field(buf, spec);
-        bzero(name_buf, 128); // Full size of the char[]
         name_buf[0] = '@';
-        strncat(name_buf, spec->name, strlen(spec->name));
+        strlcpy(&name_buf[1], spec->name, sizeof(name_buf) - 1);
+        
         rb_iv_set(obj, name_buf, value);
       }
       
