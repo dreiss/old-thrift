@@ -145,7 +145,7 @@ static field_spec* parse_field_spec(VALUE field_data) {
   spec->type = type;
   
   if (Qnil != name) {
-    spec->name = STR2CSTR(name);
+    spec->name = StringValuePtr(name);
   } else {
     spec->name = NULL;
   }
@@ -411,7 +411,7 @@ static void binary_encoding(VALUE buf, VALUE obj, int type) {
       break;
 
     case T_STR:
-      write_string(buf, STR2CSTR(obj));
+      write_string(buf, StringValuePtr(obj));
       break;
           
     case T_STRCT: {      
@@ -464,6 +464,7 @@ typedef struct {
   char* data;
   int pos;
   int len;
+  VALUE trans;
 } decode_buffer;
 
 typedef struct {
@@ -474,28 +475,48 @@ typedef struct {
 #define read_struct_begin(buf)
 #define read_struct_end(buf)
 
+static bool read_bytes(decode_buffer* buf, void* dst, size_t size) {
+  int avail = (buf->len - buf->pos);
+  
+  if (size <= avail) {
+    memcpy(dst, buf->data + buf->pos, size);
+    buf->pos += size;
+  } else {
+    VALUE refill = rb_funcall(buf->trans, rb_intern("refill_buffer"), 1, INT2FIX(size));
+    // Copy what we can
+    memcpy(dst, buf->data, avail);
+    // Refill the buffer
+    buf->data = StringValuePtr(refill);
+    buf->len = RSTRING(refill)->len;
+    buf->pos = size - avail;
+    memcpy(dst + avail, buf->data, buf->pos);
+  }
+  
+  return true;
+}
+
 static int8_t read_byte(decode_buffer* buf) {
-  int8_t data = buf->data[buf->pos];
-  buf->pos++;
+  int8_t data;
+  read_bytes(buf, &data, sizeof(int8_t));
   return data;
 }
 
 static int16_t read_int16(decode_buffer* buf) {
-  int16_t data = ntohs(*(int16_t*)(buf->data + buf->pos));
-  buf->pos += sizeof(int16_t);
-  return data;
+  int16_t data;
+  read_bytes(buf, &data, sizeof(int16_t));
+  return ntohs(data);
 }
 
 static int32_t read_int32(decode_buffer* buf) {
-  int32_t data = ntohl(*(int32_t*)(buf->data + buf->pos));
-  buf->pos += sizeof(int32_t);
-  return data;
+  int32_t data;
+  read_bytes(buf, &data, sizeof(int32_t));
+  return ntohl(data);
 }
 
 static int64_t read_int64(decode_buffer* buf) {
-  int64_t data = ntohll(*(int64_t*)(buf->data + buf->pos));
-  buf->pos += sizeof(int64_t);
-  return data;
+  int64_t data;
+  read_bytes(buf, &data, sizeof(int64_t));
+  return ntohll(data);
 }
 
 static double read_double(decode_buffer* buf) {
@@ -717,7 +738,8 @@ VALUE tfbp_decode_binary(VALUE self, VALUE obj, VALUE transport) {
 
   buf.pos = 0;  
   buf.data = RSTRING(str_buf)->ptr;
-  buf.len = RSTRING(str_buf)->len; //TODO(kevinclark): Make sure we don't overrun this.
+  buf.len = RSTRING(str_buf)->len;  // TODO(kevinclark): Make sure we don't overrun this.
+  buf.trans = transport;       // We need to hold this so the buffer can be refilled
 
 #ifdef __DEBUG__
   rb_p(rb_str_new2("Running decode binary with data:"));
