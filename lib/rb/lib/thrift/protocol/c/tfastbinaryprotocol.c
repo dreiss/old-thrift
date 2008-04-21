@@ -484,10 +484,14 @@ static bool read_bytes(decode_buffer* buf, void* dst, size_t size) {
     memcpy(dst, buf->data + buf->pos, size);
     buf->pos += size;
   } else {
-    rb_funcall(buf->trans, consume_bang_id, 1, INT2FIX(avail));
+    if (avail > 0) {
+      rb_funcall(buf->trans, consume_bang_id, 1, INT2FIX(avail));
+      // Copy what we can
+      memcpy(dst, buf->data, avail);
+    }
+    
     VALUE refill = rb_funcall(buf->trans, refill_buffer_id, 1, INT2FIX(size));
-    // Copy what we can
-    memcpy(dst, buf->data, avail);
+        
     // Refill the buffer
     buf->data = StringValuePtr(refill);
     buf->len = RSTRING(refill)->len;
@@ -535,8 +539,8 @@ static double read_double(decode_buffer* buf) {
 static thrift_string read_string(decode_buffer* buf) {
   thrift_string data;
   data.len = read_int32(buf);
-  data.ptr = buf->data + buf->pos;
-  buf->pos += data.len;
+  data.ptr = (char*) malloc(data.len);
+  read_bytes(buf, data.ptr, data.len);
   
   return data;
 }
@@ -742,7 +746,7 @@ VALUE tfbp_decode_binary(VALUE self, VALUE obj, VALUE transport) {
 
   buf.pos = 0;  
   buf.data = RSTRING(str_buf)->ptr;
-  buf.len = RSTRING(str_buf)->len;  // TODO(kevinclark): Make sure we don't overrun this.
+  buf.len = RSTRING(str_buf)->len;
   buf.trans = transport;       // We need to hold this so the buffer can be refilled
 
 #ifdef __DEBUG__
