@@ -76,7 +76,9 @@ static ID value_sym;
 static ID element_sym;
 static ID name_sym;
 static ID fields_id;
-
+static ID consume_bang_id;
+static ID string_buffer_id;
+static ID refill_buffer_id;
 
 static const uint32_t VERSION_MASK = 0xffff0000;
 static const uint32_t VERSION_1 = 0x80010000;
@@ -482,7 +484,8 @@ static bool read_bytes(decode_buffer* buf, void* dst, size_t size) {
     memcpy(dst, buf->data + buf->pos, size);
     buf->pos += size;
   } else {
-    VALUE refill = rb_funcall(buf->trans, rb_intern("refill_buffer"), 1, INT2FIX(size));
+    rb_funcall(buf->trans, consume_bang_id, 1, INT2FIX(avail));
+    VALUE refill = rb_funcall(buf->trans, refill_buffer_id, 1, INT2FIX(size));
     // Copy what we can
     memcpy(dst, buf->data, avail);
     // Refill the buffer
@@ -733,8 +736,9 @@ VALUE read_struct(VALUE obj, decode_buffer* buf) {
 
 VALUE tfbp_decode_binary(VALUE self, VALUE obj, VALUE transport) {
   decode_buffer buf;
+  VALUE ret_val;
   
-  VALUE str_buf = rb_funcall(transport, rb_intern("string_buffer"), 0);
+  VALUE str_buf = rb_funcall(transport, string_buffer_id, 0);
 
   buf.pos = 0;  
   buf.data = RSTRING(str_buf)->ptr;
@@ -746,7 +750,12 @@ VALUE tfbp_decode_binary(VALUE self, VALUE obj, VALUE transport) {
   rb_p(rb_inspect(rb_str_new2(buf.data)));
 #endif
  
-  return read_struct(obj, &buf);
+  ret_val = read_struct(obj, &buf);
+  
+  // Consume whatever was read
+  rb_funcall(buf.trans, consume_bang_id, 1, INT2FIX(buf.pos));
+  
+  return ret_val;
 }
 
 void Init_tfastbinaryprotocol()
@@ -760,7 +769,9 @@ void Init_tfastbinaryprotocol()
   name_sym = ID2SYM(rb_intern("name"));
   fields_id = rb_intern("FIELDS");
   element_sym = ID2SYM(rb_intern("element"));
-  
+  consume_bang_id = rb_intern("consume!");
+  string_buffer_id = rb_intern("string_buffer");
+  refill_buffer_id = rb_intern("refill_buffer");
   
   // For fast access
   rb_define_method(class_tfbp, "encode_binary", tfbp_encode_binary, 1);

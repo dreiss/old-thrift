@@ -111,6 +111,24 @@ class TBufferedTransport < TTransport
     @transport.flush()
     @wbuf = ''
   end
+  
+  def string_buffer
+    @rbuf
+  end
+  
+  def refill_buffer(size)
+    str = read(size)
+    
+    if str.length < size
+      str << readAll(size - str.length)
+    end
+    
+    str
+  end
+  
+  def consume!(size)
+    @rbuf.slice!(0..size)
+  end
 end
 
 class TBufferedTransportFactory < TTransportFactory
@@ -280,7 +298,16 @@ class TMemoryBuffer < TTransport
   
   # For fast binary protocol access
   def string_buffer
-    read available
+    @buf[@rpos..-1]
+  end
+
+  def refill_buffer(size)
+    # TODO: Replace with real exception
+    raise NotImplementedError # Memory buffers only get one shot.
+  end
+  
+  def consume!(size)
+    @rpos += size
   end
 end
 
