@@ -12,6 +12,10 @@
 #define dbg() fprintf(stderr, "%s:%d\n", __FUNCTION__, __LINE__)
 
 
+// TODO (kevinclark): This was here from the patch/python. Not sure
+// If it's actually that big a pain. Need to look into pulling
+// From the right place
+
 // Stolen out of TProtocol.h.
 // It would be a huge pain to have both get this from one place.
 
@@ -67,6 +71,10 @@ enum TType {
 # error "Can't define htonll or ntohll!"
 #endif
 
+
+// -----------------------------------------------------------------------------
+// Cached interned strings and such
+// -----------------------------------------------------------------------------
 
 static VALUE class_tfbp;
 static ID type_sym;
@@ -135,6 +143,13 @@ static void free_field_spec(field_spec* spec) {
   }
 }
 
+// Parses a ruby field spec into a C struct
+//
+// Simple fields look like:
+// { :name => .., :type => .. }
+// Structs add the :class attribute
+// Maps adds :key and :value attributes, field specs
+// Lists and Sets add an :element, a field spec
 static field_spec* parse_field_spec(VALUE field_data) {
   int type = NUM2INT(rb_hash_aref(field_data, type_sym));
   VALUE name = rb_hash_aref(field_data, name_sym);
@@ -184,9 +199,12 @@ static field_spec* parse_field_spec(VALUE field_data) {
 
 
 // -----------------------------------------------------------------------------
-// Write output stuff
+// Serialization routines
 // -----------------------------------------------------------------------------
 
+
+// write_*(VALUE buf, ...) takes a value and adds it to a Ruby string buffer,
+// in network order
 static void write_byte(VALUE buf, int8_t val) {
   rb_str_buf_cat(buf, (char*)&val, sizeof(int8_t));
 }
@@ -222,6 +240,8 @@ static void write_string(VALUE buf, char* str) {
   rb_str_buf_cat2(buf, str);
 }
 
+// Some functions macro'd out because they're nops for the binary protocol
+// but placeholders were desired in case things change
 #define write_struct_begin(buf)
 #define write_struct_end(buf)
 
@@ -284,6 +304,7 @@ static int write_set_data(VALUE val, VALUE truth, VALUE ary) {
   return 0;
 }
 
+// Handles container types: Map, Set, List
 static void write_container(VALUE buf, VALUE value, field_spec* spec) {
   int sz;
   
@@ -326,6 +347,10 @@ static void write_container(VALUE buf, VALUE value, field_spec* spec) {
 
 #define IS_CONTAINER(x) (x == T_MAP || x == T_SET || x == T_LIST)
 
+// Takes the field id, data to be encoded, buffer and enclosing object
+// to be encoded. buf and obj passed as a ruby array for rb_hash_foreach.
+// TODO(kevinclark): See if they can be passed individually to avoid object
+// creation
 static int encode_field(VALUE fid, VALUE data, VALUE ary) {
   field_spec *spec = parse_field_spec(data);
   
@@ -416,7 +441,8 @@ static void binary_encoding(VALUE buf, VALUE obj, int type) {
       write_string(buf, StringValuePtr(obj));
       break;
           
-    case T_STRCT: {      
+    case T_STRCT: {
+      // rb_hash_foreach has to take args as a ruby array
       VALUE args = rb_ary_new3(2, buf, obj);
       VALUE fields = rb_const_get(CLASS_OF(obj), fields_id);
       
@@ -477,6 +503,10 @@ typedef struct {
 #define read_struct_begin(buf)
 #define read_struct_end(buf)
 
+
+// read_bytes pulls a number of bytes (size) from the buffer, refilling if needed,
+// and places them in dst. This should _always) be used used when reading from the buffer
+// or buffered transports will be upset with you.
 static bool read_bytes(decode_buffer* buf, void* dst, size_t size) {
   int avail = (buf->len - buf->pos);
   
@@ -501,6 +531,10 @@ static bool read_bytes(decode_buffer* buf, void* dst, size_t size) {
   
   return true;
 }
+
+// -----------------------------------------------------------------------------
+// Helpers for grabbing specific types from the buffer
+// -----------------------------------------------------------------------------
 
 static int8_t read_byte(decode_buffer* buf) {
   int8_t data;
@@ -587,6 +621,8 @@ static void read_list_begin(decode_buffer* buf, list_header* header) {
 #define read_set_begin read_list_begin
 #define read_set_end read_list_end
 
+
+// High level reader function with ruby type coercion
 static VALUE read_type(int type, decode_buffer* buf) {
   switch(type) {
     case T_BOOL: {
@@ -622,6 +658,10 @@ static VALUE read_type(int type, decode_buffer* buf) {
   return Qnil;
 }
 
+// TODO(kevinclark): Now that read_string does a malloc,
+// This maybe could be modified to avoid that, and the type coercion
+
+// Read the bytes but don't do anything with the value
 static void skip_type(int type, decode_buffer* buf) {
   read_type(type, buf);
 }
@@ -629,6 +669,8 @@ static void skip_type(int type, decode_buffer* buf) {
 
 VALUE read_struct(VALUE obj, decode_buffer* buf);
 
+// Read the right thing from the buffer given the field spec
+// and return the ruby object
 static VALUE read_field(decode_buffer* buf, field_spec* spec) {
   switch (spec->type) {
     case T_STRCT: {
@@ -693,6 +735,9 @@ static VALUE read_field(decode_buffer* buf, field_spec* spec) {
   }
 }
 
+
+// Fill in the instance variables in an object (thrift struct)
+// from the decode buffer
 VALUE read_struct(VALUE obj, decode_buffer* buf) {
   VALUE field;
   field_header f_header;
@@ -738,6 +783,9 @@ VALUE read_struct(VALUE obj, decode_buffer* buf) {
   return obj;
 }
 
+
+// Takes an object and transport, and decodes the values in the transport's
+// buffer to fill the object.
 VALUE tfbp_decode_binary(VALUE self, VALUE obj, VALUE transport) {
   decode_buffer buf;
   VALUE ret_val;
@@ -756,8 +804,10 @@ VALUE tfbp_decode_binary(VALUE self, VALUE obj, VALUE transport) {
  
   ret_val = read_struct(obj, &buf);
   
-  // Consume whatever was read
-  rb_funcall(buf.trans, consume_bang_id, 1, INT2FIX(buf.pos));
+  if (buf.pos > 0) {
+    // Consume whatever was read
+    rb_funcall(buf.trans, consume_bang_id, 1, INT2FIX(buf.pos));
+  }
   
   return ret_val;
 }
@@ -767,18 +817,7 @@ VALUE tfbp_decode_binary(VALUE self, VALUE obj, VALUE transport) {
 // seperately from encode and decode
 // -----------------------------------------------------------------------------
 
-// def readMessageBegin()
-//   version = readI32()
-//   if (version & VERSION_MASK != VERSION_1)
-//     raise TProtocolException.new(TProtocolException::BAD_VERSION, 'Missing version identifier')
-//   end
-//   type = version & 0x000000ff
-//   name = readString()
-//   seqid = readI32()
-//   return name, type, seqid
-// end
-
-
+// Read the message header and return it as a ruby array
 VALUE tfbp_read_message_begin(VALUE self) {
   decode_buffer buf;
   int32_t version, seqid;
