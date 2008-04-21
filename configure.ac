@@ -133,6 +133,8 @@ AC_CHECK_FUNCS([sqrt])
 
 AX_THRIFT_GEN(cpp, [C++], yes)
 AM_CONDITIONAL([THRIFT_GEN_cpp], [test "$ax_thrift_gen_cpp" = "yes"])
+AX_THRIFT_GEN(c, [C], yes)
+AM_CONDITIONAL([THRIFT_GEN_c], [test "$ax_thrift_gen_c" = "yes"])
 AX_THRIFT_GEN(java, [Java], yes)
 AM_CONDITIONAL([THRIFT_GEN_java], [test "$ax_thrift_gen_java" = "yes"])
 AX_THRIFT_GEN(csharp, [C#], yes)

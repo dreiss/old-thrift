@@ -43,6 +43,9 @@ thrift_SOURCES = src/thrifty.yy \
 if THRIFT_GEN_cpp
 thrift_SOURCES += src/generate/t_cpp_generator.cc
 endif
+if THRIFT_GEN_c
+thrift_SOURCES += src/generate/t_c_generator.cc
+endif
 if THRIFT_GEN_java
 thrift_SOURCES += src/generate/t_java_generator.cc
 endif
