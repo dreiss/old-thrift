@@ -75,6 +75,7 @@ class TBufferedTransport < TTransport
   def initialize(transport)
     @transport = transport
     @wbuf = ''
+    @rbuf = ''
   end
 
   def isOpen()
@@ -89,8 +90,16 @@ class TBufferedTransport < TTransport
     @transport.close()
   end
 
+  DEFAULT_BUFFER = 4096
+
   def read(sz)
-    return @transport.read(sz)
+    ret = @rbuf.slice!(0...sz)
+    if ret.length == 0
+      @rbuf = @transport.read([sz, DEFAULT_BUFFER].max)
+      @rbuf.slice!(0...sz)
+    else
+      ret
+    end
   end
 
   def write(buf)
