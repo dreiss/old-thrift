@@ -762,6 +762,62 @@ VALUE tfbp_decode_binary(VALUE self, VALUE obj, VALUE transport) {
   return ret_val;
 }
 
+// -----------------------------------------------------------------------------
+// These methods are used by the thrift library and need to handled
+// seperately from encode and decode
+// -----------------------------------------------------------------------------
+
+// def readMessageBegin()
+//   version = readI32()
+//   if (version & VERSION_MASK != VERSION_1)
+//     raise TProtocolException.new(TProtocolException::BAD_VERSION, 'Missing version identifier')
+//   end
+//   type = version & 0x000000ff
+//   name = readString()
+//   seqid = readI32()
+//   return name, type, seqid
+// end
+
+
+VALUE tfbp_read_message_begin(VALUE self) {
+  decode_buffer buf;
+  int32_t version, seqid;
+  int8_t type;
+  thrift_string name;
+  
+  VALUE trans = rb_iv_get(self, "@trans");
+  VALUE str_buf = rb_funcall(trans, string_buffer_id, 0);
+  
+  buf.pos = 0;
+  buf.data = RSTRING(str_buf)->ptr;
+  buf.len = RSTRING(str_buf)->len;
+  buf.trans = trans;       // We need to hold this so the buffer can be refilled
+
+#ifdef __DEBUG__
+  rb_p(rb_str_new2("String buf is:"));
+  rb_p(rb_inspect(str_buf));
+#endif
+
+  version = read_int32(&buf);
+  
+  if ((version & VERSION_MASK) != VERSION_1) {
+    ID tprotocol_exception = rb_intern("TProtocolException");
+    VALUE exception = rb_funcall(tprotocol_exception, rb_intern("new"), 2, rb_const_get(tprotocol_exception, rb_intern("BAD_VERSION")), rb_str_new2("Missing version identifier"));
+    rb_raise(exception, "");
+  }
+  
+  type = version & 0x000000ff;
+  name = read_string(&buf);
+  seqid = read_int32(&buf);
+
+  if (buf.pos > 0) {
+    // Consume whatever was read
+    rb_funcall(buf.trans, consume_bang_id, 1, INT2FIX(buf.pos));
+  }
+  
+  return rb_ary_new3(3, rb_str_new(name.ptr, name.len), INT2FIX(type), INT2FIX(seqid));
+}
+
 void Init_tfastbinaryprotocol()
 {
   VALUE class_tbinproto = rb_const_get(rb_cObject, rb_intern("TBinaryProtocol"));
@@ -780,4 +836,6 @@ void Init_tfastbinaryprotocol()
   // For fast access
   rb_define_method(class_tfbp, "encode_binary", tfbp_encode_binary, 1);
   rb_define_method(class_tfbp, "decode_binary", tfbp_decode_binary, 2);
+  rb_define_method(class_tfbp, "readMessageBegin", tfbp_read_message_begin, 0);
+  
 }
