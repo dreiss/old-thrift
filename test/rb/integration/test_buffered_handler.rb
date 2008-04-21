@@ -40,23 +40,23 @@ class TestBufferedHandler
 
 end
 class TestBufferedThrift < Test::Unit::TestCase
-
   def setup
-    # Initialize the server
-    @handler   = TestBufferedHandler.new()
-    @processor = Thrift::Test::ThriftTest::Processor.new(@handler)
-    @transport = TServerSocket.new(9090)
-    @server    = TThreadedServer.new(@processor, @transport)
+    unless @thread
+      # Initialize the server
+      @handler   = TestBufferedHandler.new()
+      @processor = Thrift::Test::ThriftTest::Processor.new(@handler)
+      @transport = TServerSocket.new(9090)
+      @server    = TThreadedServer.new(@processor, @transport)
 
-    @thread    = Thread.new { @server.serve }
-  
-    # And the Client
+      @thread = Thread.new { @server.serve }
+    end
+    
     @socket   = TSocket.new('localhost', 9090)
     @protocol = TFastBinaryProtocol.new(TBufferedTransport.new(@socket))
     @client   = Thrift::Test::ThriftTest::Client.new(@protocol)
     @socket.open
   end
-
+  
   def test_string
     assert_equal(@client.testString('string'), 'string')
   end
