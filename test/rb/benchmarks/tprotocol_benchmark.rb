@@ -2,7 +2,7 @@ $LOAD_PATH.unshift '../../lib/rb/lib'
 
 require 'thrift/transport/ttransport'
 require 'thrift/protocol/tbinaryprotocol'
-require 'thrift/protocol/tfastbinaryprotocol'
+require 'thrift/protocol/tbinaryprotocolaccelerated'
 
 require 'benchmark'
 require 'rubygems'
@@ -18,7 +18,7 @@ transport1 = TMemoryBuffer.new
 ruby_binary_protocol = TBinaryProtocol.new(transport1)
 
 transport2 = TMemoryBuffer.new
-c_fast_binary_protocol = TFastBinaryProtocol.new(transport2)
+c_fast_binary_protocol = TBinaryProtocolAccelerated.new(transport2)
 
 
 ooe = Fixtures::Structs::OneOfEach.new

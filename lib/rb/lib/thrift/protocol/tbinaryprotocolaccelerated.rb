@@ -1,4 +1,4 @@
-require File.join(File.dirname(__FILE__), '../../../ext/tfastbinaryprotocol')
+require File.join(File.dirname(__FILE__), '../../../ext/tbinaryprotocolaccelerated')
 
 =begin
 The only change required for a transport to support TFastBinaryProtocol is to implement 3 methods:

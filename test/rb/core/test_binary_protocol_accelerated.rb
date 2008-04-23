@@ -3,9 +3,9 @@ require File.join(File.dirname(__FILE__), '../fixtures/structs')
 
 require 'thrift/transport/ttransport'
 require 'thrift/protocol/tbinaryprotocol'
-require 'thrift/protocol/tfastbinaryprotocol'
+require 'thrift/protocol/tbinaryprotocolaccelerated'
 
-class TFastBinaryProtocolTest < Test::Unit::TestCase
+class TBinaryProtocolAcceleratedTest < Test::Unit::TestCase
   I8_MIN = -128
   I8_MAX = 127
   I16_MIN = -32768
@@ -28,7 +28,7 @@ class TFastBinaryProtocolTest < Test::Unit::TestCase
   
   def setup
     @trans = TMemoryBuffer.new
-    @fast_proto = TFastBinaryProtocol.new(@trans)
+    @fast_proto = TBinaryProtocolAccelerated.new(@trans)
     @slow_proto = TBinaryProtocol.new(@trans)
   end
   

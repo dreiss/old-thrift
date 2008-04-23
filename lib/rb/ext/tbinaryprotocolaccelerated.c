@@ -76,7 +76,7 @@ enum TType {
 // Cached interned strings and such
 // -----------------------------------------------------------------------------
 
-static VALUE class_tfbp;
+static VALUE class_tbpa;
 static ID type_sym;
 static ID class_sym;
 static ID key_sym;
@@ -458,7 +458,7 @@ static void binary_encoding(VALUE buf, VALUE obj, int type) {
 }
 
 // obj is always going to be a TSTRCT
-VALUE tfbp_encode_binary(VALUE self, VALUE obj) {
+VALUE tbpa_encode_binary(VALUE self, VALUE obj) {
   VALUE buf = rb_str_buf_new(1024);
   binary_encoding(buf, obj, T_STRCT);
   return buf;
@@ -786,7 +786,7 @@ VALUE read_struct(VALUE obj, decode_buffer* buf) {
 
 // Takes an object and transport, and decodes the values in the transport's
 // buffer to fill the object.
-VALUE tfbp_decode_binary(VALUE self, VALUE obj, VALUE transport) {
+VALUE tbpa_decode_binary(VALUE self, VALUE obj, VALUE transport) {
   decode_buffer buf;
   VALUE ret_val;
   
@@ -818,7 +818,7 @@ VALUE tfbp_decode_binary(VALUE self, VALUE obj, VALUE transport) {
 // -----------------------------------------------------------------------------
 
 // Read the message header and return it as a ruby array
-VALUE tfbp_read_message_begin(VALUE self) {
+VALUE tbpa_read_message_begin(VALUE self) {
   decode_buffer buf;
   int32_t version, seqid;
   int8_t type;
@@ -857,10 +857,10 @@ VALUE tfbp_read_message_begin(VALUE self) {
   return rb_ary_new3(3, rb_str_new(name.ptr, name.len), INT2FIX(type), INT2FIX(seqid));
 }
 
-void Init_tfastbinaryprotocol()
+void Init_tbinaryprotocolaccelerated()
 {
   VALUE class_tbinproto = rb_const_get(rb_cObject, rb_intern("TBinaryProtocol"));
-  class_tfbp = rb_define_class("TFastBinaryProtocol", class_tbinproto);
+  class_tbpa = rb_define_class("TBinaryProtocolAccelerated", class_tbinproto);
   type_sym = ID2SYM(rb_intern("type"));
   class_sym = ID2SYM(rb_intern("class"));
   key_sym = ID2SYM(rb_intern("key"));
@@ -873,8 +873,8 @@ void Init_tfastbinaryprotocol()
   refill_buffer_id = rb_intern("refill_buffer");
   
   // For fast access
-  rb_define_method(class_tfbp, "encode_binary", tfbp_encode_binary, 1);
-  rb_define_method(class_tfbp, "decode_binary", tfbp_decode_binary, 2);
-  rb_define_method(class_tfbp, "readMessageBegin", tfbp_read_message_begin, 0);
+  rb_define_method(class_tbpa, "encode_binary", tbpa_encode_binary, 1);
+  rb_define_method(class_tbpa, "decode_binary", tbpa_decode_binary, 2);
+  rb_define_method(class_tbpa, "readMessageBegin", tbpa_read_message_begin, 0);
   
 }

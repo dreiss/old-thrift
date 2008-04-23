@@ -2,7 +2,7 @@ require File.join(File.dirname(__FILE__), '../test_helper')
 
 require 'thrift/transport/tsocket'
 require 'thrift/protocol/tbinaryprotocol'
-require 'thrift/protocol/tfastbinaryprotocol'
+require 'thrift/protocol/tbinaryprotocolaccelerated'
 require 'thrift/server/tserver'
 require 'ThriftTest'
 
@@ -52,7 +52,7 @@ class TestBufferedThrift < Test::Unit::TestCase
     end
     
     @socket   = TSocket.new('localhost', 9090)
-    @protocol = TFastBinaryProtocol.new(TBufferedTransport.new(@socket))
+    @protocol = TBinaryProtocolAccelerated.new(TBufferedTransport.new(@socket))
     @client   = Thrift::Test::ThriftTest::Client.new(@protocol)
     @socket.open
   end
