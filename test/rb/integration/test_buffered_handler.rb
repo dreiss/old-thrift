@@ -2,7 +2,7 @@ require File.join(File.dirname(__FILE__), '../test_helper')
 
 require 'thrift/transport/tsocket'
 require 'thrift/protocol/tbinaryprotocol'
-require 'thrift/protocol/c/tfastbinaryprotocol'
+require 'thrift/protocol/tfastbinaryprotocol'
 require 'thrift/server/tserver'
 require 'ThriftTest'
 

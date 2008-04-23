@@ -3,7 +3,7 @@ require File.join(File.dirname(__FILE__), '../fixtures/structs')
 
 require 'thrift/transport/ttransport'
 require 'thrift/protocol/tbinaryprotocol'
-require 'thrift/protocol/c/tfastbinaryprotocol'
+require 'thrift/protocol/tfastbinaryprotocol'
 
 class TFastBinaryProtocolTest < Test::Unit::TestCase
   I8_MIN = -128
