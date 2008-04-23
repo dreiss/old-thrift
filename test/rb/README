@@ -1,4 +1,4 @@
-The integration tests here (mostly the buffered handler) is slightly
+The integration tests here (mostly the buffered handler) are slightly
 indeterministic because of the threading. I'm removing it from the make
 (which should at some point go into make check) for this reason. Nevertheless,
 they should still be run if you're doing ruby development.
