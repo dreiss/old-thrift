@@ -2,7 +2,7 @@ $LOAD_PATH.unshift '../../lib/rb/lib'
 
 require 'thrift/transport/ttransport'
 require 'thrift/protocol/tbinaryprotocol'
-require 'thrift/protocol/c/tfastbinaryprotocol'
+require 'thrift/protocol/tfastbinaryprotocol'
 
 require 'benchmark'
 require 'rubygems'
