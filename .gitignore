@@ -47,6 +47,9 @@ stamp-h1
 test/.deps
 test/.libs
 test/*.o
+test/*.la
+test/*.lo
+test/Benchmark
 test/DebugProtoTest
 test/JSONProtoTest
 test/Makefile
@@ -64,3 +67,5 @@ test/py/Makefile
 test/py/Makefile.in
 test/py/gen-py
 ylwrap
+*.swp
+TAGS
