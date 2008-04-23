@@ -199,11 +199,10 @@ module ThriftStruct
   end
 
   def read(iprot)
-    # TODO: Make sure transport is C readable
+    # TODO(kevinclark): Make sure transport is C readable
     if iprot.respond_to?(:decode_binary)
       iprot.decode_binary(self, iprot.trans)
     else
-      # $stderr.puts "Doing ruby decoding regularly"
       iprot.readStructBegin()
       loop do
         fname, ftype, fid = iprot.readFieldBegin()
@@ -220,7 +219,6 @@ module ThriftStruct
       # TODO(kevinclark): Clean this so I don't have to access the transport.
       oprot.trans.write oprot.encode_binary(self)
     else
-      # $stderr.puts "Doing ruby encoding regulalry"
       oprot.writeStructBegin(self.class.name)
       each_field do |fid, type, name|
         if ((value = instance_variable_get("@#{name}")) != nil)
