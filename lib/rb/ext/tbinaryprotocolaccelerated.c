@@ -458,7 +458,7 @@ static void binary_encoding(VALUE buf, VALUE obj, int type) {
 }
 
 // obj is always going to be a TSTRCT
-VALUE tbpa_encode_binary(VALUE self, VALUE obj) {
+static VALUE tbpa_encode_binary(VALUE self, VALUE obj) {
   VALUE buf = rb_str_buf_new(1024);
   binary_encoding(buf, obj, T_STRCT);
   return buf;
@@ -667,7 +667,7 @@ static void skip_type(int type, decode_buffer* buf) {
 }
 
 
-VALUE read_struct(VALUE obj, decode_buffer* buf);
+static VALUE read_struct(VALUE obj, decode_buffer* buf);
 
 // Read the right thing from the buffer given the field spec
 // and return the ruby object
@@ -738,7 +738,7 @@ static VALUE read_field(decode_buffer* buf, field_spec* spec) {
 
 // Fill in the instance variables in an object (thrift struct)
 // from the decode buffer
-VALUE read_struct(VALUE obj, decode_buffer* buf) {
+static VALUE read_struct(VALUE obj, decode_buffer* buf) {
   VALUE field;
   field_header f_header;
   VALUE value = Qnil;
@@ -786,7 +786,7 @@ VALUE read_struct(VALUE obj, decode_buffer* buf) {
 
 // Takes an object and transport, and decodes the values in the transport's
 // buffer to fill the object.
-VALUE tbpa_decode_binary(VALUE self, VALUE obj, VALUE transport) {
+static VALUE tbpa_decode_binary(VALUE self, VALUE obj, VALUE transport) {
   decode_buffer buf;
   VALUE ret_val;
   
@@ -818,7 +818,7 @@ VALUE tbpa_decode_binary(VALUE self, VALUE obj, VALUE transport) {
 // -----------------------------------------------------------------------------
 
 // Read the message header and return it as a ruby array
-VALUE tbpa_read_message_begin(VALUE self) {
+static VALUE tbpa_read_message_begin(VALUE self) {
   decode_buffer buf;
   int32_t version, seqid;
   int8_t type;
