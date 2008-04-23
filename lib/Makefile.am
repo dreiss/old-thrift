@@ -14,6 +14,10 @@ if ENABLE_ERLANG
 SUBDIRS += erl
 endif
 
+if ENABLE_RUBY
+SUBDIRS += rb
+endif
+
 EXTRA_DIST = \
   cocoa \
   erl   \
@@ -21,5 +25,4 @@ EXTRA_DIST = \
   ocaml \
   perl  \
   php   \
-  rb    \
   st

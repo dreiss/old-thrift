@@ -26,6 +26,10 @@ Benchmark_SOURCES = \
 
 Benchmark_LDADD = libtestgencpp.la
 
+if ENABLE_RUBY
+SUBDIRS += rb
+endif
+
 check_PROGRAMS = \
 	TFDTransportTest \
 	TPipedTransportTest \
