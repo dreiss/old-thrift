@@ -4,6 +4,10 @@ if ENABLE_JAVA
 SUBDIRS += java
 endif
 
+if ENABLE_RUBY
+SUBDIRS += rb
+endif
+
 noinst_LTLIBRARIES = libtestgencpp.la
 libtestgencpp_la_SOURCES = \
 	gen-cpp/DebugProtoTest_types.cpp \
@@ -25,10 +29,6 @@ Benchmark_SOURCES = \
 	Benchmark.cpp
 
 Benchmark_LDADD = libtestgencpp.la
-
-if ENABLE_RUBY
-SUBDIRS += rb
-endif
 
 check_PROGRAMS = \
 	TFDTransportTest \
