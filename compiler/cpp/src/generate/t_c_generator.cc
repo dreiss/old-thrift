@@ -72,11 +72,6 @@ class t_c_generator : public t_oop_generator {
     }
     this->nspace = string(tmp, pos);
     free(tmp);
-
-    fprintf(stderr, "nspace: %s %s %s\n", 
-            nspace.c_str(), 
-            nspace_u.c_str(), 
-            nspace_uc.c_str());
   }
 
   /**
@@ -223,8 +218,11 @@ void t_c_generator::generate_typedef(t_typedef* ttypedef) {
  * @param tenum The enumeration
  */
 void t_c_generator::generate_enum(t_enum* tenum) {
+  // TODO: look in to using glib's enum facilities
   f_types_ <<
-    indent() << "enum " << tenum->get_name() << " {" << endl;
+    indent() << "typedef enum _" << tenum->get_name() << " " << tenum->get_name() << ";" << endl <<
+    indent() << "enum _" << tenum->get_name() << " {" << endl;
+    
   indent_up();
 
   vector<t_enum_value*> constants = tenum->get_constants();
@@ -234,8 +232,7 @@ void t_c_generator::generate_enum(t_enum* tenum) {
     if (first) {
       first = false;
     } else {
-      f_types_ <<
-        "," << endl;
+      f_types_ << "," << endl;
     }
     f_types_ <<
       indent() << (*c_iter)->get_name();
@@ -260,6 +257,7 @@ void t_c_generator::generate_struct(t_struct* tstruct)
 
 void t_c_generator::generate_xception(t_struct* tstruct)
 {
+  // TODO: look in to/think about making these gerror's
   f_types_ << "/* exception */" << endl;
   generate_object(tstruct);
 }
@@ -296,16 +294,11 @@ void t_c_generator::generate_object(t_struct* tstruct)
   string name_uc = buf;
   name_uc += "_";
 
-  fprintf(stderr, "name: %s %s %s\n", 
-          name.c_str(), 
-          name_u.c_str(), 
-          name_uc.c_str());
-
   f_types_ << 
     "typedef struct _" << this->nspace << name << " " << this->nspace << name << ";" << endl <<
     "struct _" << this->nspace << name << endl <<
     "{ " << endl <<
-    "    GTypeInstance gtype; " << endl;
+    "    GObject parent; " << endl;
 
   vector<t_field*>::const_iterator m_iter;
   const vector<t_field*>& members = tstruct->get_members();
@@ -319,7 +312,7 @@ void t_c_generator::generate_object(t_struct* tstruct)
     "typedef struct _" << this->nspace << name << "Class " << this->nspace << name << "Class;" << endl <<
     "struct _" << this->nspace << name << "Class" << endl <<
     "{ " << endl <<
-    "    GTypeClass gtypeclass; " << endl <<
+    "    GObjectClass parent; " << endl <<
     "}; " << endl <<
     "GType " << this->nspace_u << name_u << "get_type (void);" << endl <<
     "void " << this->nspace_u << name_u << "class_init (gpointer g_class, gpointer class_data);" << endl <<
@@ -342,32 +335,21 @@ void t_c_generator::generate_object(t_struct* tstruct)
     "        static const GTypeInfo type_info = " << endl <<
     "        {" << endl <<
     "            sizeof (" << this->nspace << name << "Class)," << endl <<
-    "            NULL,                /* base_init */" << endl <<
-    "            NULL,                /* base_finalize */" << endl <<
-    "            " << this->nspace_u << name_u << "class_init, /* class_init */" << endl <<
-    "            " << this->nspace_u << name_u << "class_final, /* class_finalize */" << endl <<
-    "            NULL,                /* class_data */" << endl <<
+    "            NULL, /* base_init */" << endl <<
+    "            NULL, /* base_finalize */" << endl <<
+    "            NULL, /* class_init */" << endl <<
+    "            NULL, /* class_finalize */" << endl <<
+    "            NULL, /* class_data */" << endl <<
     "            sizeof (" << this->nspace << name << ")," << endl <<
-    "            0,                /* n_preallocs */" << endl <<
+    "            0, /* n_preallocs */" << endl <<
     "            " << this->nspace_u << name_u << "instance_init /* instance_init */" << endl <<
     "        };" << endl << endl <<
-    "        static const GTypeFundamentalInfo fundamental_info =" << endl <<
-    "        {" << endl <<
-    "            G_TYPE_FLAG_CLASSED | G_TYPE_FLAG_INSTANTIATABLE" << endl <<
-    "        };    " << endl << endl << 
-    "        type = g_type_register_fundamental" << endl <<
-    "        (" << endl <<
-    "            g_type_fundamental_next (), /* next available GType number */" << endl <<
+    "        type = g_type_register_static (G_TYPE_OBJECT, " << endl <<
     "            \"" << this->nspace << name << "Type\", /* type name as string */" << endl <<
-    "            &type_info, /* type info as above */" << endl <<
-    "            &fundamental_info, /* fundamental info as above */" << endl <<
-    "            0 /* type is not abstract */" << endl <<
-    "        );" << endl <<
+    "            &type_info, 0);" << endl <<
     "    }" << endl << endl << 
-    "    return    type;" << endl << 
+    "    return type;" << endl << 
     "}" << endl << 
-    "void " << this->nspace_u << name_u << "class_init (gpointer g_class, gpointer class_data) {}" << endl <<
-    "void " << this->nspace_u << name_u << "class_final (gpointer g_class, gpointer class_data) {}" << endl <<
     "void " << this->nspace_u << name_u << "instance_init (GTypeInstance *instance, gpointer g_class) {" << endl <<
     "    " << this->nspace << name << " * this = " << this->nspace_uc << name_uc << "(instance);" << endl;
 
@@ -426,8 +408,8 @@ string t_c_generator::type_name(t_type* ttype) {
   if (ttype->is_base_type()) {
     return base_type_name(((t_base_type*)ttype)->get_base());
   } else {
-    // TODO: actual types
-    return "void *";
+    fprintf(stderr, "ttype->name: %s\n", ttype->get_name().c_str());
+    return ttype->get_name();
   }
 }
 
