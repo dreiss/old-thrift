@@ -112,22 +112,22 @@ class TBufferedTransport < TTransport
     @wbuf = ''
   end
   
-  def string_buffer
+  def borrow(requested_length = 0)
+    return @rbuf if requested_length == 0 and @rbuf.length > 0
+    
+    if @rbuf.length < DEFAULT_BUFFER
+      @rbuf << @transport.read([requested_length, DEFAULT_BUFFER].max)
+    end
+    
+    if @rbuf.length < requested_length
+      @rbuf << readAll(requested_length - @rbuf.length)
+    end
+
     @rbuf
   end
   
-  def refill_buffer(size)
-    str = read(size)
-    
-    if str.length < size
-      str << readAll(size - str.length)
-    end
-    
-    str
-  end
-  
   def consume!(size)
-    @rbuf.slice!(0..size)
+    @rbuf.slice!(0...size)
   end
 end
 
@@ -297,13 +297,17 @@ class TMemoryBuffer < TTransport
   end
   
   # For fast binary protocol access
-  def string_buffer
-    @buf[@rpos..-1]
-  end
-
-  def refill_buffer(size)
-    # TODO: Replace with real exception
-    raise NotImplementedError # Memory buffers only get one shot.
+  def borrow(size = nil)
+    if size.nil?
+      @buf[@rpos..-1]
+    else
+      if size > @buf.length - @rpos
+        # TODO: Replace with real exception
+        raise NotImplementedError # Memory buffers only get one shot.
+      else
+        @buf[@rpos..(@rpos + size)]
+      end
+    end
   end
   
   def consume!(size)

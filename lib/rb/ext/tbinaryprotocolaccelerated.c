@@ -88,7 +88,7 @@ static ID name_sym;
 static ID fields_id;
 static ID consume_bang_id;
 static ID string_buffer_id;
-static ID refill_buffer_id;
+static ID borrow_id;
 
 static const uint32_t VERSION_MASK = 0xffff0000;
 static const uint32_t VERSION_1 = 0x80010000;
@@ -519,6 +519,30 @@ typedef struct {
 #define read_struct_begin(buf)
 #define read_struct_end(buf)
 
+static void consume(decode_buffer* buf, int32_t size) {
+  if (size != 0) {
+    rb_funcall(buf->trans, consume_bang_id, 1, INT2FIX(size));
+  }
+}
+
+static VALUE borrow(decode_buffer* buf, int32_t size) {
+  if (size == 0) {
+    return rb_funcall(buf->trans, borrow_id, 0);
+  } else {
+    return rb_funcall(buf->trans, borrow_id, 1, INT2FIX(size));
+  }
+}
+
+// Refills the buffer by calling borrow. If buf->pos is nonzero that number of bytes
+// is cleared through consume
+static void fill_buffer(decode_buffer* buf, int32_t req_len) {
+  consume(buf, buf->pos);
+  VALUE refill = borrow(buf, req_len);
+  buf->data = StringValuePtr(refill);
+  buf->len = RSTRING(refill)->len;
+  buf->pos = 0;
+}
+
 
 // read_bytes pulls a number of bytes (size) from the buffer, refilling if needed,
 // and places them in dst. This should _always_ be used used when reading from the buffer
@@ -530,19 +554,16 @@ static bool read_bytes(decode_buffer* buf, void* dst, size_t size) {
     memcpy(dst, buf->data + buf->pos, size);
     buf->pos += size;
   } else {
+    
     if (avail > 0) {
-      rb_funcall(buf->trans, consume_bang_id, 1, INT2FIX(avail));
       // Copy what we can
       memcpy(dst, buf->data, avail);
+      buf->pos += avail;
     }
-    
-    VALUE refill = rb_funcall(buf->trans, refill_buffer_id, 1, INT2FIX(size));
-        
-    // Refill the buffer
-    buf->data = StringValuePtr(refill);
-    buf->len = RSTRING(refill)->len;
-    buf->pos = size - avail;
-    memcpy(dst + avail, buf->data, buf->pos);
+
+    fill_buffer(buf, size);
+    memcpy(dst + avail, buf->data, size - avail);
+    buf->pos += size - avail;
   }
   
   return true;
@@ -805,13 +826,10 @@ static VALUE read_struct(VALUE obj, decode_buffer* buf) {
 static VALUE tbpa_decode_binary(VALUE self, VALUE obj, VALUE transport) {
   decode_buffer buf;
   VALUE ret_val;
-  
-  VALUE str_buf = rb_funcall(transport, string_buffer_id, 0);
 
-  buf.pos = 0;  
-  buf.data = RSTRING(str_buf)->ptr;
-  buf.len = RSTRING(str_buf)->len;
+  buf.pos = 0;    // This needs to be set so an arbitrary number of bytes isn't consumed
   buf.trans = transport;       // We need to hold this so the buffer can be refilled
+  fill_buffer(&buf, 0);
 
 #ifdef __DEBUG__
   rb_p(rb_str_new2("Running decode binary with data:"));
@@ -820,10 +838,8 @@ static VALUE tbpa_decode_binary(VALUE self, VALUE obj, VALUE transport) {
  
   ret_val = read_struct(obj, &buf);
   
-  if (buf.pos > 0) {
-    // Consume whatever was read
-    rb_funcall(buf.trans, consume_bang_id, 1, INT2FIX(buf.pos));
-  }
+  // Consume whatever was read
+  consume(&buf, buf.pos);
   
   return ret_val;
 }
@@ -841,17 +857,10 @@ static VALUE tbpa_read_message_begin(VALUE self) {
   thrift_string name;
   
   VALUE trans = rb_iv_get(self, "@trans");
-  VALUE str_buf = rb_funcall(trans, string_buffer_id, 0);
   
-  buf.pos = 0;
-  buf.data = RSTRING(str_buf)->ptr;
-  buf.len = RSTRING(str_buf)->len;
-  buf.trans = trans;       // We need to hold this so the buffer can be refilled
-
-#ifdef __DEBUG__
-  rb_p(rb_str_new2("String buf is:"));
-  rb_p(rb_inspect(str_buf));
-#endif
+  buf.pos = 0;              // This needs to be set so fill_buffer doesn't consume
+  buf.trans = trans;        // We need to hold this so the buffer can be refilled
+  fill_buffer(&buf, 0);
 
   version = read_int32(&buf);
   
@@ -865,10 +874,7 @@ static VALUE tbpa_read_message_begin(VALUE self) {
   name = read_string(&buf);
   seqid = read_int32(&buf);
 
-  if (buf.pos > 0) {
-    // Consume whatever was read
-    rb_funcall(buf.trans, consume_bang_id, 1, INT2FIX(buf.pos));
-  }
+  consume(&buf, buf.pos);
   
   return rb_ary_new3(3, rb_str_new(name.ptr, name.len), INT2FIX(type), INT2FIX(seqid));
 }
@@ -886,7 +892,7 @@ void Init_tbinaryprotocolaccelerated()
   element_sym = ID2SYM(rb_intern("element"));
   consume_bang_id = rb_intern("consume!");
   string_buffer_id = rb_intern("string_buffer");
-  refill_buffer_id = rb_intern("refill_buffer");
+  borrow_id = rb_intern("borrow");
   
   // For fast access
   rb_define_method(class_tbpa, "encode_binary", tbpa_encode_binary, 1);

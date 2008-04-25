@@ -44,10 +44,11 @@ class TSocket < TTransport
 
   def read(sz)
     begin
-      data = @handle.recv(sz)
+      data = @handle.readpartial(sz)
       if (data.length == 0)
         raise TTransportException.new("TSocket: Could not read #{sz} bytes from #{@host}:#{@port}")
       end
+            
       return data
     rescue StandardError
       raise TTransportException.new(TTransportException::NOT_OPEN)
