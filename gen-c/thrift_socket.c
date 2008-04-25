@@ -115,18 +115,15 @@ void _thrift_socket_get_property (GObject * object, guint property_id,
     }
 }
 
-static void _thrift_socket_instance_init (GTypeInstance *instance,
-                                          gpointer g_class)
+static void _thrift_socket_instance_init (ThriftSocket * socket)
 {
-    ThriftSocket * socket = THRIFT_SOCKET (instance);
     socket->socket = 0;
 }
 
 // TODO: destroy, free hostname memory, close socket, etc.
 
 
-static void _thrift_socket_class_init (gpointer klass,
-                                       gpointer class_data)
+static void _thrift_socket_class_init (ThriftSocketClass * klass)
 {
     GObjectClass * gobject_class = G_OBJECT_CLASS (klass);
     GParamSpec * param_spec;
@@ -163,12 +160,13 @@ GType thrift_socket_get_type (void)
             sizeof (ThriftSocketClass),
             NULL, /* base_init */
             NULL, /* base_finalize */
-            _thrift_socket_class_init,
+            (GClassInitFunc)_thrift_socket_class_init,
             NULL, /* class_finalize */
             NULL, /* class_data */
             sizeof (ThriftSocket),
             0, /* n_preallocs */
-            _thrift_socket_instance_init
+            (GInstanceInitFunc)_thrift_socket_instance_init,
+            NULL, /* value_table */
         };
 
         type = g_type_register_static (G_TYPE_OBJECT,

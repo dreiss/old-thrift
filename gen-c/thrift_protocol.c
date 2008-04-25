@@ -467,18 +467,12 @@ void _thrift_protocol_get_property (GObject * object, guint property_id,
     }
 }
 
-static void _thrift_protocol_instance_init (GTypeInstance *instance,
-                                            gpointer g_class)
+static void _thrift_protocol_instance_init (ThriftProtocol * protocol)
 {
-    ThriftProtocol * protocol = THRIFT_PROTOCOL (instance);
     protocol->thrift_socket = NULL;
 }
 
-// TODO: destroy, free hostname memory, close protocol, etc.
-
-
-static void _thrift_protocol_class_init (gpointer klass,
-                                         gpointer class_data)
+static void _thrift_protocol_class_init (ThriftProtocolClass * klass)
 {
     GObjectClass * gobject_class = G_OBJECT_CLASS (klass);
     GParamSpec * param_spec;
@@ -489,7 +483,7 @@ static void _thrift_protocol_class_init (gpointer klass,
     param_spec = g_param_spec_object ("socket",
                                       "socket (construct)",
                                       "Set the socket of the protocol",
-                                      THRIFT_SOCKET_TYPE,
+                                      THRIFT_TYPE_SOCKET,
                                       G_PARAM_CONSTRUCT_ONLY |
                                       G_PARAM_READWRITE);
     g_object_class_install_property (gobject_class, PROP_SOCKET, param_spec);
@@ -506,12 +500,13 @@ GType thrift_protocol_get_type (void)
             sizeof (ThriftProtocolClass),
             NULL, /* base_init */
             NULL, /* base_finalize */
-            _thrift_protocol_class_init,
+            (GClassInitFunc)_thrift_protocol_class_init,
             NULL, /* class_finalize */
             NULL, /* class_data */
             sizeof (ThriftProtocol),
             0, /* n_preallocs */
-            _thrift_protocol_instance_init
+            (GInstanceInitFunc)_thrift_protocol_instance_init,
+            NULL, /* value_table */
         };
 
         type = g_type_register_static (G_TYPE_OBJECT,

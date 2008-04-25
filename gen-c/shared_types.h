@@ -7,8 +7,9 @@
 #define shared_TYPES_H
 
 /* base includes */
-#include <stdint.h>
 #include <glib-object.h>
+#include "thrift_protocol.h"
+#include "thrift_struct.h"
 
 
 /* custom thrift includes */
@@ -21,22 +22,23 @@
 typedef struct _ThriftSharedStruct ThriftSharedStruct;
 struct _ThriftSharedStruct
 { 
-    GObject parent; 
-    int32_t key;
+    ThriftStruct parent; 
+
+    /* private */
+    gint32 key;
     gchar * value;
 }; 
 typedef struct _ThriftSharedStructClass ThriftSharedStructClass;
 struct _ThriftSharedStructClass
 { 
-    GObjectClass parent; 
+    ThriftStructClass parent; 
 }; 
 GType thrift_shared_struct_get_type (void);
-void thrift_shared_struct_instance_init (GTypeInstance *instance, gpointer g_class);
-#define THRIFT_SHARED_STRUCT_TYPE (thrift_shared_struct_get_type ())
-#define THRIFT_SHARED_STRUCT_(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), THRIFT_SHARED_STRUCT_TYPE, ThriftSharedStruct))
-#define THRIFT_SHARED_STRUCT_CLASS(c) (G_TYPE_CHECK_CLASS_CAST ((c), THRIFT_SHARED_STRUCT_, ThriftSharedStructClass))
-#define THRIFT_IS_SHARED_STRUCT_(obj) (G_TYPE_CHECK_TYPE ((obj), THRIFT_SHARED_STRUCT_TYPE))
-#define THRIFT_IS_SHARED_STRUCT_CLASS(c) (G_TYPE_CHECK_CLASS_TYPE ((c), THRIFT_SHARED_STRUCT_TYPE))
-#define THRIFT_SHARED_STRUCT_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), THRIFT_SHARED_STRUCT_TYPE, ThriftSharedStructClass))
+#define THRIFT_TYPE_SHARED_STRUCT (thrift_shared_struct_get_type ())
+#define THRIFT_SHARED_STRUCT(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), THRIFT_TYPE_SHARED_STRUCT, ThriftSharedStruct))
+#define THRIFT_SHARED_STRUCT_CLASS(c) (G_TYPE_CHECK_CLASS_CAST ((c), THRIFT_TYPE_SHARED_STRUCT, ThriftSharedStructClass))
+#define THRIFT_IS_SHARED_STRUCT(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), THRIFT_TYPE_SHARED_STRUCT))
+#define THRIFT_IS_SHARED_STRUCT_CLASS(c) (G_TYPE_CHECK_CLASS_TYPE ((c), THRIFT_TYPE_SHARED_STRUCT))
+#define THRIFT_SHARED_STRUCT_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), THRIFT_TYPE_SHARED_STRUCT, ThriftSharedStructClass))
 
 #endif /* shared_TYPES_H */

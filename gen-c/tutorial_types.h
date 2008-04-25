@@ -7,8 +7,9 @@
 #define tutorial_TYPES_H
 
 /* base includes */
-#include <stdint.h>
 #include <glib-object.h>
+#include "thrift_protocol.h"
+#include "thrift_struct.h"
 
 /* other thrift includes */
 #include "shared_types.h"
@@ -17,65 +18,67 @@
 
 /* begin types */
 
-typedef enum _Operation Operation;
-enum _Operation {
+typedef enum _ThriftTutorialOperation ThriftTutorialOperation;
+enum _ThriftTutorialOperation {
   ADD = 1,
   SUBTRACT = 2,
   MULTIPLY = 3,
   DIVIDE = 4
 };
 
-typedef int32_t MyInteger;
+typedef gint32 ThriftTutorialMyInteger;
 
 /* constants */
-#define INT32CONSTANT 9853
-#define MAPCONSTANT "not yet supported"
+#define THRIFT_TUTORIAL_INT32CONSTANT 9853
+#define THRIFT_TUTORIAL_MAPCONSTANT "not yet supported"
 
 /* struct */
 typedef struct _ThriftTutorialWork ThriftTutorialWork;
 struct _ThriftTutorialWork
 { 
-    GObject parent; 
-    int32_t num1;
-    int32_t num2;
+    ThriftStruct parent; 
+
+    /* private */
+    gint32 num1;
+    gint32 num2;
     gchar * str1;
     gchar * str2;
-    Operation op;
+    ThriftTutorialOperation op;
 }; 
 typedef struct _ThriftTutorialWorkClass ThriftTutorialWorkClass;
 struct _ThriftTutorialWorkClass
 { 
-    GObjectClass parent; 
+    ThriftStructClass parent; 
 }; 
 GType thrift_tutorial_work_get_type (void);
-void thrift_tutorial_work_instance_init (GTypeInstance *instance, gpointer g_class);
-#define THRIFT_TUTORIAL_WORK_TYPE (thrift_tutorial_work_get_type ())
-#define THRIFT_TUTORIAL_WORK_(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), THRIFT_TUTORIAL_WORK_TYPE, ThriftTutorialWork))
-#define THRIFT_TUTORIAL_WORK_CLASS(c) (G_TYPE_CHECK_CLASS_CAST ((c), THRIFT_TUTORIAL_WORK_, ThriftTutorialWorkClass))
-#define THRIFT_TUTORIAL_IS_WORK_(obj) (G_TYPE_CHECK_TYPE ((obj), THRIFT_TUTORIAL_WORK_TYPE))
-#define THRIFT_TUTORIAL_IS_WORK_CLASS(c) (G_TYPE_CHECK_CLASS_TYPE ((c), THRIFT_TUTORIAL_WORK_TYPE))
-#define THRIFT_TUTORIAL_WORK_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), THRIFT_TUTORIAL_WORK_TYPE, ThriftTutorialWorkClass))
+#define THRIFT_TUTORIAL_TYPE_WORK (thrift_tutorial_work_get_type ())
+#define THRIFT_TUTORIAL_WORK(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), THRIFT_TUTORIAL_TYPE_WORK, ThriftTutorialWork))
+#define THRIFT_TUTORIAL_WORK_CLASS(c) (G_TYPE_CHECK_CLASS_CAST ((c), THRIFT_TUTORIAL_TYPE_WORK, ThriftTutorialWorkClass))
+#define THRIFT_TUTORIAL_IS_WORK(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), THRIFT_TUTORIAL_TYPE_WORK))
+#define THRIFT_TUTORIAL_IS_WORK_CLASS(c) (G_TYPE_CHECK_CLASS_TYPE ((c), THRIFT_TUTORIAL_TYPE_WORK))
+#define THRIFT_TUTORIAL_WORK_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), THRIFT_TUTORIAL_TYPE_WORK, ThriftTutorialWorkClass))
 
 /* exception */
 typedef struct _ThriftTutorialInvalidOperation ThriftTutorialInvalidOperation;
 struct _ThriftTutorialInvalidOperation
 { 
-    GObject parent; 
-    int32_t what;
+    ThriftStruct parent; 
+
+    /* private */
+    gint32 what;
     gchar * why;
 }; 
 typedef struct _ThriftTutorialInvalidOperationClass ThriftTutorialInvalidOperationClass;
 struct _ThriftTutorialInvalidOperationClass
 { 
-    GObjectClass parent; 
+    ThriftStructClass parent; 
 }; 
 GType thrift_tutorial_invalid_operation_get_type (void);
-void thrift_tutorial_invalid_operation_instance_init (GTypeInstance *instance, gpointer g_class);
-#define THRIFT_TUTORIAL_INVALID_OPERATION_TYPE (thrift_tutorial_invalid_operation_get_type ())
-#define THRIFT_TUTORIAL_INVALID_OPERATION_(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), THRIFT_TUTORIAL_INVALID_OPERATION_TYPE, ThriftTutorialInvalidOperation))
-#define THRIFT_TUTORIAL_INVALID_OPERATION_CLASS(c) (G_TYPE_CHECK_CLASS_CAST ((c), THRIFT_TUTORIAL_INVALID_OPERATION_, ThriftTutorialInvalidOperationClass))
-#define THRIFT_TUTORIAL_IS_INVALID_OPERATION_(obj) (G_TYPE_CHECK_TYPE ((obj), THRIFT_TUTORIAL_INVALID_OPERATION_TYPE))
-#define THRIFT_TUTORIAL_IS_INVALID_OPERATION_CLASS(c) (G_TYPE_CHECK_CLASS_TYPE ((c), THRIFT_TUTORIAL_INVALID_OPERATION_TYPE))
-#define THRIFT_TUTORIAL_INVALID_OPERATION_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), THRIFT_TUTORIAL_INVALID_OPERATION_TYPE, ThriftTutorialInvalidOperationClass))
+#define THRIFT_TUTORIAL_TYPE_INVALID_OPERATION (thrift_tutorial_invalid_operation_get_type ())
+#define THRIFT_TUTORIAL_INVALID_OPERATION(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), THRIFT_TUTORIAL_TYPE_INVALID_OPERATION, ThriftTutorialInvalidOperation))
+#define THRIFT_TUTORIAL_INVALID_OPERATION_CLASS(c) (G_TYPE_CHECK_CLASS_CAST ((c), THRIFT_TUTORIAL_TYPE_INVALID_OPERATION, ThriftTutorialInvalidOperationClass))
+#define THRIFT_TUTORIAL_IS_INVALID_OPERATION(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), THRIFT_TUTORIAL_TYPE_INVALID_OPERATION))
+#define THRIFT_TUTORIAL_IS_INVALID_OPERATION_CLASS(c) (G_TYPE_CHECK_CLASS_TYPE ((c), THRIFT_TUTORIAL_TYPE_INVALID_OPERATION))
+#define THRIFT_TUTORIAL_INVALID_OPERATION_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), THRIFT_TUTORIAL_TYPE_INVALID_OPERATION, ThriftTutorialInvalidOperationClass))
 
 #endif /* tutorial_TYPES_H */

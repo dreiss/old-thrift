@@ -6,67 +6,124 @@
 
 #include "tutorial_types.h"
 
+gint32 thrift_tutorial_work_write (ThriftStruct * object, ThriftProtocol * thrift_protocol)
+{
+  gint32 xfer = 0;
+  ThriftTutorialWork * this_object = THRIFT_TUTORIAL_WORK(object);
+  xfer += thrift_protocol_write_struct_begin (thrift_protocol, "Work");
+  xfer += thrift_protocol_write_field_begin (thrift_protocol, "num1", T_I32, 1);
+  xfer += thrift_protocol_write_i32(thrift_protocol, this_object->num1);
+  xfer += thrift_protocol_write_field_end (thrift_protocol);
+  xfer += thrift_protocol_write_field_begin (thrift_protocol, "num2", T_I32, 2);
+  xfer += thrift_protocol_write_i32(thrift_protocol, this_object->num2);
+  xfer += thrift_protocol_write_field_end (thrift_protocol);
+  xfer += thrift_protocol_write_field_begin (thrift_protocol, "str1", T_STRING, 3);
+  xfer += thrift_protocol_write_string(thrift_protocol, this_object->str1);
+  xfer += thrift_protocol_write_field_end (thrift_protocol);
+  xfer += thrift_protocol_write_field_begin (thrift_protocol, "str2", T_STRING, 4);
+  xfer += thrift_protocol_write_string(thrift_protocol, this_object->str2);
+  xfer += thrift_protocol_write_field_end (thrift_protocol);
+  xfer += thrift_protocol_write_field_begin (thrift_protocol, "op", T_I32, 5);
+  xfer += thrift_protocol_write_i32(thrift_protocol, (gint32)this_object->op);
+  xfer += thrift_protocol_write_field_end (thrift_protocol);
+  xfer += thrift_protocol_write_field_stop(thrift_protocol);
+  xfer += thrift_protocol_write_struct_end(thrift_protocol);
+  return xfer;
+}
+
+void thrift_tutorial_work_instance_init (ThriftTutorialWork * object)
+{
+  object->num1 = 42;
+  object->num2 = 0;
+  object->str1 = "";
+  object->str2 = "foo";
+}
+
+void thrift_tutorial_work_class_init (ThriftStructClass * thrift_struct_class)
+{
+  thrift_struct_class->write = thrift_tutorial_work_write;
+}
+
 GType thrift_tutorial_work_get_type (void)
 {
-    static GType type = 0;
+  static GType type = 0;
 
-    if (type == 0) 
+  if (type == 0) 
+  {
+    static const GTypeInfo type_info = 
     {
-        static const GTypeInfo type_info = 
-        {
-            sizeof (ThriftTutorialWorkClass),
-            NULL, /* base_init */
-            NULL, /* base_finalize */
-            NULL, /* class_init */
-            NULL, /* class_finalize */
-            NULL, /* class_data */
-            sizeof (ThriftTutorialWork),
-            0, /* n_preallocs */
-            thrift_tutorial_work_instance_init /* instance_init */
-        };
+      sizeof (ThriftTutorialWorkClass),
+      NULL, /* base_init */
+      NULL, /* base_finalize */
+      (GClassInitFunc)thrift_tutorial_work_class_init,
+      NULL, /* class_finalize */
+      NULL, /* class_data */
+      sizeof (ThriftTutorialWork),
+      0, /* n_preallocs */
+      (GInstanceInitFunc)thrift_tutorial_work_instance_init,
+      NULL, /* value_table */
+    };
 
-        type = g_type_register_static (G_TYPE_OBJECT, 
-            "ThriftTutorialWorkType", /* type name as string */
-            &type_info, 0);
-    }
+    type = g_type_register_static (THRIFT_TYPE_STRUCT, 
+                                   "ThriftTutorialWorkType",
+                                   &type_info, 0);
+  }
 
-    return type;
+  return type;
 }
-void thrift_tutorial_work_instance_init (GTypeInstance *instance, gpointer g_class) {
-    ThriftTutorialWork * this = THRIFT_TUTORIAL_WORK_(instance);
-    this->num1 = 42;
-    this->num2 = 0;
-    this->str1 = "";
-    this->str2 = "foo";
+
+gint32 thrift_tutorial_invalid_operation_write (ThriftStruct * object, ThriftProtocol * thrift_protocol)
+{
+  gint32 xfer = 0;
+  ThriftTutorialInvalidOperation * this_object = THRIFT_TUTORIAL_INVALID_OPERATION(object);
+  xfer += thrift_protocol_write_struct_begin (thrift_protocol, "InvalidOperation");
+  xfer += thrift_protocol_write_field_begin (thrift_protocol, "what", T_I32, 1);
+  xfer += thrift_protocol_write_i32(thrift_protocol, this_object->what);
+  xfer += thrift_protocol_write_field_end (thrift_protocol);
+  xfer += thrift_protocol_write_field_begin (thrift_protocol, "why", T_STRING, 2);
+  xfer += thrift_protocol_write_string(thrift_protocol, this_object->why);
+  xfer += thrift_protocol_write_field_end (thrift_protocol);
+  xfer += thrift_protocol_write_field_stop(thrift_protocol);
+  xfer += thrift_protocol_write_struct_end(thrift_protocol);
+  return xfer;
 }
+
+void thrift_tutorial_invalid_operation_instance_init (ThriftTutorialInvalidOperation * object)
+{
+  object->what = 0;
+  object->why = "";
+}
+
+void thrift_tutorial_invalid_operation_class_init (ThriftStructClass * thrift_struct_class)
+{
+  thrift_struct_class->write = thrift_tutorial_invalid_operation_write;
+}
+
 GType thrift_tutorial_invalid_operation_get_type (void)
 {
-    static GType type = 0;
+  static GType type = 0;
 
-    if (type == 0) 
+  if (type == 0) 
+  {
+    static const GTypeInfo type_info = 
     {
-        static const GTypeInfo type_info = 
-        {
-            sizeof (ThriftTutorialInvalidOperationClass),
-            NULL, /* base_init */
-            NULL, /* base_finalize */
-            NULL, /* class_init */
-            NULL, /* class_finalize */
-            NULL, /* class_data */
-            sizeof (ThriftTutorialInvalidOperation),
-            0, /* n_preallocs */
-            thrift_tutorial_invalid_operation_instance_init /* instance_init */
-        };
+      sizeof (ThriftTutorialInvalidOperationClass),
+      NULL, /* base_init */
+      NULL, /* base_finalize */
+      (GClassInitFunc)thrift_tutorial_invalid_operation_class_init,
+      NULL, /* class_finalize */
+      NULL, /* class_data */
+      sizeof (ThriftTutorialInvalidOperation),
+      0, /* n_preallocs */
+      (GInstanceInitFunc)thrift_tutorial_invalid_operation_instance_init,
+      NULL, /* value_table */
+    };
 
-        type = g_type_register_static (G_TYPE_OBJECT, 
-            "ThriftTutorialInvalidOperationType", /* type name as string */
-            &type_info, 0);
-    }
+    type = g_type_register_static (THRIFT_TYPE_STRUCT, 
+                                   "ThriftTutorialInvalidOperationType",
+                                   &type_info, 0);
+  }
 
-    return type;
+  return type;
 }
-void thrift_tutorial_invalid_operation_instance_init (GTypeInstance *instance, gpointer g_class) {
-    ThriftTutorialInvalidOperation * this = THRIFT_TUTORIAL_INVALID_OPERATION_(instance);
-    this->what = 0;
-    this->why = "";
-}
+

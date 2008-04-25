@@ -26,12 +26,12 @@ struct _ThriftSocketClass
 
 GType thrift_socket_get_type (void);
 
-#define THRIFT_SOCKET_TYPE (thrift_socket_get_type ())
-#define THRIFT_SOCKET(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), THRIFT_SOCKET_TYPE, ThriftSocket))
-#define THRIFT_SOCKET_CLASS(c) (G_TYPE_CHECK_CLASS_CAST ((c), THRIFT_SOCKET, ThriftSocketClass))
-#define THRIFT_IS_SOCKET(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), THRIFT_SOCKET_TYPE))
-#define THRIFT_IS_SOCKET_CLASS(c) (G_TYPE_CHECK_CLASS_TYPE ((c), THRIFT_SOCKET_TYPE))
-#define THRIFT_SOCKET_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), THRIFT_SOCKET_TYPE, ThriftSocketClass))
+#define THRIFT_TYPE_SOCKET (thrift_socket_get_type ())
+#define THRIFT_SOCKET(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), THRIFT_TYPE_SOCKET, ThriftSocket))
+#define THRIFT_SOCKET_CLASS(c) (G_TYPE_CHECK_CLASS_CAST ((c), THRIFT_TYPE_SOCKET, ThriftSocketClass))
+#define THRIFT_IS_SOCKET(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), THRIFT_TYPE_SOCKET))
+#define THRIFT_IS_SOCKET_CLASS(c) (G_TYPE_CHECK_CLASS_TYPE ((c), THRIFT_TYPE_SOCKET))
+#define THRIFT_SOCKET_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), THRIFT_TYPE_SOCKET, ThriftSocketClass))
 
 gboolean thrift_socket_connect (ThriftSocket * socket);
 gint thrift_socket_send (ThriftSocket * socket, const gpointer buf, guint len);
