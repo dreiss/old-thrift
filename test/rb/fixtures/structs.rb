@@ -66,11 +66,27 @@ module Fixtures
       }
     end
     
+    class NestedMap
+      include ThriftStruct
+      attr_accessor :map
+      FIELDS = {
+        0 => {:type => TType::MAP, :name => 'map', :key => {:type => TType::I32}, :value => {:type => TType::MAP, :key => {:type => TType::I32}, :value => {:type => TType::I32}}}
+      }
+    end
+    
     class OneList
       include ThriftStruct
       attr_accessor :list
       FIELDS = {
         1 => {:type => TType::LIST, :name => 'list', :element => {:type => TType::STRING}}
+      }
+    end
+    
+    class NestedList
+      include ThriftStruct
+      attr_accessor :list
+      FIELDS = {
+        0 => {:type => TType::LIST, :name => 'list', :element => {:type => TType::LIST, :element => { :type => TType::I32 } } }
       }
     end
     
@@ -82,6 +98,13 @@ module Fixtures
       }
     end
     
+    class NestedSet
+      include ThriftStruct
+      attr_accessor :set
+      FIELDS = {
+        1 => {:type => TType::SET, :name => 'set', :element => {:type => TType::SET, :element => { :type => TType::STRING } }}
+      }
+    end
     
     # struct OneOfEach {
     #   1: bool im_true,

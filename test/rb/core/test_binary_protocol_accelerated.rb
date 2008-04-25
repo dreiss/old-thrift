@@ -119,8 +119,32 @@ class TBinaryProtocolAcceleratedTest < Test::Unit::TestCase
     assert_decodes_struct obj
   end
   
+  def test_encodes_maps_of_maps
+    obj = Fixtures::Structs::NestedMap.new(:map => { 1 => { 2 => 3 }})
+    assert_encodes_struct obj
+    assert_decodes_struct obj
+  end
+  
+  def test_encodes_list_of_lists
+    obj = Fixtures::Structs::NestedList.new(:list => [[1,2,3], [4,5,6]])
+    assert_encodes_struct obj
+    assert_decodes_struct obj
+  end
+
+  def test_encodes_set_of_sets
+    obj = Fixtures::Structs::NestedSet.new(:set => {{'a' => true} => true})
+    assert_encodes_struct obj
+
+    # Nested hashes won't work with ==, so we do it by hand
+    data = @fast_proto.encode_binary(obj)
+    @trans.write data
+    decoded = @fast_proto.decode_binary(obj.class.new, @trans)
+    assert_equal decoded.set.keys, [{'a' => true}]
+    assert_equal decoded.set.values, [true]
+  end
+  
   unless ENV['FAST_TEST']
-    def test_encodes_and_decodes_nested_maps_and_lists
+    def test_encodes_and_decodes_struct_of_structs
       ooe = Fixtures::Structs::OneOfEach.new
       ooe.im_true   = true
       ooe.im_false  = false

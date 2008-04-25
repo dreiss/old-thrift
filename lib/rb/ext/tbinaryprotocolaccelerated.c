@@ -40,6 +40,8 @@ enum TType {
   // T_UTF16      = 17
 };
 
+#define IS_CONTAINER(x) (x == T_MAP || x == T_SET || x == T_LIST)
+
 // Same comment as the enum.  Sorry.
 #ifdef HAVE_ENDIAN_H
 #include <endian.h>
@@ -284,68 +286,78 @@ static void write_set_begin(VALUE buf, int type, int sz) {
 
 static void binary_encoding(VALUE buf, VALUE obj, int type);
 
-static int write_map_data(VALUE key, VALUE val, VALUE ary) {
-  VALUE buf = rb_ary_entry(ary, 0);
-  int key_type = FIX2INT(rb_ary_entry(ary, 1));
-  int val_type = FIX2INT(rb_ary_entry(ary, 2));
-  
-  binary_encoding(buf, key, key_type);
-  binary_encoding(buf, val, val_type);
-  
-  return 0;
-}
-
-static int write_set_data(VALUE val, VALUE truth, VALUE ary) {
-  VALUE buf = rb_ary_entry(ary, 0);
-  int type = FIX2INT(rb_ary_entry(ary, 1));
-  
-  binary_encoding(buf, val, type);
-  
-  return 0;
-}
-
 // Handles container types: Map, Set, List
 static void write_container(VALUE buf, VALUE value, field_spec* spec) {
-  int sz;
+  int sz, i;
   
   switch(spec->type) {
     case T_MAP: {
-      sz = RHASH(value)->tbl->num_entries;
+      VALUE keys;
+      VALUE key;
+      VALUE val;
       
-      // TODO(kevinclark): Yuck. Yuck yuck yuck. Figure out how to not convert types over and over. 
-      VALUE args = rb_ary_new3(3, buf, INT2FIX(spec->data.map->key->type), INT2FIX(spec->data.map->value->type));
+      keys = rb_funcall(value, rb_intern("keys"), 0);
+      
+      sz = RARRAY(keys)->len;
       
       write_map_begin(buf, spec->data.map->key->type, spec->data.map->value->type, sz);
-      rb_hash_foreach(value, write_map_data, args);
+      
+      for (i = 0; i < sz; i++) {
+        key = rb_ary_entry(keys, i);
+        val = rb_hash_aref(value, key);
+        
+        if (IS_CONTAINER(spec->data.map->key->type)) {
+          write_container(buf, key, spec->data.map->key);
+        } else {
+          binary_encoding(buf, key, spec->data.map->key->type);
+        }
+        
+        if (IS_CONTAINER(spec->data.map->value->type)) {
+          write_container(buf, val, spec->data.map->value);
+        } else {
+          binary_encoding(buf, val, spec->data.map->value->type);
+        }
+      }
+      
       write_map_end(buf);
+
       break;
     }
     
     case T_LIST: {
       sz = RARRAY(value)->len;
-      int i;
       
       write_list_begin(buf, spec->data.element->type, sz);
       for (i = 0; i < sz; ++i) {
-        binary_encoding(buf, rb_ary_entry(value, i), spec->data.element->type);
+        if (IS_CONTAINER(spec->data.element->type)) {
+          write_container(buf, rb_ary_entry(value, i), spec->data.element);
+        } else {
+          binary_encoding(buf, rb_ary_entry(value, i), spec->data.element->type);
+        }
       }
       write_list_end(buf);
       break;
     }
-    
+
     case T_SET: {
-      sz = RHASH(value)->tbl->num_entries;
+      VALUE items = rb_funcall(value, rb_intern("keys"), 0);
+      sz = RARRAY(items)->len;
       
-      VALUE args = rb_ary_new3(2, buf, INT2FIX(spec->data.element->type));
       write_set_begin(buf, spec->data.element->type, sz);
-      rb_hash_foreach(value, write_set_data, args);
+      
+      for (i = 0; i < sz; i++) {
+        if (IS_CONTAINER(spec->data.element->type)) {
+          write_container(buf, rb_ary_entry(items, i), spec->data.element);
+        } else {
+          binary_encoding(buf, rb_ary_entry(items, i), spec->data.element->type);
+        }
+      }
+      
       write_set_end(buf);
       break;
     }
   }
 }
-
-#define IS_CONTAINER(x) (x == T_MAP || x == T_SET || x == T_LIST)
 
 // Takes the field id, data to be encoded, buffer and enclosing object
 // to be encoded. buf and obj passed as a ruby array for rb_hash_foreach.
@@ -454,6 +466,10 @@ static void binary_encoding(VALUE buf, VALUE obj, int type) {
       write_struct_end(buf);
       break;
     }
+    
+    default: {
+      rb_raise(rb_eNotImpError, "Unknown type for binary_encoding: %d", type);
+    }
   }
 }
 
@@ -505,7 +521,7 @@ typedef struct {
 
 
 // read_bytes pulls a number of bytes (size) from the buffer, refilling if needed,
-// and places them in dst. This should _always) be used used when reading from the buffer
+// and places them in dst. This should _always_ be used used when reading from the buffer
 // or buffered transports will be upset with you.
 static bool read_bytes(decode_buffer* buf, void* dst, size_t size) {
   int avail = (buf->len - buf->pos);
