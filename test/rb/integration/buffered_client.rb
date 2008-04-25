@@ -2,59 +2,17 @@ require File.join(File.dirname(__FILE__), '../test_helper')
 
 require 'thrift/transport/tsocket'
 require 'thrift/protocol/tbinaryprotocol'
-require 'thrift/protocol/tbinaryprotocolaccelerated'
 require 'thrift/server/tserver'
 require 'ThriftTest'
 
-class TestBufferedHandler
-  [:testString, :testByte, :testI32, :testI64, :testDouble,
-   :testStruct, :testMap, :testSet, :testList, :testNest,
-   :testEnum, :testTypedef].each do |meth|
-
-    define_method(meth) do |thing|
-      thing
-    end
-
-  end
-
-  def testInsanity(thing)
-    num, uid = thing.userMap.find { true }
-    return {uid => {num => thing}}
-  end
-
-  def testMapMap(thing)
-    return {thing => {thing => thing}}
-  end
-
-  def testEnum(thing)
-    return thing
-  end
-
-  def testTypedef(thing)
-    return thing
-  end
-
-  def testException(thing)
-    raise Thrift::Test::Xception, 'error'
-  end
-
-end
-class TestBufferedThrift < Test::Unit::TestCase
+class BufferedClientTest < Test::Unit::TestCase
   def setup
-    unless @thread
-      # Initialize the server
-      @handler   = TestBufferedHandler.new()
-      @processor = Thrift::Test::ThriftTest::Processor.new(@handler)
-      @transport = TServerSocket.new(9090)
-      @server    = TThreadedServer.new(@processor, @transport)
-
-      @thread = Thread.new { @server.serve }
+    unless @socket
+      @socket   = TSocket.new('localhost', 9090)
+      @protocol = TBinaryProtocol.new(TBufferedTransport.new(@socket))
+      @client   = Thrift::Test::ThriftTest::Client.new(@protocol)
+      @socket.open
     end
-    
-    @socket   = TSocket.new('localhost', 9090)
-    @protocol = TBinaryProtocolAccelerated.new(TBufferedTransport.new(@socket))
-    @client   = Thrift::Test::ThriftTest::Client.new(@protocol)
-    @socket.open
   end
   
   def test_string
@@ -185,3 +143,4 @@ class TestBufferedThrift < Test::Unit::TestCase
     end
   end
 end
+
