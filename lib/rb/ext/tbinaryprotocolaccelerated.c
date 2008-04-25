@@ -6,8 +6,30 @@
 
 #include <ruby.h>
 #include <st.h>
+#include <netinet/in.h>
 
 // #define __DEBUG__
+
+#ifndef HAVE_STRLCPY
+
+size_t
+strlcpy (char *dst, const char *src, size_t dst_sz)
+{
+    size_t n;
+
+    for (n = 0; n < dst_sz; n++) {
+      if ((*dst++ = *src++) == '\0')
+        break;
+    }
+
+    if (n < dst_sz)
+      return n;
+    if (n > 0)
+      *(dst - 1) = '\0';
+    return n + strlen (src);
+}
+
+#endif
 
 #define dbg() fprintf(stderr, "%s:%d\n", __FUNCTION__, __LINE__)
 
