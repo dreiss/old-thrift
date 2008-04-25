@@ -450,22 +450,9 @@ static void binary_encoding(VALUE buf, VALUE obj, int type) {
       write_i32(buf, NUM2INT(obj));
       break;
     
-    case T_I64: {
-      int64_t val;
-      switch (TYPE(obj)) {
-        case T_FIXNUM:
-          val = NUM2INT(obj);
-          break;
-        case T_BIGNUM:
-          val = rb_num2ll(obj);
-          break;
-        default:
-          rb_raise(rb_eArgError, "Argument is not a Fixnum or Bignum");
-      }
-
-      write_i64(buf, val);
+    case T_I64:
+      write_i64(buf, rb_num2ll(obj));
       break;
-    }
     
     case T_DBL:
       write_double(buf, NUM2DBL(obj));
