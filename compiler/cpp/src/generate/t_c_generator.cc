@@ -4,6 +4,13 @@
 // See accompanying file LICENSE or visit the Thrift site at:
 // http://developers.facebook.com/thrift/
 
+
+/**
+ * TODO:
+ * - use glib stuff where it can be since we'll require it for the code
+ *   we produce, g_strdup is an example. also may help with intl support
+ */
+
 #include <cassert>
 
 #include <fstream>
@@ -315,13 +322,12 @@ void t_c_generator::generate_object(t_struct* tstruct)
     "    GObjectClass parent; " << endl <<
     "}; " << endl <<
     "GType " << this->nspace_u << name_u << "get_type (void);" << endl <<
-    "void " << this->nspace_u << name_u << "class_init (gpointer g_class, gpointer class_data);" << endl <<
-    "void " << this->nspace_u << name_u << "class_final (gpointer g_class, gpointer class_data);" << endl <<
     "void " << this->nspace_u << name_u << "instance_init (GTypeInstance *instance, gpointer g_class);" << endl <<
     "#define " << this->nspace_uc << name_uc << "TYPE (" << this->nspace_u << name_u << "get_type ())" << endl <<
+    // TODO: get rid of trailing _ on this one
     "#define " << this->nspace_uc << name_uc << "(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), " << this->nspace_uc << name_uc << "TYPE, " << this->nspace << name << "))" << endl <<
     "#define " << this->nspace_uc << name_uc << "CLASS(c) (G_TYPE_CHECK_CLASS_CAST ((c), " << this->nspace_uc << name_uc << ", " << this->nspace << name << "Class))" << endl <<
-    "#define " << this->nspace_uc << "IS_" << name_uc << "(obj) (G_TYPE_CHECK_TYPE ((obj), " << this->nspace_uc << name_uc << "TYPE))" << endl << 
+    "#define " << this->nspace_uc << "IS_" << name_uc << "(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), " << this->nspace_uc << name_uc << "TYPE))" << endl << 
     "#define " << this->nspace_uc << "IS_" << name_uc << "CLASS(c) (G_TYPE_CHECK_CLASS_TYPE ((c), " << this->nspace_uc << name_uc << "TYPE))" << endl <<
     "#define " << this->nspace_uc << name_uc << "GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), " << this->nspace_uc << name_uc << "TYPE, " << this->nspace << name << "Class))" << endl <<
     endl;
@@ -424,7 +430,7 @@ string t_c_generator::base_type_name(t_base_type::t_base tbase) {
   case t_base_type::TYPE_VOID:
     return "void";
   case t_base_type::TYPE_STRING:
-    return "char *";
+    return "gchar *";
   case t_base_type::TYPE_BOOL:
     return "bool";
   case t_base_type::TYPE_BYTE:
