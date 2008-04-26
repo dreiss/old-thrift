@@ -4,7 +4,7 @@ all-local:
 	$(ANT)
 
 install-exec-hook:
-	$(ANT) install -Dinstall.path=$(JAVA_PREFIX)
+	$(ANT) install -Dinstall.path=$(DESTDIR)$(JAVA_PREFIX)
 
 # Make sure this doesn't fail if ant is not configured.
 clean-local:

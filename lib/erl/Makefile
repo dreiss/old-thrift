@@ -16,3 +16,6 @@ distclean: clean
 # Hack to make "make dist" work.
 # This should not work, but it appears to.
 distdir:
+
+install: all
+	echo "no install target, sorry."
