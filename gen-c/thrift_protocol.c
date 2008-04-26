@@ -167,7 +167,7 @@ guint32 thrift_protocol_write_i64 (ThriftProtocol * thrift_protocol,
     g_assert (THRIFT_IS_PROTOCOL (thrift_protocol));
 
     // TODO: 64-bit htonll???
-    gint64 net = (gint64)g_htonl(i64);
+    gint64 net = (gint64)g_htonl (i64);
     thrift_socket_send (thrift_protocol->thrift_socket, 
                         (const gpointer)&net, 8);
     return 8;
@@ -180,7 +180,7 @@ guint32 thrift_protocol_write_double (ThriftProtocol * thrift_protocol,
 
     // TODO: 64-bit htonll???
     // TODO: is the "cast" enough?
-    guint64 bits = (gint64)g_htonl(dub);
+    guint64 bits = (gint64)g_htonl (dub);
     return thrift_protocol_write_i64 (thrift_protocol, bits);
 }
 
@@ -374,7 +374,7 @@ gint32 thrift_protocol_read_i16 (ThriftProtocol * thrift_protocol,
     gpointer b[2];
     thrift_socket_receive (thrift_protocol->thrift_socket, b, 2);
     *i16 = *(gint16*)b;
-    *i16 = g_ntohs(*i16);
+    *i16 = g_ntohs (*i16);
     return 2;
 }
 
@@ -384,7 +384,7 @@ gint32 thrift_protocol_read_i32 (ThriftProtocol * thrift_protocol,
     gpointer b[4];
     thrift_socket_receive (thrift_protocol->thrift_socket, b, 4);
     *i32 = *(gint32*)b;
-    *i32 = g_ntohl(*i32);
+    *i32 = g_ntohl (*i32);
     return 4;
 }
 
@@ -395,7 +395,7 @@ gint32 thrift_protocol_read_i64 (ThriftProtocol * thrift_protocol,
     thrift_socket_receive (thrift_protocol->thrift_socket, b, 8);
     *i64 = *(gint64*)b;
     // TODO: 64-bit htonll???
-    *i64 = g_ntohl(*i64);
+    *i64 = g_ntohl (*i64);
     return 8;
 }
 
@@ -433,86 +433,197 @@ gint32 thrift_protocol_read_binary (ThriftProtocol * thrift_protocol,
     return result + *len;
 }
 
+/**
+ * Method to arbitrarily skip over data.
+ */
+gint32 thrift_protocol_skip (ThriftProtocol * thrift_protocol, ThriftType type)
+{
+  switch (type) 
+  {
+      case T_BOOL:
+        {
+          gboolean boolv;
+          return thrift_protocol_read_bool (thrift_protocol, &boolv);
+        }
+      case T_BYTE:
+        {
+          gint8 bytev;
+          return thrift_protocol_read_byte (thrift_protocol, &bytev);
+        }
+      case T_I16:
+        {
+          gint16 i16;
+          return thrift_protocol_read_i16 (thrift_protocol, &i16);
+        }
+      case T_I32:
+        {
+          gint32 i32;
+          return thrift_protocol_read_i32 (thrift_protocol, &i32);
+        }
+      case T_I64:
+        {
+          gint64 i64;
+          return thrift_protocol_read_i64 (thrift_protocol, &i64);
+        }
+      case T_DOUBLE:
+        {
+          double dub;
+          return thrift_protocol_read_double (thrift_protocol, &dub);
+        }
+      case T_STRING:
+        {
+          gchar * str;
+          guint32 len;
+          gint32 ret = thrift_protocol_read_binary (thrift_protocol, &str, 
+                                                    &len);
+          g_free (str);
+          return ret;
+        }
+      case T_STRUCT:
+        {
+          guint32 result = 0;
+          gchar * name;
+          gint16 fid;
+          ThriftType ftype;
+          result += thrift_protocol_read_struct_begin (thrift_protocol, &name);
+          while (1) 
+          {
+            result += thrift_protocol_read_field_begin (thrift_protocol, 
+                                                        &name, &ftype, &fid);
+            if (ftype == T_STOP)
+              break;
+            result += thrift_protocol_skip (thrift_protocol, ftype);
+            result += thrift_protocol_read_field_end (thrift_protocol);
+          }
+          result += thrift_protocol_read_struct_end (thrift_protocol);
+          return result;
+        }
+      case T_MAP:
+        {
+          guint32 result = 0;
+          ThriftType key_type;
+          ThriftType val_type;
+          guint32 i, size;
+          result += thrift_protocol_read_map_begin (thrift_protocol, &key_type,
+                                                    &val_type, &size);
+          for (i = 0; i < size; i++) {
+            result += thrift_protocol_skip (thrift_protocol, key_type);
+            result += thrift_protocol_skip (thrift_protocol, val_type);
+          }
+          result += thrift_protocol_read_map_end (thrift_protocol);
+          return result;
+        }
+      case T_SET:
+        {
+          guint32 result = 0;
+          ThriftType elem_type;
+          guint32 i, size;
+          result += thrift_protocol_read_set_begin (thrift_protocol, &elem_type, 
+                                                    &size);
+          for (i = 0; i < size; i++) {
+            result += thrift_protocol_skip (thrift_protocol, elem_type);
+          }
+          result += thrift_protocol_read_set_end (thrift_protocol);
+          return result;
+        }
+      case T_LIST:
+        {
+          guint32 result = 0;
+          ThriftType elem_type;
+          guint32 i, size;
+          result += thrift_protocol_read_list_begin (thrift_protocol, 
+                                                     &elem_type, &size);
+          for (i = 0; i < size; i++) {
+            result += thrift_protocol_skip (thrift_protocol, elem_type);
+          }
+          result += thrift_protocol_read_list_end (thrift_protocol);
+          return result;
+        }
+      default:
+        return 0;
+  }
+}
+
 enum _ThriftProtocolProperties
 {
-    PROP_DUMMY,
-    PROP_SOCKET,
+  PROP_DUMMY,
+  PROP_SOCKET,
 };
 
 void _thrift_protocol_set_property (GObject * object, guint property_id,
                                     const GValue * value, GParamSpec * pspec)
 {
-    ThriftProtocol * protocol = THRIFT_PROTOCOL (object);
-    /* TODO: we could check that pspec is the type we want, not sure that's nec
-     * TODO: proper error here */
-    switch (property_id)
-    {
-        case PROP_SOCKET:
-            protocol->thrift_socket = g_value_get_object (value);
-            break;
-    }
+  ThriftProtocol * protocol = THRIFT_PROTOCOL (object);
+  /* TODO: we could check that pspec is the type we want, not sure that's nec
+   * TODO: proper error here */
+  switch (property_id)
+  {
+      case PROP_SOCKET:
+        protocol->thrift_socket = g_value_get_object (value);
+        break;
+  }
 }
 
 void _thrift_protocol_get_property (GObject * object, guint property_id,
                                     GValue * value, GParamSpec * pspec)
 {
-    ThriftProtocol * protocol = THRIFT_PROTOCOL (object);
-    /* TODO: we could check that pspec is the type we want, not sure that's nec
-     * TODO: proper error here */
-    switch (property_id)
-    {
-        case PROP_SOCKET:
-            g_value_set_object (value, protocol->thrift_socket);
-            break;
-    }
+  ThriftProtocol * protocol = THRIFT_PROTOCOL (object);
+  /* TODO: we could check that pspec is the type we want, not sure that's nec
+   * TODO: proper error here */
+  switch (property_id)
+  {
+      case PROP_SOCKET:
+        g_value_set_object (value, protocol->thrift_socket);
+        break;
+  }
 }
 
 static void _thrift_protocol_instance_init (ThriftProtocol * protocol)
 {
-    protocol->thrift_socket = NULL;
+  protocol->thrift_socket = NULL;
 }
 
 static void _thrift_protocol_class_init (ThriftProtocolClass * klass)
 {
-    GObjectClass * gobject_class = G_OBJECT_CLASS (klass);
-    GParamSpec * param_spec;
+  GObjectClass * gobject_class = G_OBJECT_CLASS (klass);
+  GParamSpec * param_spec;
 
-    gobject_class->set_property = _thrift_protocol_set_property;
-    gobject_class->get_property = _thrift_protocol_get_property;
+  gobject_class->set_property = _thrift_protocol_set_property;
+  gobject_class->get_property = _thrift_protocol_get_property;
 
-    param_spec = g_param_spec_object ("socket",
-                                      "socket (construct)",
-                                      "Set the socket of the protocol",
-                                      THRIFT_TYPE_SOCKET,
-                                      G_PARAM_CONSTRUCT_ONLY |
-                                      G_PARAM_READWRITE);
-    g_object_class_install_property (gobject_class, PROP_SOCKET, param_spec);
+  param_spec = g_param_spec_object ("socket",
+                                    "socket (construct)",
+                                    "Set the socket of the protocol",
+                                    THRIFT_TYPE_SOCKET,
+                                    G_PARAM_CONSTRUCT_ONLY |
+                                    G_PARAM_READWRITE);
+  g_object_class_install_property (gobject_class, PROP_SOCKET, param_spec);
 }
 
 GType thrift_protocol_get_type (void)
 {
-    static GType type = 0;
+  static GType type = 0;
 
-    if (type == 0)
+  if (type == 0)
+  {
+    static const GTypeInfo type_info =
     {
-        static const GTypeInfo type_info =
-        {
-            sizeof (ThriftProtocolClass),
-            NULL, /* base_init */
-            NULL, /* base_finalize */
-            (GClassInitFunc)_thrift_protocol_class_init,
-            NULL, /* class_finalize */
-            NULL, /* class_data */
-            sizeof (ThriftProtocol),
-            0, /* n_preallocs */
-            (GInstanceInitFunc)_thrift_protocol_instance_init,
-            NULL, /* value_table */
-        };
+      sizeof (ThriftProtocolClass),
+      NULL, /* base_init */
+      NULL, /* base_finalize */
+      (GClassInitFunc)_thrift_protocol_class_init,
+      NULL, /* class_finalize */
+      NULL, /* class_data */
+      sizeof (ThriftProtocol),
+      0, /* n_preallocs */
+      (GInstanceInitFunc)_thrift_protocol_instance_init,
+      NULL, /* value_table */
+    };
 
-        type = g_type_register_static (G_TYPE_OBJECT,
-                                       "ThriftProtocolType",
-                                       &type_info, 0);
-    }
+    type = g_type_register_static (G_TYPE_OBJECT,
+                                   "ThriftProtocolType",
+                                   &type_info, 0);
+  }
 
-    return type;
+  return type;
 }

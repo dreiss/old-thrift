@@ -11,7 +11,7 @@
 #include "thrudoc.h"
 
 #define HOST "localhost"
-#define PORT 2008
+#define PORT 9091
 
 guint32 Thrudoc_admin_args_write (ThriftProtocol * prot, const gchar * op, 
                                   const gchar * data)
@@ -75,12 +75,6 @@ void ThrudocClient_send_putList (ThriftProtocol * prot, GPtrArray * elements)
 
 int main (int argc, char **argv)
 {
-    char hostname[100] = HOST;
-    int	sd;
-    struct sockaddr_in sin;
-    struct sockaddr_in pin;
-    struct hostent *hp;
-
     g_type_init ();
 
     ThriftSocket * socket = g_object_new (THRIFT_TYPE_SOCKET,
@@ -92,6 +86,10 @@ int main (int argc, char **argv)
     ThriftProtocol * prot = g_object_new (THRIFT_TYPE_PROTOCOL, 
                                           "socket", socket, 
                                           NULL);
+
+    ThriftThrudocClient * client = g_object_new (THRIFT_THRUDOC_TYPE_CLIENT,
+                                                 "protocol", prot, 
+                                                 NULL);
 
     if (0)
     {
@@ -108,6 +106,11 @@ int main (int argc, char **argv)
 
     thrift_socket_connect (socket);
 
+    GPtrArray * _return;
+    thrift_thrudoc_get_buckets (client, &_return);
+
+#if 0
+
     gchar str[1024];
     g_sprintf (str, "%s\n", argv[1]);
     thrift_protocol_write_string (prot, str);
@@ -117,6 +120,7 @@ int main (int argc, char **argv)
 
     /* spew-out the results and bail out of here! */
     printf ("ret: %s", in_buf);
+
 
     ThrudocClient_send_admin (prot, "echo", "hello there");
 
@@ -134,6 +138,7 @@ int main (int argc, char **argv)
     g_ptr_array_add (elements, te);
     ThrudocClient_send_putList (prot, elements);
     g_ptr_array_free (elements, 1);
+#endif
 
-    close (sd);
+    return 0;
 }

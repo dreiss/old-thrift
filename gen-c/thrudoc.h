@@ -21,6 +21,14 @@ struct _ThriftThrudocClientClass
 
 };
 
+GType thrift_thrudoc_client_get_type (void);
+#define THRIFT_THRUDOC_TYPE_CLIENT (thrift_thrudoc_client_get_type ())
+#define THRIFT_THRUDOC_CLIENT(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), THRIFT_THRUDOC_TYPE_CLIENT, ThriftThrudocClientClass))
+#define THRIFT_THRUDOC_CLIENT_CLASS(c) (G_TYPE_CHECK_CLASS_CAST ((c), THRIFT_THRUDOC_TYPE_CLIENT, ThriftThrudocClientClass))
+#define THRIFT_THRUDOC_IS_CLIENT(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), THRIFT_THRUDOC_TYPE_CLIENT))
+#define THRIFT_THRUDOC_IS_CLIENT_CLASS(c) (G_TYPE_CHECK_CLASS_TYPE ((c), THRIFT_THRUDOC_TYPE_CLIENT))
+#define THRIFT_THRUDOC_CLIENT_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), THRIFT_THRUDOC_TYPE_CLIENT, ThriftThrudocClientClass))
+
 void thrift_thrudoc_get_buckets (ThriftThrudocClient * client, GPtrArray ** _return);
 void thrift_thrudoc_send_get_buckets (ThriftThrudocClient * client);
 void thrift_thrudoc_recv_get_buckets (ThriftThrudocClient * client, GPtrArray ** _return);

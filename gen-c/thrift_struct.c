@@ -5,6 +5,11 @@
 
 #include "thrift_struct.h"
 
+gint32 thrift_struct_read (ThriftStruct * object, ThriftProtocol * thrift_protocol)
+{
+    return THRIFT_STRUCT_GET_CLASS (object)->read (object, thrift_protocol);
+}
+
 gint32 thrift_struct_write (ThriftStruct * object, ThriftProtocol * thrift_protocol)
 {
     return THRIFT_STRUCT_GET_CLASS (object)->write (object, thrift_protocol);
