@@ -143,6 +143,37 @@ class TBinaryProtocolAcceleratedTest < Test::Unit::TestCase
     assert_equal decoded.set.values, [true]
   end
   
+  if ENV['MEM_TEST']
+    def test_for_memory_leaks_on_exceptions
+      ooe = Fixtures::Structs::OneOfEach.new
+      ooe.im_true   = true
+      ooe.im_false  = false
+      ooe.a_bite    = -42
+      ooe.integer16 = 27000
+      ooe.integer32 = 1<<24
+      ooe.integer64 = 6000 * 1000 * 1000
+      ooe.double_precision = Math::PI
+      ooe.some_characters  = "Debug THIS!"
+      ooe.zomg_unicode     = "\xd7\n\a\t"
+    
+      10_000.times do
+        data = @fast_proto.encode_binary(ooe)
+        bytes = []
+        data.each_byte do |b|
+          bytes << b
+          transport = TMemoryBuffer.new
+          transport.write(bytes.pack("c#{bytes.length}"))
+      
+          begin
+            @fast_proto.decode_binary(Fixtures::Structs::OneOfEach.new, transport)
+          rescue Exception
+          end
+        end
+      end
+    
+    end
+  end
+  
   unless ENV['FAST_TEST']
     def test_encodes_and_decodes_struct_of_structs
       ooe = Fixtures::Structs::OneOfEach.new
