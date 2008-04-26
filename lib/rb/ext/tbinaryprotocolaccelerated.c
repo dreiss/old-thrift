@@ -616,13 +616,26 @@ static double read_double(decode_buffer* buf) {
   return transfer.f;
 }
 
-static thrift_string read_string(decode_buffer* buf) {
-  thrift_string data;
-  data.len = read_int32(buf);
-  data.ptr = (char*) malloc(data.len);
-  read_bytes(buf, data.ptr, data.len);
+static VALUE read_string(decode_buffer* buf) {
+  VALUE ret_str;
+  int len = read_int32(buf);
   
-  return data;
+  if (buf->len - buf->pos >= len) {
+    ret_str = rb_str_new(buf->data + buf->pos, len);
+    buf->pos += len;
+  } 
+  else {
+    char* str;
+    
+    str = (char*) malloc(len);
+    
+    read_bytes(buf, str, len);
+    ret_str = rb_str_new(str, len);
+    
+    free(str);
+  }
+  
+  return ret_str;
 }
 
 static void read_field_begin(decode_buffer* buf, field_header* header) {
@@ -696,8 +709,7 @@ static VALUE read_type(int type, decode_buffer* buf) {
       return rb_float_new(read_double(buf));
 
     case T_STR: {
-      thrift_string str = read_string(buf);
-      return rb_str_new(str.ptr, str.len);
+      return read_string(buf);
     }
   }
   
@@ -863,7 +875,7 @@ static VALUE tbpa_read_message_begin(VALUE self) {
   decode_buffer buf;
   int32_t version, seqid;
   int8_t type;
-  thrift_string name;
+  VALUE name;
   
   VALUE trans = rb_iv_get(self, "@trans");
   
@@ -885,7 +897,7 @@ static VALUE tbpa_read_message_begin(VALUE self) {
 
   consume(&buf, buf.pos);
   
-  return rb_ary_new3(3, rb_str_new(name.ptr, name.len), INT2FIX(type), INT2FIX(seqid));
+  return rb_ary_new3(3, name, INT2FIX(type), INT2FIX(seqid));
 }
 
 void Init_tbinaryprotocolaccelerated()
