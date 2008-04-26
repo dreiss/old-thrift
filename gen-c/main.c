@@ -8,7 +8,7 @@
 
 #include "thrift_socket.h"
 #include "thrift_protocol.h"
-#include "Thrudoc_types.h"
+#include "thrudoc.h"
 
 #define HOST "localhost"
 #define PORT 2008

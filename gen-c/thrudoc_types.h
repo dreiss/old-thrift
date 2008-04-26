@@ -3,8 +3,8 @@
  *
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  */
-#ifndef Thrudoc_TYPES_H
-#define Thrudoc_TYPES_H
+#ifndef THRUDOC_TYPES_H
+#define THRUDOC_TYPES_H
 
 /* base includes */
 #include <glib-object.h>
@@ -117,4 +117,4 @@ GType thrift_thrudoc_list_response_get_type (void);
 #define THRIFT_THRUDOC_IS_LIST_RESPONSE_CLASS(c) (G_TYPE_CHECK_CLASS_TYPE ((c), THRIFT_THRUDOC_TYPE_LIST_RESPONSE))
 #define THRIFT_THRUDOC_LIST_RESPONSE_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), THRIFT_THRUDOC_TYPE_LIST_RESPONSE, ThriftThrudocListResponseClass))
 
-#endif /* Thrudoc_TYPES_H */
+#endif /* THRUDOC_TYPES_H */

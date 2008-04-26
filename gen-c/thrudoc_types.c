@@ -4,7 +4,7 @@
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  */
 
-#include "Thrudoc_types.h"
+#include "thrudoc_types.h"
 
 gint32 thrift_thrudoc_thrudoc_exception_write (ThriftStruct * object, ThriftProtocol * thrift_protocol)
 {
