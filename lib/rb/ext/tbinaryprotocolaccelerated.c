@@ -398,8 +398,10 @@ static int encode_field(VALUE fid, VALUE data, VALUE ary) {
   // TODO(kevinclark): Replace with the strlcpy method used in read
   VALUE value = rb_ivar_get(obj, rb_intern(name_buf));
   
-  if (Qnil == value)
+  if (Qnil == value) {
+    free_field_spec(spec);
     return 0;
+  }
      
   write_field_begin(buf, spec->name, spec->type, NUM2INT(fid));
   
