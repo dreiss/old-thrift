@@ -19,98 +19,40 @@ struct _ThriftThrudocClientClass
 {
   ThriftClientClass parent;
 
-  void getBuckets(GPtrArray ** _return);
-  void send_getBuckets();
-  void recv_getBuckets(GPtrArray ** _return);
-  void put(const gchar * bucket, const gchar * key, const gchar * value);
-  void send_put(const gchar * bucket, const gchar * key, const gchar * value);
-  void recv_put();
-  void get(gchar ** _return, const gchar * bucket, const gchar * key);
-  void send_get(const gchar * bucket, const gchar * key);
-  void recv_get(gchar ** _return);
-  void remove(const gchar * bucket, const gchar * key);
-  void send_remove(const gchar * bucket, const gchar * key);
-  void recv_remove();
-  void putValue(gchar ** _return, const gchar * bucket, const gchar * value);
-  void send_putValue(const gchar * bucket, const gchar * value);
-  void recv_putValue(gchar ** _return);
-  void scan(ThriftThrudocScanResponse ** _return, const gchar * bucket, const gchar * seed, const gint32 count);
-  void send_scan(const gchar * bucket, const gchar * seed, const gint32 count);
-  void recv_scan(ThriftThrudocScanResponse ** _return);
-  void putList(GPtrArray ** _return, const GPtrArray * elements);
-  void send_putList(const GPtrArray * elements);
-  void recv_putList(GPtrArray ** _return);
-  void getList(GPtrArray ** _return, const GPtrArray * elements);
-  void send_getList(const GPtrArray * elements);
-  void recv_getList(GPtrArray ** _return);
-  void removeList(GPtrArray ** _return, const GPtrArray * elements);
-  void send_removeList(const GPtrArray * elements);
-  void recv_removeList(GPtrArray ** _return);
-  void putValueList(GPtrArray ** _return, const GPtrArray * elements);
-  void send_putValueList(const GPtrArray * elements);
-  void recv_putValueList(GPtrArray ** _return);
-  void admin(gchar ** _return, const gchar * op, const gchar * data);
-  void send_admin(const gchar * op, const gchar * data);
-  void recv_admin(gchar ** _return);
-}
-class ThrudocClient : virtual public ThrudocIf {
- public:
-  ThrudocClient(boost::shared_ptr<facebook::thrift::protocol::TProtocol> prot) :
-    piprot_(prot),
-    poprot_(prot) {
-    iprot_ = prot.get();
-    oprot_ = prot.get();
-  }
-  ThrudocClient(boost::shared_ptr<facebook::thrift::protocol::TProtocol> iprot, boost::shared_ptr<facebook::thrift::protocol::TProtocol> oprot) :
-    piprot_(iprot),
-    poprot_(oprot) {
-    iprot_ = iprot.get();
-    oprot_ = oprot.get();
-  }
-  boost::shared_ptr<facebook::thrift::protocol::TProtocol> getInputProtocol() {
-    return piprot_;
-  }
-  boost::shared_ptr<facebook::thrift::protocol::TProtocol> getOutputProtocol() {
-    return poprot_;
-  }
-  void getBuckets(GPtrArray ** _return);
-  void send_getBuckets();
-  void recv_getBuckets(GPtrArray ** _return);
-  void put(const gchar * bucket, const gchar * key, const gchar * value);
-  void send_put(const gchar * bucket, const gchar * key, const gchar * value);
-  void recv_put();
-  void get(gchar ** _return, const gchar * bucket, const gchar * key);
-  void send_get(const gchar * bucket, const gchar * key);
-  void recv_get(gchar ** _return);
-  void remove(const gchar * bucket, const gchar * key);
-  void send_remove(const gchar * bucket, const gchar * key);
-  void recv_remove();
-  void putValue(gchar ** _return, const gchar * bucket, const gchar * value);
-  void send_putValue(const gchar * bucket, const gchar * value);
-  void recv_putValue(gchar ** _return);
-  void scan(ThriftThrudocScanResponse ** _return, const gchar * bucket, const gchar * seed, const gint32 count);
-  void send_scan(const gchar * bucket, const gchar * seed, const gint32 count);
-  void recv_scan(ThriftThrudocScanResponse ** _return);
-  void putList(GPtrArray ** _return, const GPtrArray * elements);
-  void send_putList(const GPtrArray * elements);
-  void recv_putList(GPtrArray ** _return);
-  void getList(GPtrArray ** _return, const GPtrArray * elements);
-  void send_getList(const GPtrArray * elements);
-  void recv_getList(GPtrArray ** _return);
-  void removeList(GPtrArray ** _return, const GPtrArray * elements);
-  void send_removeList(const GPtrArray * elements);
-  void recv_removeList(GPtrArray ** _return);
-  void putValueList(GPtrArray ** _return, const GPtrArray * elements);
-  void send_putValueList(const GPtrArray * elements);
-  void recv_putValueList(GPtrArray ** _return);
-  void admin(gchar ** _return, const gchar * op, const gchar * data);
-  void send_admin(const gchar * op, const gchar * data);
-  void recv_admin(gchar ** _return);
- protected:
-  boost::shared_ptr<facebook::thrift::protocol::TProtocol> piprot_;
-  boost::shared_ptr<facebook::thrift::protocol::TProtocol> poprot_;
-  facebook::thrift::protocol::TProtocol* iprot_;
-  facebook::thrift::protocol::TProtocol* oprot_;
 };
 
-#endif
+void thrift_thrudoc_get_buckets (ThriftThrudocClient * client, GPtrArray ** _return);
+void thrift_thrudoc_send_get_buckets (ThriftThrudocClient * client);
+void thrift_thrudoc_recv_get_buckets (ThriftThrudocClient * client, GPtrArray ** _return);
+void thrift_thrudoc_put (ThriftThrudocClient * client, const gchar * bucket, const gchar * key, const gchar * value);
+void thrift_thrudoc_send_put (ThriftThrudocClient * client, const gchar * bucket, const gchar * key, const gchar * value);
+void thrift_thrudoc_recv_put (ThriftThrudocClient * client);
+void thrift_thrudoc_get (ThriftThrudocClient * client, gchar ** _return, const gchar * bucket, const gchar * key);
+void thrift_thrudoc_send_get (ThriftThrudocClient * client, const gchar * bucket, const gchar * key);
+void thrift_thrudoc_recv_get (ThriftThrudocClient * client, gchar ** _return);
+void thrift_thrudoc_remove (ThriftThrudocClient * client, const gchar * bucket, const gchar * key);
+void thrift_thrudoc_send_remove (ThriftThrudocClient * client, const gchar * bucket, const gchar * key);
+void thrift_thrudoc_recv_remove (ThriftThrudocClient * client);
+void thrift_thrudoc_put_value (ThriftThrudocClient * client, gchar ** _return, const gchar * bucket, const gchar * value);
+void thrift_thrudoc_send_put_value (ThriftThrudocClient * client, const gchar * bucket, const gchar * value);
+void thrift_thrudoc_recv_put_value (ThriftThrudocClient * client, gchar ** _return);
+void thrift_thrudoc_scan (ThriftThrudocClient * client, ThriftThrudocScanResponse ** _return, const gchar * bucket, const gchar * seed, const gint32 count);
+void thrift_thrudoc_send_scan (ThriftThrudocClient * client, const gchar * bucket, const gchar * seed, const gint32 count);
+void thrift_thrudoc_recv_scan (ThriftThrudocClient * client, ThriftThrudocScanResponse ** _return);
+void thrift_thrudoc_put_list (ThriftThrudocClient * client, GPtrArray ** _return, const GPtrArray * elements);
+void thrift_thrudoc_send_put_list (ThriftThrudocClient * client, const GPtrArray * elements);
+void thrift_thrudoc_recv_put_list (ThriftThrudocClient * client, GPtrArray ** _return);
+void thrift_thrudoc_get_list (ThriftThrudocClient * client, GPtrArray ** _return, const GPtrArray * elements);
+void thrift_thrudoc_send_get_list (ThriftThrudocClient * client, const GPtrArray * elements);
+void thrift_thrudoc_recv_get_list (ThriftThrudocClient * client, GPtrArray ** _return);
+void thrift_thrudoc_remove_list (ThriftThrudocClient * client, GPtrArray ** _return, const GPtrArray * elements);
+void thrift_thrudoc_send_remove_list (ThriftThrudocClient * client, const GPtrArray * elements);
+void thrift_thrudoc_recv_remove_list (ThriftThrudocClient * client, GPtrArray ** _return);
+void thrift_thrudoc_put_value_list (ThriftThrudocClient * client, GPtrArray ** _return, const GPtrArray * elements);
+void thrift_thrudoc_send_put_value_list (ThriftThrudocClient * client, const GPtrArray * elements);
+void thrift_thrudoc_recv_put_value_list (ThriftThrudocClient * client, GPtrArray ** _return);
+void thrift_thrudoc_admin (ThriftThrudocClient * client, gchar ** _return, const gchar * op, const gchar * data);
+void thrift_thrudoc_send_admin (ThriftThrudocClient * client, const gchar * op, const gchar * data);
+void thrift_thrudoc_recv_admin (ThriftThrudocClient * client, gchar ** _return);
+
+#endif /* thrudoc_H */

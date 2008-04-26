@@ -5,78 +5,41 @@
  */
 #include "thrudoc.h"
 
-void ThrudocClient::getBuckets(GPtrArray ** _return)
+void thrift_thrudoc_get_buckets (ThriftThrudocClient * client, GPtrArray ** _return)
 {
-  send_getBuckets();
-  recv_getBuckets(_return);
+  thrift_thrudoc_send_get_buckets (client);
+  thrift_thrudoc_recv_get_buckets (client, _return);
 }
 
-void ThrudocClient::send_getBuckets()
+void thrift_thrudoc_send_get_buckets (ThriftThrudocClient * client)
 {
-  int32_t cseqid = 0;
-  oprot_->writeMessageBegin("getBuckets", facebook::thrift::protocol::T_CALL, cseqid);
+  gint32 cseqid = 0;
+  ThriftProtocol * thrift_protocol = THRIFT_CLIENT (client)->thrift_protocol;
+
+  thrift_protocol_write_message_begin (thrift_protocol, "getBuckets", T_CALL, cseqid);
 
   Thrudoc_getBuckets_pargs args;
   args.write(oprot_);
 
-  oprot_->writeMessageEnd();
-  oprot_->getTransport()->flush();
-  oprot_->getTransport()->writeEnd();
+  thrift_protocol_write_message_end (thrift_protocol);
 }
 
-void ThrudocClient::recv_getBuckets(GPtrArray ** _return)
+void thrift_thrudoc_recv_get_buckets (ThriftThrudocClient * client, GPtrArray ** _return)
 {
-
-  int32_t rseqid = 0;
-  std::string fname;
-  facebook::thrift::protocol::TMessageType mtype;
-
-  iprot_->readMessageBegin(fname, mtype, rseqid);
-  if (mtype == facebook::thrift::protocol::T_EXCEPTION) {
-    facebook::thrift::TApplicationException x;
-    x.read(iprot_);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw x;
-  }
-  if (mtype != facebook::thrift::protocol::T_REPLY) {
-    iprot_->skip(facebook::thrift::protocol::T_STRUCT);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE);
-  }
-  if (fname.compare("getBuckets") != 0) {
-    iprot_->skip(facebook::thrift::protocol::T_STRUCT);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME);
-  }
-  Thrudoc_getBuckets_presult result;
-  result.success = &_return;
-  result.read(iprot_);
-  iprot_->readMessageEnd();
-  iprot_->getTransport()->readEnd();
-
-  if (result.__isset.success) {
-    // _return pointer has now been filled
-    return;
-  }
-  if (result.__isset.e) {
-    throw result.e;
-  }
-  throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::MISSING_RESULT, "getBuckets failed: unknown result");
 }
 
-void ThrudocClient::put(const gchar * bucket, const gchar * key, const gchar * value)
+void thrift_thrudoc_put (ThriftThrudocClient * client, const gchar * bucket, const gchar * key, const gchar * value)
 {
-  send_put(bucket, key, value);
-  recv_put();
+  thrift_thrudoc_send_put (client, bucket, key, value);
+  thrift_thrudoc_recv_put (client);
 }
 
-void ThrudocClient::send_put(const gchar * bucket, const gchar * key, const gchar * value)
+void thrift_thrudoc_send_put (ThriftThrudocClient * client, const gchar * bucket, const gchar * key, const gchar * value)
 {
-  int32_t cseqid = 0;
-  oprot_->writeMessageBegin("put", facebook::thrift::protocol::T_CALL, cseqid);
+  gint32 cseqid = 0;
+  ThriftProtocol * thrift_protocol = THRIFT_CLIENT (client)->thrift_protocol;
+
+  thrift_protocol_write_message_begin (thrift_protocol, "put", T_CALL, cseqid);
 
   Thrudoc_put_pargs args;
   args.bucket = &bucket;
@@ -84,246 +47,100 @@ void ThrudocClient::send_put(const gchar * bucket, const gchar * key, const gcha
   args.value = &value;
   args.write(oprot_);
 
-  oprot_->writeMessageEnd();
-  oprot_->getTransport()->flush();
-  oprot_->getTransport()->writeEnd();
+  thrift_protocol_write_message_end (thrift_protocol);
 }
 
-void ThrudocClient::recv_put()
+void thrift_thrudoc_recv_put (ThriftThrudocClient * client)
 {
-
-  int32_t rseqid = 0;
-  std::string fname;
-  facebook::thrift::protocol::TMessageType mtype;
-
-  iprot_->readMessageBegin(fname, mtype, rseqid);
-  if (mtype == facebook::thrift::protocol::T_EXCEPTION) {
-    facebook::thrift::TApplicationException x;
-    x.read(iprot_);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw x;
-  }
-  if (mtype != facebook::thrift::protocol::T_REPLY) {
-    iprot_->skip(facebook::thrift::protocol::T_STRUCT);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE);
-  }
-  if (fname.compare("put") != 0) {
-    iprot_->skip(facebook::thrift::protocol::T_STRUCT);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME);
-  }
-  Thrudoc_put_presult result;
-  result.read(iprot_);
-  iprot_->readMessageEnd();
-  iprot_->getTransport()->readEnd();
-
-  if (result.__isset.e) {
-    throw result.e;
-  }
-  return;
 }
 
-void ThrudocClient::get(gchar ** _return, const gchar * bucket, const gchar * key)
+void thrift_thrudoc_get (ThriftThrudocClient * client, gchar ** _return, const gchar * bucket, const gchar * key)
 {
-  send_get(bucket, key);
-  recv_get(_return);
+  thrift_thrudoc_send_get (client, bucket, key);
+  thrift_thrudoc_recv_get (client, _return);
 }
 
-void ThrudocClient::send_get(const gchar * bucket, const gchar * key)
+void thrift_thrudoc_send_get (ThriftThrudocClient * client, const gchar * bucket, const gchar * key)
 {
-  int32_t cseqid = 0;
-  oprot_->writeMessageBegin("get", facebook::thrift::protocol::T_CALL, cseqid);
+  gint32 cseqid = 0;
+  ThriftProtocol * thrift_protocol = THRIFT_CLIENT (client)->thrift_protocol;
+
+  thrift_protocol_write_message_begin (thrift_protocol, "get", T_CALL, cseqid);
 
   Thrudoc_get_pargs args;
   args.bucket = &bucket;
   args.key = &key;
   args.write(oprot_);
 
-  oprot_->writeMessageEnd();
-  oprot_->getTransport()->flush();
-  oprot_->getTransport()->writeEnd();
+  thrift_protocol_write_message_end (thrift_protocol);
 }
 
-void ThrudocClient::recv_get(gchar ** _return)
+void thrift_thrudoc_recv_get (ThriftThrudocClient * client, gchar ** _return)
 {
-
-  int32_t rseqid = 0;
-  std::string fname;
-  facebook::thrift::protocol::TMessageType mtype;
-
-  iprot_->readMessageBegin(fname, mtype, rseqid);
-  if (mtype == facebook::thrift::protocol::T_EXCEPTION) {
-    facebook::thrift::TApplicationException x;
-    x.read(iprot_);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw x;
-  }
-  if (mtype != facebook::thrift::protocol::T_REPLY) {
-    iprot_->skip(facebook::thrift::protocol::T_STRUCT);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE);
-  }
-  if (fname.compare("get") != 0) {
-    iprot_->skip(facebook::thrift::protocol::T_STRUCT);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME);
-  }
-  Thrudoc_get_presult result;
-  result.success = &_return;
-  result.read(iprot_);
-  iprot_->readMessageEnd();
-  iprot_->getTransport()->readEnd();
-
-  if (result.__isset.success) {
-    // _return pointer has now been filled
-    return;
-  }
-  if (result.__isset.e) {
-    throw result.e;
-  }
-  throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::MISSING_RESULT, "get failed: unknown result");
 }
 
-void ThrudocClient::remove(const gchar * bucket, const gchar * key)
+void thrift_thrudoc_remove (ThriftThrudocClient * client, const gchar * bucket, const gchar * key)
 {
-  send_remove(bucket, key);
-  recv_remove();
+  thrift_thrudoc_send_remove (client, bucket, key);
+  thrift_thrudoc_recv_remove (client);
 }
 
-void ThrudocClient::send_remove(const gchar * bucket, const gchar * key)
+void thrift_thrudoc_send_remove (ThriftThrudocClient * client, const gchar * bucket, const gchar * key)
 {
-  int32_t cseqid = 0;
-  oprot_->writeMessageBegin("remove", facebook::thrift::protocol::T_CALL, cseqid);
+  gint32 cseqid = 0;
+  ThriftProtocol * thrift_protocol = THRIFT_CLIENT (client)->thrift_protocol;
+
+  thrift_protocol_write_message_begin (thrift_protocol, "remove", T_CALL, cseqid);
 
   Thrudoc_remove_pargs args;
   args.bucket = &bucket;
   args.key = &key;
   args.write(oprot_);
 
-  oprot_->writeMessageEnd();
-  oprot_->getTransport()->flush();
-  oprot_->getTransport()->writeEnd();
+  thrift_protocol_write_message_end (thrift_protocol);
 }
 
-void ThrudocClient::recv_remove()
+void thrift_thrudoc_recv_remove (ThriftThrudocClient * client)
 {
-
-  int32_t rseqid = 0;
-  std::string fname;
-  facebook::thrift::protocol::TMessageType mtype;
-
-  iprot_->readMessageBegin(fname, mtype, rseqid);
-  if (mtype == facebook::thrift::protocol::T_EXCEPTION) {
-    facebook::thrift::TApplicationException x;
-    x.read(iprot_);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw x;
-  }
-  if (mtype != facebook::thrift::protocol::T_REPLY) {
-    iprot_->skip(facebook::thrift::protocol::T_STRUCT);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE);
-  }
-  if (fname.compare("remove") != 0) {
-    iprot_->skip(facebook::thrift::protocol::T_STRUCT);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME);
-  }
-  Thrudoc_remove_presult result;
-  result.read(iprot_);
-  iprot_->readMessageEnd();
-  iprot_->getTransport()->readEnd();
-
-  if (result.__isset.e) {
-    throw result.e;
-  }
-  return;
 }
 
-void ThrudocClient::putValue(gchar ** _return, const gchar * bucket, const gchar * value)
+void thrift_thrudoc_put_value (ThriftThrudocClient * client, gchar ** _return, const gchar * bucket, const gchar * value)
 {
-  send_putValue(bucket, value);
-  recv_putValue(_return);
+  thrift_thrudoc_send_put_value (client, bucket, value);
+  thrift_thrudoc_recv_put_value (client, _return);
 }
 
-void ThrudocClient::send_putValue(const gchar * bucket, const gchar * value)
+void thrift_thrudoc_send_put_value (ThriftThrudocClient * client, const gchar * bucket, const gchar * value)
 {
-  int32_t cseqid = 0;
-  oprot_->writeMessageBegin("putValue", facebook::thrift::protocol::T_CALL, cseqid);
+  gint32 cseqid = 0;
+  ThriftProtocol * thrift_protocol = THRIFT_CLIENT (client)->thrift_protocol;
+
+  thrift_protocol_write_message_begin (thrift_protocol, "putValue", T_CALL, cseqid);
 
   Thrudoc_putValue_pargs args;
   args.bucket = &bucket;
   args.value = &value;
   args.write(oprot_);
 
-  oprot_->writeMessageEnd();
-  oprot_->getTransport()->flush();
-  oprot_->getTransport()->writeEnd();
+  thrift_protocol_write_message_end (thrift_protocol);
 }
 
-void ThrudocClient::recv_putValue(gchar ** _return)
+void thrift_thrudoc_recv_put_value (ThriftThrudocClient * client, gchar ** _return)
 {
-
-  int32_t rseqid = 0;
-  std::string fname;
-  facebook::thrift::protocol::TMessageType mtype;
-
-  iprot_->readMessageBegin(fname, mtype, rseqid);
-  if (mtype == facebook::thrift::protocol::T_EXCEPTION) {
-    facebook::thrift::TApplicationException x;
-    x.read(iprot_);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw x;
-  }
-  if (mtype != facebook::thrift::protocol::T_REPLY) {
-    iprot_->skip(facebook::thrift::protocol::T_STRUCT);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE);
-  }
-  if (fname.compare("putValue") != 0) {
-    iprot_->skip(facebook::thrift::protocol::T_STRUCT);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME);
-  }
-  Thrudoc_putValue_presult result;
-  result.success = &_return;
-  result.read(iprot_);
-  iprot_->readMessageEnd();
-  iprot_->getTransport()->readEnd();
-
-  if (result.__isset.success) {
-    // _return pointer has now been filled
-    return;
-  }
-  if (result.__isset.e) {
-    throw result.e;
-  }
-  throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::MISSING_RESULT, "putValue failed: unknown result");
 }
 
-void ThrudocClient::scan(ThriftThrudocScanResponse ** _return, const gchar * bucket, const gchar * seed, const gint32 count)
+void thrift_thrudoc_scan (ThriftThrudocClient * client, ThriftThrudocScanResponse ** _return, const gchar * bucket, const gchar * seed, const gint32 count)
 {
-  send_scan(bucket, seed, count);
-  recv_scan(_return);
+  thrift_thrudoc_send_scan (client, bucket, seed, count);
+  thrift_thrudoc_recv_scan (client, _return);
 }
 
-void ThrudocClient::send_scan(const gchar * bucket, const gchar * seed, const gint32 count)
+void thrift_thrudoc_send_scan (ThriftThrudocClient * client, const gchar * bucket, const gchar * seed, const gint32 count)
 {
-  int32_t cseqid = 0;
-  oprot_->writeMessageBegin("scan", facebook::thrift::protocol::T_CALL, cseqid);
+  gint32 cseqid = 0;
+  ThriftProtocol * thrift_protocol = THRIFT_CLIENT (client)->thrift_protocol;
+
+  thrift_protocol_write_message_begin (thrift_protocol, "scan", T_CALL, cseqid);
 
   Thrudoc_scan_pargs args;
   args.bucket = &bucket;
@@ -331,367 +148,131 @@ void ThrudocClient::send_scan(const gchar * bucket, const gchar * seed, const gi
   args.count = &count;
   args.write(oprot_);
 
-  oprot_->writeMessageEnd();
-  oprot_->getTransport()->flush();
-  oprot_->getTransport()->writeEnd();
+  thrift_protocol_write_message_end (thrift_protocol);
 }
 
-void ThrudocClient::recv_scan(ThriftThrudocScanResponse ** _return)
+void thrift_thrudoc_recv_scan (ThriftThrudocClient * client, ThriftThrudocScanResponse ** _return)
 {
-
-  int32_t rseqid = 0;
-  std::string fname;
-  facebook::thrift::protocol::TMessageType mtype;
-
-  iprot_->readMessageBegin(fname, mtype, rseqid);
-  if (mtype == facebook::thrift::protocol::T_EXCEPTION) {
-    facebook::thrift::TApplicationException x;
-    x.read(iprot_);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw x;
-  }
-  if (mtype != facebook::thrift::protocol::T_REPLY) {
-    iprot_->skip(facebook::thrift::protocol::T_STRUCT);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE);
-  }
-  if (fname.compare("scan") != 0) {
-    iprot_->skip(facebook::thrift::protocol::T_STRUCT);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME);
-  }
-  Thrudoc_scan_presult result;
-  result.success = &_return;
-  result.read(iprot_);
-  iprot_->readMessageEnd();
-  iprot_->getTransport()->readEnd();
-
-  if (result.__isset.success) {
-    // _return pointer has now been filled
-    return;
-  }
-  if (result.__isset.e) {
-    throw result.e;
-  }
-  throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::MISSING_RESULT, "scan failed: unknown result");
 }
 
-void ThrudocClient::putList(GPtrArray ** _return, const GPtrArray * elements)
+void thrift_thrudoc_put_list (ThriftThrudocClient * client, GPtrArray ** _return, const GPtrArray * elements)
 {
-  send_putList(elements);
-  recv_putList(_return);
+  thrift_thrudoc_send_put_list (client, elements);
+  thrift_thrudoc_recv_put_list (client, _return);
 }
 
-void ThrudocClient::send_putList(const GPtrArray * elements)
+void thrift_thrudoc_send_put_list (ThriftThrudocClient * client, const GPtrArray * elements)
 {
-  int32_t cseqid = 0;
-  oprot_->writeMessageBegin("putList", facebook::thrift::protocol::T_CALL, cseqid);
+  gint32 cseqid = 0;
+  ThriftProtocol * thrift_protocol = THRIFT_CLIENT (client)->thrift_protocol;
+
+  thrift_protocol_write_message_begin (thrift_protocol, "putList", T_CALL, cseqid);
 
   Thrudoc_putList_pargs args;
   args.elements = &elements;
   args.write(oprot_);
 
-  oprot_->writeMessageEnd();
-  oprot_->getTransport()->flush();
-  oprot_->getTransport()->writeEnd();
+  thrift_protocol_write_message_end (thrift_protocol);
 }
 
-void ThrudocClient::recv_putList(GPtrArray ** _return)
+void thrift_thrudoc_recv_put_list (ThriftThrudocClient * client, GPtrArray ** _return)
 {
-
-  int32_t rseqid = 0;
-  std::string fname;
-  facebook::thrift::protocol::TMessageType mtype;
-
-  iprot_->readMessageBegin(fname, mtype, rseqid);
-  if (mtype == facebook::thrift::protocol::T_EXCEPTION) {
-    facebook::thrift::TApplicationException x;
-    x.read(iprot_);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw x;
-  }
-  if (mtype != facebook::thrift::protocol::T_REPLY) {
-    iprot_->skip(facebook::thrift::protocol::T_STRUCT);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE);
-  }
-  if (fname.compare("putList") != 0) {
-    iprot_->skip(facebook::thrift::protocol::T_STRUCT);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME);
-  }
-  Thrudoc_putList_presult result;
-  result.success = &_return;
-  result.read(iprot_);
-  iprot_->readMessageEnd();
-  iprot_->getTransport()->readEnd();
-
-  if (result.__isset.success) {
-    // _return pointer has now been filled
-    return;
-  }
-  if (result.__isset.e) {
-    throw result.e;
-  }
-  throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::MISSING_RESULT, "putList failed: unknown result");
 }
 
-void ThrudocClient::getList(GPtrArray ** _return, const GPtrArray * elements)
+void thrift_thrudoc_get_list (ThriftThrudocClient * client, GPtrArray ** _return, const GPtrArray * elements)
 {
-  send_getList(elements);
-  recv_getList(_return);
+  thrift_thrudoc_send_get_list (client, elements);
+  thrift_thrudoc_recv_get_list (client, _return);
 }
 
-void ThrudocClient::send_getList(const GPtrArray * elements)
+void thrift_thrudoc_send_get_list (ThriftThrudocClient * client, const GPtrArray * elements)
 {
-  int32_t cseqid = 0;
-  oprot_->writeMessageBegin("getList", facebook::thrift::protocol::T_CALL, cseqid);
+  gint32 cseqid = 0;
+  ThriftProtocol * thrift_protocol = THRIFT_CLIENT (client)->thrift_protocol;
+
+  thrift_protocol_write_message_begin (thrift_protocol, "getList", T_CALL, cseqid);
 
   Thrudoc_getList_pargs args;
   args.elements = &elements;
   args.write(oprot_);
 
-  oprot_->writeMessageEnd();
-  oprot_->getTransport()->flush();
-  oprot_->getTransport()->writeEnd();
+  thrift_protocol_write_message_end (thrift_protocol);
 }
 
-void ThrudocClient::recv_getList(GPtrArray ** _return)
+void thrift_thrudoc_recv_get_list (ThriftThrudocClient * client, GPtrArray ** _return)
 {
-
-  int32_t rseqid = 0;
-  std::string fname;
-  facebook::thrift::protocol::TMessageType mtype;
-
-  iprot_->readMessageBegin(fname, mtype, rseqid);
-  if (mtype == facebook::thrift::protocol::T_EXCEPTION) {
-    facebook::thrift::TApplicationException x;
-    x.read(iprot_);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw x;
-  }
-  if (mtype != facebook::thrift::protocol::T_REPLY) {
-    iprot_->skip(facebook::thrift::protocol::T_STRUCT);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE);
-  }
-  if (fname.compare("getList") != 0) {
-    iprot_->skip(facebook::thrift::protocol::T_STRUCT);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME);
-  }
-  Thrudoc_getList_presult result;
-  result.success = &_return;
-  result.read(iprot_);
-  iprot_->readMessageEnd();
-  iprot_->getTransport()->readEnd();
-
-  if (result.__isset.success) {
-    // _return pointer has now been filled
-    return;
-  }
-  if (result.__isset.e) {
-    throw result.e;
-  }
-  throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::MISSING_RESULT, "getList failed: unknown result");
 }
 
-void ThrudocClient::removeList(GPtrArray ** _return, const GPtrArray * elements)
+void thrift_thrudoc_remove_list (ThriftThrudocClient * client, GPtrArray ** _return, const GPtrArray * elements)
 {
-  send_removeList(elements);
-  recv_removeList(_return);
+  thrift_thrudoc_send_remove_list (client, elements);
+  thrift_thrudoc_recv_remove_list (client, _return);
 }
 
-void ThrudocClient::send_removeList(const GPtrArray * elements)
+void thrift_thrudoc_send_remove_list (ThriftThrudocClient * client, const GPtrArray * elements)
 {
-  int32_t cseqid = 0;
-  oprot_->writeMessageBegin("removeList", facebook::thrift::protocol::T_CALL, cseqid);
+  gint32 cseqid = 0;
+  ThriftProtocol * thrift_protocol = THRIFT_CLIENT (client)->thrift_protocol;
+
+  thrift_protocol_write_message_begin (thrift_protocol, "removeList", T_CALL, cseqid);
 
   Thrudoc_removeList_pargs args;
   args.elements = &elements;
   args.write(oprot_);
 
-  oprot_->writeMessageEnd();
-  oprot_->getTransport()->flush();
-  oprot_->getTransport()->writeEnd();
+  thrift_protocol_write_message_end (thrift_protocol);
 }
 
-void ThrudocClient::recv_removeList(GPtrArray ** _return)
+void thrift_thrudoc_recv_remove_list (ThriftThrudocClient * client, GPtrArray ** _return)
 {
-
-  int32_t rseqid = 0;
-  std::string fname;
-  facebook::thrift::protocol::TMessageType mtype;
-
-  iprot_->readMessageBegin(fname, mtype, rseqid);
-  if (mtype == facebook::thrift::protocol::T_EXCEPTION) {
-    facebook::thrift::TApplicationException x;
-    x.read(iprot_);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw x;
-  }
-  if (mtype != facebook::thrift::protocol::T_REPLY) {
-    iprot_->skip(facebook::thrift::protocol::T_STRUCT);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE);
-  }
-  if (fname.compare("removeList") != 0) {
-    iprot_->skip(facebook::thrift::protocol::T_STRUCT);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME);
-  }
-  Thrudoc_removeList_presult result;
-  result.success = &_return;
-  result.read(iprot_);
-  iprot_->readMessageEnd();
-  iprot_->getTransport()->readEnd();
-
-  if (result.__isset.success) {
-    // _return pointer has now been filled
-    return;
-  }
-  if (result.__isset.e) {
-    throw result.e;
-  }
-  throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::MISSING_RESULT, "removeList failed: unknown result");
 }
 
-void ThrudocClient::putValueList(GPtrArray ** _return, const GPtrArray * elements)
+void thrift_thrudoc_put_value_list (ThriftThrudocClient * client, GPtrArray ** _return, const GPtrArray * elements)
 {
-  send_putValueList(elements);
-  recv_putValueList(_return);
+  thrift_thrudoc_send_put_value_list (client, elements);
+  thrift_thrudoc_recv_put_value_list (client, _return);
 }
 
-void ThrudocClient::send_putValueList(const GPtrArray * elements)
+void thrift_thrudoc_send_put_value_list (ThriftThrudocClient * client, const GPtrArray * elements)
 {
-  int32_t cseqid = 0;
-  oprot_->writeMessageBegin("putValueList", facebook::thrift::protocol::T_CALL, cseqid);
+  gint32 cseqid = 0;
+  ThriftProtocol * thrift_protocol = THRIFT_CLIENT (client)->thrift_protocol;
+
+  thrift_protocol_write_message_begin (thrift_protocol, "putValueList", T_CALL, cseqid);
 
   Thrudoc_putValueList_pargs args;
   args.elements = &elements;
   args.write(oprot_);
 
-  oprot_->writeMessageEnd();
-  oprot_->getTransport()->flush();
-  oprot_->getTransport()->writeEnd();
+  thrift_protocol_write_message_end (thrift_protocol);
 }
 
-void ThrudocClient::recv_putValueList(GPtrArray ** _return)
+void thrift_thrudoc_recv_put_value_list (ThriftThrudocClient * client, GPtrArray ** _return)
 {
-
-  int32_t rseqid = 0;
-  std::string fname;
-  facebook::thrift::protocol::TMessageType mtype;
-
-  iprot_->readMessageBegin(fname, mtype, rseqid);
-  if (mtype == facebook::thrift::protocol::T_EXCEPTION) {
-    facebook::thrift::TApplicationException x;
-    x.read(iprot_);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw x;
-  }
-  if (mtype != facebook::thrift::protocol::T_REPLY) {
-    iprot_->skip(facebook::thrift::protocol::T_STRUCT);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE);
-  }
-  if (fname.compare("putValueList") != 0) {
-    iprot_->skip(facebook::thrift::protocol::T_STRUCT);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME);
-  }
-  Thrudoc_putValueList_presult result;
-  result.success = &_return;
-  result.read(iprot_);
-  iprot_->readMessageEnd();
-  iprot_->getTransport()->readEnd();
-
-  if (result.__isset.success) {
-    // _return pointer has now been filled
-    return;
-  }
-  if (result.__isset.e) {
-    throw result.e;
-  }
-  throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::MISSING_RESULT, "putValueList failed: unknown result");
 }
 
-void ThrudocClient::admin(gchar ** _return, const gchar * op, const gchar * data)
+void thrift_thrudoc_admin (ThriftThrudocClient * client, gchar ** _return, const gchar * op, const gchar * data)
 {
-  send_admin(op, data);
-  recv_admin(_return);
+  thrift_thrudoc_send_admin (client, op, data);
+  thrift_thrudoc_recv_admin (client, _return);
 }
 
-void ThrudocClient::send_admin(const gchar * op, const gchar * data)
+void thrift_thrudoc_send_admin (ThriftThrudocClient * client, const gchar * op, const gchar * data)
 {
-  int32_t cseqid = 0;
-  oprot_->writeMessageBegin("admin", facebook::thrift::protocol::T_CALL, cseqid);
+  gint32 cseqid = 0;
+  ThriftProtocol * thrift_protocol = THRIFT_CLIENT (client)->thrift_protocol;
+
+  thrift_protocol_write_message_begin (thrift_protocol, "admin", T_CALL, cseqid);
 
   Thrudoc_admin_pargs args;
   args.op = &op;
   args.data = &data;
   args.write(oprot_);
 
-  oprot_->writeMessageEnd();
-  oprot_->getTransport()->flush();
-  oprot_->getTransport()->writeEnd();
+  thrift_protocol_write_message_end (thrift_protocol);
 }
 
-void ThrudocClient::recv_admin(gchar ** _return)
+void thrift_thrudoc_recv_admin (ThriftThrudocClient * client, gchar ** _return)
 {
-
-  int32_t rseqid = 0;
-  std::string fname;
-  facebook::thrift::protocol::TMessageType mtype;
-
-  iprot_->readMessageBegin(fname, mtype, rseqid);
-  if (mtype == facebook::thrift::protocol::T_EXCEPTION) {
-    facebook::thrift::TApplicationException x;
-    x.read(iprot_);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw x;
-  }
-  if (mtype != facebook::thrift::protocol::T_REPLY) {
-    iprot_->skip(facebook::thrift::protocol::T_STRUCT);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE);
-  }
-  if (fname.compare("admin") != 0) {
-    iprot_->skip(facebook::thrift::protocol::T_STRUCT);
-    iprot_->readMessageEnd();
-    iprot_->getTransport()->readEnd();
-    throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME);
-  }
-  Thrudoc_admin_presult result;
-  result.success = &_return;
-  result.read(iprot_);
-  iprot_->readMessageEnd();
-  iprot_->getTransport()->readEnd();
-
-  if (result.__isset.success) {
-    // _return pointer has now been filled
-    return;
-  }
-  if (result.__isset.e) {
-    throw result.e;
-  }
-  throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::MISSING_RESULT, "admin failed: unknown result");
 }
 
