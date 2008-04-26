@@ -1,4 +1,5 @@
 $LOAD_PATH.unshift '../../lib/rb/lib'
+$LOAD_PATH.unshift '../../lib/rb/ext'
 
 require 'thrift/transport/ttransport'
 require 'thrift/protocol/tbinaryprotocol'
