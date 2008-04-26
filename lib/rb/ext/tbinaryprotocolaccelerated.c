@@ -111,6 +111,7 @@ static ID fields_id;
 static ID consume_bang_id;
 static ID string_buffer_id;
 static ID borrow_id;
+static ID keys_id;
 
 static const uint32_t VERSION_MASK = 0xffff0000;
 static const uint32_t VERSION_1 = 0x80010000;
@@ -314,7 +315,7 @@ static void write_container(VALUE buf, VALUE value, field_spec* spec) {
       VALUE key;
       VALUE val;
       
-      keys = rb_funcall(value, rb_intern("keys"), 0);
+      keys = rb_funcall(value, keys_id, 0);
       
       sz = RARRAY(keys)->len;
       
@@ -358,7 +359,7 @@ static void write_container(VALUE buf, VALUE value, field_spec* spec) {
     }
 
     case T_SET: {
-      VALUE items = rb_funcall(value, rb_intern("keys"), 0);
+      VALUE items = rb_funcall(value, keys_id, 0);
       sz = RARRAY(items)->len;
       
       write_set_begin(buf, spec->data.element->type, sz);
@@ -912,6 +913,7 @@ void Init_tbinaryprotocolaccelerated()
   consume_bang_id = rb_intern("consume!");
   string_buffer_id = rb_intern("string_buffer");
   borrow_id = rb_intern("borrow");
+  keys_id = rb_intern("keys");
   
   // For fast access
   rb_define_method(class_tbpa, "encode_binary", tbpa_encode_binary, 1);
