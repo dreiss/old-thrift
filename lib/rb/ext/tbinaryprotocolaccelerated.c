@@ -148,23 +148,19 @@ typedef struct _thrift_map {
 
 static void free_field_spec(field_spec* spec) {
   switch(spec->type) {
-    case T_STRCT:
-      free(spec);
-      break;
-    
     case T_LIST:
     case T_SET:
       free_field_spec(spec->data.element);
-      free(spec);
       break;
     
     case T_MAP:
       free_field_spec(spec->data.map->key);
       free_field_spec(spec->data.map->value);
       free(spec->data.map);
-      free(spec);
       break;
   }
+  
+  free(spec);
 }
 
 // Parses a ruby field spec into a C struct
