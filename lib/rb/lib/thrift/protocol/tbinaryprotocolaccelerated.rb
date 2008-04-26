@@ -1,5 +1,5 @@
 require 'thrift/protocol/tbinaryprotocol'
-require File.join(File.dirname(__FILE__), '../../../ext/tbinaryprotocolaccelerated')
+require 'tbinaryprotocolaccelerated'
 
 =begin
 The only change required for a transport to support TFastBinaryProtocol is to implement 2 methods:
