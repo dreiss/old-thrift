@@ -7,71 +7,11 @@
 #include <string.h>
 
 #include "thrift_socket.h"
-#include "thrift_protocol.h"
+#include "thrift_binary_protocol.h"
 #include "thrudoc.h"
 
 #define HOST "localhost"
 #define PORT 9091
-
-guint32 Thrudoc_admin_args_write (ThriftProtocol * prot, const gchar * op, 
-                                  const gchar * data)
-{
-    guint32 xfer = 0;
-    xfer += thrift_protocol_write_struct_begin (prot, "Thrudoc_admin_args");
-    xfer += thrift_protocol_write_field_begin (prot, "op", T_STRING, 1);
-    xfer += thrift_protocol_write_string (prot, op);
-    xfer += thrift_protocol_write_field_end (prot);
-    xfer += thrift_protocol_write_field_begin (prot, "data", T_STRING, 2);
-    xfer += thrift_protocol_write_string (prot, data);
-    xfer += thrift_protocol_write_field_end (prot);
-    xfer += thrift_protocol_write_field_stop (prot);
-    xfer += thrift_protocol_write_struct_end (prot);
-    return xfer;
-}
-
-void ThrudocClient_send_admin (ThriftProtocol * prot, const gchar * op,
-                              const gchar * data)
-{
-  gint32 cseqid = 0;
-
-  thrift_protocol_write_message_begin (prot, "admin", T_CALL, cseqid);
-
-  Thrudoc_admin_args_write (prot, op, data);
-
-  thrift_protocol_write_message_end (prot);
-}
-
-guint32 Thrudoc_putList_args_write (ThriftProtocol * prot, GPtrArray * elements)
-{
-    uint32_t xfer = 0;
-    xfer += thrift_protocol_write_struct_begin (prot, "Thrudoc_putList_args");
-    xfer += thrift_protocol_write_field_begin (prot, "elements", T_LIST, 1);
-    {
-        int i;
-        xfer += thrift_protocol_write_list_begin (prot, T_STRUCT, elements->len);
-        for (i = 0; i < elements->len; i++)
-        {
-            xfer += thrift_struct_write 
-                (THRIFT_STRUCT (g_ptr_array_index (elements, i)), prot);
-        }
-        xfer += thrift_protocol_write_list_end (prot);
-    }
-    xfer += thrift_protocol_write_field_end (prot);
-    xfer += thrift_protocol_write_field_stop (prot);
-    xfer += thrift_protocol_write_struct_end (prot);
-    return xfer;
-}
-
-void ThrudocClient_send_putList (ThriftProtocol * prot, GPtrArray * elements)
-{
-  gint32 cseqid = 0;
-
-  thrift_protocol_write_message_begin (prot, "putList", T_CALL, cseqid);
-
-  Thrudoc_putList_args_write (prot, elements);
-
-  thrift_protocol_write_message_end (prot);
-}
 
 int main (int argc, char **argv)
 {
@@ -83,9 +23,9 @@ int main (int argc, char **argv)
                                           NULL);
 
     // TODO: figure out why sending it as a property seg-faults
-    ThriftProtocol * prot = g_object_new (THRIFT_TYPE_PROTOCOL, 
-                                          "socket", socket, 
-                                          NULL);
+    ThriftBinaryProtocol * prot = g_object_new (THRIFT_TYPE_BINARY_PROTOCOL, 
+                                                "socket", socket, 
+                                                NULL);
 
     ThriftThrudocClient * client = g_object_new (THRIFT_THRUDOC_TYPE_CLIENT,
                                                  "protocol", prot, 
@@ -106,15 +46,23 @@ int main (int argc, char **argv)
 
     thrift_socket_connect (socket);
 
-    GPtrArray * _return;
-//    thrift_thrudoc_get_buckets (client, &_return);
+    if (0)
+    {
+      GPtrArray * _return;
+      thrift_thrudoc_get_buckets (client, &_return);
+    }
+    if (1)
     {
       gchar * _return;
       thrift_thrudoc_admin (client, &_return, "echo", "data");
       fprintf (stderr, "admin ('echo', 'data')=%s\n", _return);
-//      g_free (_return);
     }
-//    thrift_thrudoc_put (client, "bucket", "key", "value");
+    if (0)
+    {
+      gchar * _return;
+      thrift_thrudoc_put (client, "bucket", "key", "value");
+      fprintf (stderr, "put ('bucket', 'key', 'value')=%s\n");
+    }
 
 #if 0
 
