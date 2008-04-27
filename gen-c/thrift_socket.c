@@ -49,16 +49,19 @@ gboolean thrift_socket_connect (ThriftSocket * thrift_socket)
 
 gint thrift_socket_send (ThriftSocket * socket, const gpointer buf, guint len)
 {
-    guint ret;
-
     g_assert (THRIFT_IS_SOCKET (socket));
 
-    /* send a message to the server PORT on machine HOST */
-    ret = send (socket->socket, buf, len, 0);
-    if (ret == -1)
-        perror ("send");
+    if (socket->buf_len + len > socket->buf_size)
+    {
+        // grow the buffer
+        socket->buf = g_realloc (socket->buf, socket->buf_size * 2);
+        socket->buf_size *= 2;
+    }
 
-    return ret;
+    memcpy (socket->buf + socket->buf_len, buf, len);
+    socket->buf_len += len;
+
+    return len;
 }
 
 gint thrift_socket_receive (ThriftSocket * socket, gpointer buf, guint len)
@@ -72,6 +75,35 @@ gint thrift_socket_receive (ThriftSocket * socket, gpointer buf, guint len)
     if (ret == -1)
         perror ("recv");
     return ret;
+}
+
+gint thrift_socket_flush (ThriftSocket * socket)
+{
+    guint ret;
+
+    g_assert (THRIFT_IS_SOCKET (socket));
+
+    /* send the "frame" size */
+    gint32 sz = socket->buf_len;
+    sz = (gint32)g_htonl(sz);
+    ret = send (socket->socket, &sz, 4, 0);
+    if (ret == -1)
+    {
+        perror ("send");
+        return -1;
+    }
+
+    /* send a message to the server PORT on machine HOST */
+    ret = send (socket->socket, socket->buf, socket->buf_len, 0);
+    if (ret == -1)
+    {
+        perror ("send");
+        return -1;
+    }
+
+    socket->buf_len = 0;
+
+    return ret + 4;
 }
 
 enum _ThriftSocketProperties
@@ -118,6 +150,8 @@ void _thrift_socket_get_property (GObject * object, guint property_id,
 static void _thrift_socket_instance_init (ThriftSocket * socket)
 {
     socket->socket = 0;
+    socket->buf_size = 256;
+    socket->buf = g_new (guint8, socket->buf_size);
 }
 
 // TODO: destroy, free hostname memory, close socket, etc.

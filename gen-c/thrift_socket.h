@@ -16,6 +16,10 @@ struct _ThriftSocket
     gchar * hostname;
     gshort port;
     int socket;
+
+    guint8 * buf;
+    guint32 buf_size;
+    guint32 buf_len;
 }; 
 
 typedef struct _ThriftSocketClass ThriftSocketClass;
@@ -36,5 +40,6 @@ GType thrift_socket_get_type (void);
 gboolean thrift_socket_connect (ThriftSocket * socket);
 gint thrift_socket_send (ThriftSocket * socket, const gpointer buf, guint len);
 gint thrift_socket_receive (ThriftSocket * socket, gpointer buf, guint len);
+gint thrift_socket_flush (ThriftSocket * socket);
 
 #endif /* THRIFT_SOCKET_H */

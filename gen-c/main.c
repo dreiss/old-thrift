@@ -107,7 +107,14 @@ int main (int argc, char **argv)
     thrift_socket_connect (socket);
 
     GPtrArray * _return;
-    thrift_thrudoc_get_buckets (client, &_return);
+//    thrift_thrudoc_get_buckets (client, &_return);
+    {
+      gchar * _return;
+      thrift_thrudoc_admin (client, &_return, "echo", "data");
+      fprintf (stderr, "admin ('echo', 'data')=%s\n", _return);
+//      g_free (_return);
+    }
+//    thrift_thrudoc_put (client, "bucket", "key", "value");
 
 #if 0
 

@@ -32,6 +32,9 @@ guint32 thrift_protocol_write_message_begin (ThriftProtocol * thrift_protocol,
 
 guint32 thrift_protocol_write_message_end (ThriftProtocol * thrift_protocol)
 {
+    g_assert (THRIFT_IS_PROTOCOL (thrift_protocol));
+
+    thrift_socket_flush (thrift_protocol->thrift_socket);
     return 0;
 }
 
@@ -165,6 +168,7 @@ guint32 thrift_protocol_write_i64 (ThriftProtocol * thrift_protocol,
                                    const gint64 i64)
 {
     g_assert (THRIFT_IS_PROTOCOL (thrift_protocol));
+    g_assert_not_reached ();
 
     // TODO: 64-bit htonll???
     gint64 net = (gint64)g_htonl (i64);
@@ -177,11 +181,10 @@ guint32 thrift_protocol_write_double (ThriftProtocol * thrift_protocol,
                                       const double dub)
 {
     g_assert (sizeof (double) == sizeof (guint64));
+    g_assert_not_reached ();
 
-    // TODO: 64-bit htonll???
     // TODO: is the "cast" enough?
-    guint64 bits = (gint64)g_htonl (dub);
-    return thrift_protocol_write_i64 (thrift_protocol, bits);
+    return thrift_protocol_write_i64 (thrift_protocol, dub);
 }
 
 guint32 thrift_protocol_write_string (ThriftProtocol * thrift_protocol,
@@ -190,8 +193,8 @@ guint32 thrift_protocol_write_string (ThriftProtocol * thrift_protocol,
     g_assert (THRIFT_IS_PROTOCOL (thrift_protocol));
 
     guint32 len = strlen (str);
-    /* + 1 is for the null term char */
-    return thrift_protocol_write_binary (thrift_protocol, str, len + 1);
+    /* TODO: we need to utf8 encode... */
+    return thrift_protocol_write_binary (thrift_protocol, str, len);
 }
 
 guint32 thrift_protocol_write_binary (ThriftProtocol * thrift_protocol,

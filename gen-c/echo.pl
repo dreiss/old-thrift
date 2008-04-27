@@ -6,7 +6,7 @@
 use strict;
 use Socket;
 use IO::Handle;
-use constant MY_ECHO_PORT => shift @ARGV || 2008;
+use constant MY_ECHO_PORT => shift @ARGV || 9091;
 
 my ($bytes_out,$bytes_in) = (0,0);
 
@@ -41,8 +41,16 @@ while(1) {
 	$bytes_in += length($_);
 	chomp;
 
+        printf STDERR "#%d\n", length ($_); 
+        foreach my $c (0..length($_)-1)
+        {
+            my $ch = substr($_, $c, 1);
+            printf STDERR "0x%02x\n", ord($ch);
+        }
+        print STDERR "\n";
+
 	my $msg_out = "$_\n\0";
-	print STDERR $msg_out;
+#	print STDERR $msg_out;
 	print SESSION $msg_out;
 	$bytes_out += length($msg_out);
     }

@@ -5,6 +5,7 @@
  */
 #include "thrudoc.h"
 #include "thrift_client.h"
+#include <stdio.h>
 
 void thrift_thrudoc_get_buckets (ThriftThrudocClient * client, GPtrArray ** _return)
 {
@@ -1176,6 +1177,7 @@ void thrift_thrudoc_recv_admin (ThriftThrudocClient * client, gchar ** _return)
   ThriftProtocol * thrift_protocol = THRIFT_CLIENT (client)->thrift_protocol;
 
   thrift_protocol_read_message_begin (thrift_protocol, &fname, &mtype, &rseqid);
+fprintf (stderr, "mb: %s, %d, %d\n", "ff", mtype, rseqid);
 
   if (mtype == T_EXCEPTION) {
     /* ThriftApplicationException x;
@@ -1183,18 +1185,21 @@ void thrift_thrudoc_recv_admin (ThriftThrudocClient * client, gchar ** _return)
     thrift_protocol_skip (thrift_protocol, T_STRUCT);
     thrift_protocol_read_message_end (thrift_protocol);
     /* TODO: error handling throw x; */
+fprintf (stderr, "T_EXCEPTION\n");
     return;
   }
   if (mtype != T_REPLY) {
     thrift_protocol_skip (thrift_protocol, T_STRUCT);
     thrift_protocol_read_message_end (thrift_protocol);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE); */
+fprintf (stderr, "!T_REPLY\n");
     return;
   }
   if (strncmp (fname, "admin", 5) != 0) {
     thrift_protocol_skip (thrift_protocol, T_STRUCT);
     thrift_protocol_read_message_end (thrift_protocol);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
+fprintf (stderr, "!admin\n");
     return;
   }
 
