@@ -35,10 +35,8 @@ gint32 _thrift_binary_protocol_write_message_begin (ThriftProtocol * protocol,
 gint32 _thrift_binary_protocol_write_message_end (ThriftProtocol * protocol,
                                                   GError ** error)
 {
+    THRIFT_UNUSED_VAR (protocol);
     THRIFT_UNUSED_VAR (error);
-    g_assert (THRIFT_IS_BINARY_PROTOCOL (protocol));
-
-    thrift_transport_flush (protocol->transport);
     return 0;
 }
 
@@ -506,6 +504,8 @@ gint32 _thrift_binary_protocol_read_string (ThriftProtocol * protocol,
     guint32 len;
     guint32 result = thrift_protocol_read_binary (protocol, str, &len,
                                                   error);
+    /* TODO: null term string, why am i having to do this */
+    (*str)[len] = '\0';
     return result;
 }
 

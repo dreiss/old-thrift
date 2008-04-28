@@ -4,8 +4,8 @@
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  */
 
-#include "thrift.h"
 #include "thrudoc_types.h"
+#include "thrift.h"
 
 gint32 thrift_thrudoc_thrudoc_exception_write (ThriftStruct * object, ThriftProtocol * protocol, GError ** error)
 {
@@ -71,6 +71,7 @@ gint32 thrift_thrudoc_thrudoc_exception_read (ThriftStruct * object, ThriftProto
 
 void thrift_thrudoc_thrudoc_exception_instance_init (ThriftThrudocThrudocException * object)
 {
+  THRIFT_UNUSED_VAR (object);
   object->what = "";
 }
 
@@ -179,6 +180,7 @@ gint32 thrift_thrudoc_element_read (ThriftStruct * object, ThriftProtocol * prot
 
 void thrift_thrudoc_element_instance_init (ThriftThrudocElement * object)
 {
+  THRIFT_UNUSED_VAR (object);
   object->bucket = "";
   object->key = "";
   object->value = "";
@@ -300,6 +302,7 @@ gint32 thrift_thrudoc_scan_response_read (ThriftStruct * object, ThriftProtocol 
 
 void thrift_thrudoc_scan_response_instance_init (ThriftThrudocScanResponse * object)
 {
+  THRIFT_UNUSED_VAR (object);
   object->seed = "";
 }
 
@@ -398,7 +401,7 @@ gint32 thrift_thrudoc_list_response_read (ThriftStruct * object, ThriftProtocol 
 
 void thrift_thrudoc_list_response_instance_init (ThriftThrudocListResponse * object)
 {
-    THRIFT_UNUSED_VAR (object);
+  THRIFT_UNUSED_VAR (object);
 }
 
 void thrift_thrudoc_list_response_class_init (ThriftStructClass * thrift_struct_class)

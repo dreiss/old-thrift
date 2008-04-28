@@ -10,22 +10,28 @@
 #include <string.h>
 #include <unistd.h>
 
+gboolean _thrift_socket_is_open (ThriftTransport * transport)
+{
+    ThriftSocket * socket = THRIFT_SOCKET (transport);
+    return socket->sd != 0;
+}
+
 gboolean _thrift_socket_open (ThriftTransport * transport,
                               GError ** error)
 {
-    ThriftSocket * thrift_socket = THRIFT_SOCKET (transport);
-    g_assert (thrift_socket->sd == 0);
+    ThriftSocket * tsocket = THRIFT_SOCKET (transport);
+    g_assert (tsocket->sd == 0);
 
     struct hostent * hp;
     struct sockaddr_in pin;
 
     /* go find out about the desired host machine */
-    if ((hp = gethostbyname (thrift_socket->hostname)) == 0)
+    if ((hp = gethostbyname (tsocket->hostname)) == 0)
     {
         /* TODO: pass through h_error info */
         g_set_error (error, THRIFT_SOCKET_ERROR, THRIFT_SOCKET_ERROR_HOST, 
                      "failed to lookup host: %s:%d", 
-                     thrift_socket->hostname, thrift_socket->port);
+                     tsocket->hostname, tsocket->port);
         return 0;
     }
 
@@ -33,26 +39,26 @@ gboolean _thrift_socket_open (ThriftTransport * transport,
     memset (&pin, 0, sizeof (pin));
     pin.sin_family = AF_INET;
     pin.sin_addr.s_addr = ((struct in_addr *)(hp->h_addr))->s_addr;
-    pin.sin_port = htons (thrift_socket->port);
+    pin.sin_port = htons (tsocket->port);
 
     /* grab an Internet domain socket */
-    if ((thrift_socket->sd = socket (AF_INET, SOCK_STREAM, 0)) == -1) 
+    if ((tsocket->sd = socket (AF_INET, SOCK_STREAM, 0)) == -1) 
     {
         /* TODO: pass through error info */
         g_set_error (error, THRIFT_SOCKET_ERROR, THRIFT_SOCKET_ERROR_SOCKET, 
                      "failed to create socket for host: %s:%d", 
-                     thrift_socket->hostname, thrift_socket->port);
+                     tsocket->hostname, tsocket->port);
         return 0;
     }
 
     /* connect to PORT on HOST */
-    if (connect (thrift_socket->sd, (struct sockaddr *)&pin, sizeof (pin)) ==
+    if (connect (tsocket->sd, (struct sockaddr *)&pin, sizeof (pin)) ==
         -1)
     {
         /* TODO: pass through error info */
         g_set_error (error, THRIFT_SOCKET_ERROR, THRIFT_SOCKET_ERROR_CONNECT, 
                      "failed to connect to host: %s:%d", 
-                     thrift_socket->hostname, thrift_socket->port);
+                     tsocket->hostname, tsocket->port);
         return 0;
     }
 
@@ -62,13 +68,13 @@ gboolean _thrift_socket_open (ThriftTransport * transport,
 gboolean _thrift_socket_close (ThriftTransport * transport,
                                GError ** error)
 {
-    ThriftSocket * thrift_socket = THRIFT_SOCKET (transport);
+    ThriftSocket * socket = THRIFT_SOCKET (transport);
 
     THRIFT_UNUSED_VAR (error);
 
     /* TODO: error handling */
-    close (thrift_socket->sd);
-    thrift_socket->sd = 0;
+    close (socket->sd);
+    socket->sd = 0;
 
     return 1;
 }
@@ -76,14 +82,14 @@ gboolean _thrift_socket_close (ThriftTransport * transport,
 gint32 _thrift_socket_read (ThriftTransport * transport, gpointer buf,
                             guint len, GError ** error)
 {
-    ThriftSocket * thrift_socket = THRIFT_SOCKET (transport);
+    ThriftSocket * socket = THRIFT_SOCKET (transport);
 
     /* TODO: look at all the stuff in TSocket.cpp */
     gint ret;
     guint got = 0;
     while (got < len)
     {
-        ret = recv (thrift_socket->sd, buf, len, 0); 
+        ret = recv (socket->sd, buf, len, 0); 
         if (ret < 0)
         {
             /* TODO: pass on error info */
@@ -98,19 +104,27 @@ gint32 _thrift_socket_read (ThriftTransport * transport, gpointer buf,
     return got;
 }
 
+gboolean _thrift_socket_read_end (ThriftTransport * transport, 
+                                  GError ** error)
+{
+    THRIFT_UNUSED_VAR (transport);
+    THRIFT_UNUSED_VAR (error);
+    return 1;
+}
+
 gint32 _thrift_socket_write (ThriftTransport * transport,
                              const gpointer buf, const guint len,
                              GError ** error)
 {
-    ThriftSocket * thrift_socket = THRIFT_SOCKET (transport);
-    g_assert (thrift_socket->sd != 0);
+    ThriftSocket * socket = THRIFT_SOCKET (transport);
+    g_assert (socket->sd != 0);
 
     /* TODO: take a look at the flags stuff in TSocket.cpp */
     gint ret;
     guint sent = 0;
     while (sent < len)
     {
-        ret = send (thrift_socket->sd, buf + sent, len - sent, 0);
+        ret = send (socket->sd, buf + sent, len - sent, 0);
         if (ret < 0)
         {
             /* TODO: pass on error info */
@@ -122,6 +136,21 @@ gint32 _thrift_socket_write (ThriftTransport * transport,
     }
 
     return sent;
+}
+
+gboolean _thrift_socket_write_end (ThriftTransport * transport, 
+                                   GError ** error)
+{
+    THRIFT_UNUSED_VAR (transport);
+    THRIFT_UNUSED_VAR (error);
+    return 1;
+}
+
+gboolean _thrift_socket_flush (ThriftTransport * transport, GError ** error)
+{
+    THRIFT_UNUSED_VAR (transport);
+    THRIFT_UNUSED_VAR (error);
+    return 1;
 }
 
 enum _ThriftSocketProperties
@@ -209,10 +238,14 @@ static void _thrift_socket_class_init (ThriftSocketClass * klass)
     ThriftTransportClass * thrift_transport_class = 
         THRIFT_TRANSPORT_CLASS(klass);
 
+    thrift_transport_class->is_open = _thrift_socket_is_open;
     thrift_transport_class->open = _thrift_socket_open;
     thrift_transport_class->close = _thrift_socket_close;
     thrift_transport_class->read = _thrift_socket_read;
+    thrift_transport_class->read_end = _thrift_socket_read_end;
     thrift_transport_class->write = _thrift_socket_write;
+    thrift_transport_class->write_end = _thrift_socket_write_end;
+    thrift_transport_class->flush = _thrift_socket_flush;
 }
 
 GQuark

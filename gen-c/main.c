@@ -8,6 +8,7 @@
 
 #include "thrift.h"
 #include "thrift_socket.h"
+#include "thrift_framed.h"
 #include "thrift_binary_protocol.h"
 #include "thrudoc.h"
 
@@ -26,9 +27,13 @@ int main (int argc, char **argv)
                                           "port", PORT, 
                                           NULL);
 
+    ThriftFramed * framed = g_object_new (THRIFT_TYPE_FRAMED,
+                                          "transport", socket,
+                                          NULL);
+
     // TODO: figure out why sending it as a property seg-faults
     ThriftBinaryProtocol * prot = g_object_new (THRIFT_TYPE_BINARY_PROTOCOL, 
-                                                "transport", socket, 
+                                                "transport", framed, 
                                                 NULL);
 
     ThriftThrudocClient * client = g_object_new (THRIFT_THRUDOC_TYPE_CLIENT,
@@ -62,15 +67,18 @@ int main (int argc, char **argv)
       GPtrArray * _return;
       thrift_thrudoc_get_buckets (client, &_return, NULL);
     }
-    if (1)
+    if (0)
     {
       gchar * _return;
       thrift_thrudoc_admin (client, &_return, "echo", "data", NULL);
       fprintf (stderr, "admin ('echo', 'data')=%s\n", _return);
     }
-    if (0)
+    if (1)
     {
+      gchar * _return;
       thrift_thrudoc_put (client, "bucket", "key", "value", NULL);
+      thrift_thrudoc_get (client, &_return, "bucket", "key", NULL);
+      fprintf (stderr, "put/get ('bucket', 'key', 'value)=%s\n", _return);
     }
 
 #if 0

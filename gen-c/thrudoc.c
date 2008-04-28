@@ -29,6 +29,9 @@ void thrift_thrudoc_send_get_buckets (ThriftThrudocClient * client, GError ** er
   }
 
   thrift_protocol_write_message_end (protocol, error);
+
+  thrift_transport_flush (protocol->transport, error);
+  thrift_transport_write_end (protocol->transport, error);
 }
 
 void thrift_thrudoc_recv_get_buckets (ThriftThrudocClient * client, GPtrArray ** _return, GError ** error)
@@ -151,6 +154,9 @@ void thrift_thrudoc_send_put (ThriftThrudocClient * client, const gchar * bucket
   }
 
   thrift_protocol_write_message_end (protocol, error);
+
+  thrift_transport_flush (protocol->transport, error);
+  thrift_transport_write_end (protocol->transport, error);
 }
 
 void thrift_thrudoc_recv_put (ThriftThrudocClient * client, GError ** error)
@@ -250,6 +256,9 @@ void thrift_thrudoc_send_get (ThriftThrudocClient * client, const gchar * bucket
   }
 
   thrift_protocol_write_message_end (protocol, error);
+
+  thrift_transport_flush (protocol->transport, error);
+  thrift_transport_write_end (protocol->transport, error);
 }
 
 void thrift_thrudoc_recv_get (ThriftThrudocClient * client, gchar ** _return, GError ** error)
@@ -356,6 +365,9 @@ void thrift_thrudoc_send_remove (ThriftThrudocClient * client, const gchar * buc
   }
 
   thrift_protocol_write_message_end (protocol, error);
+
+  thrift_transport_flush (protocol->transport, error);
+  thrift_transport_write_end (protocol->transport, error);
 }
 
 void thrift_thrudoc_recv_remove (ThriftThrudocClient * client, GError ** error)
@@ -455,6 +467,9 @@ void thrift_thrudoc_send_put_value (ThriftThrudocClient * client, const gchar * 
   }
 
   thrift_protocol_write_message_end (protocol, error);
+
+  thrift_transport_flush (protocol->transport, error);
+  thrift_transport_write_end (protocol->transport, error);
 }
 
 void thrift_thrudoc_recv_put_value (ThriftThrudocClient * client, gchar ** _return, GError ** error)
@@ -564,6 +579,9 @@ void thrift_thrudoc_send_scan (ThriftThrudocClient * client, const gchar * bucke
   }
 
   thrift_protocol_write_message_end (protocol, error);
+
+  thrift_transport_flush (protocol->transport, error);
+  thrift_transport_write_end (protocol->transport, error);
 }
 
 void thrift_thrudoc_recv_scan (ThriftThrudocClient * client, ThriftThrudocScanResponse ** _return, GError ** error)
@@ -675,6 +693,9 @@ void thrift_thrudoc_send_put_list (ThriftThrudocClient * client, const GPtrArray
   }
 
   thrift_protocol_write_message_end (protocol, error);
+
+  thrift_transport_flush (protocol->transport, error);
+  thrift_transport_write_end (protocol->transport, error);
 }
 
 void thrift_thrudoc_recv_put_list (ThriftThrudocClient * client, GPtrArray ** _return, GError ** error)
@@ -799,6 +820,9 @@ void thrift_thrudoc_send_get_list (ThriftThrudocClient * client, const GPtrArray
   }
 
   thrift_protocol_write_message_end (protocol, error);
+
+  thrift_transport_flush (protocol->transport, error);
+  thrift_transport_write_end (protocol->transport, error);
 }
 
 void thrift_thrudoc_recv_get_list (ThriftThrudocClient * client, GPtrArray ** _return, GError ** error)
@@ -923,6 +947,9 @@ void thrift_thrudoc_send_remove_list (ThriftThrudocClient * client, const GPtrAr
   }
 
   thrift_protocol_write_message_end (protocol, error);
+
+  thrift_transport_flush (protocol->transport, error);
+  thrift_transport_write_end (protocol->transport, error);
 }
 
 void thrift_thrudoc_recv_remove_list (ThriftThrudocClient * client, GPtrArray ** _return, GError ** error)
@@ -1047,6 +1074,9 @@ void thrift_thrudoc_send_put_value_list (ThriftThrudocClient * client, const GPt
   }
 
   thrift_protocol_write_message_end (protocol, error);
+
+  thrift_transport_flush (protocol->transport, error);
+  thrift_transport_write_end (protocol->transport, error);
 }
 
 void thrift_thrudoc_recv_put_value_list (ThriftThrudocClient * client, GPtrArray ** _return, GError ** error)
@@ -1166,6 +1196,9 @@ void thrift_thrudoc_send_admin (ThriftThrudocClient * client, const gchar * op, 
   }
 
   thrift_protocol_write_message_end (protocol, error);
+
+  thrift_transport_flush (protocol->transport, error);
+  thrift_transport_write_end (protocol->transport, error);
 }
 
 void thrift_thrudoc_recv_admin (ThriftThrudocClient * client, gchar ** _return, GError ** error)

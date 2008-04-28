@@ -9,6 +9,11 @@
 #include <netdb.h>
 #include <string.h>
 
+/*
+ * TODO:
+ * - this should be an interface rather than base class
+ */
+
 gboolean thrift_transport_is_open (ThriftTransport * transport)
 {
     return THRIFT_TRANSPORT_GET_CLASS (transport)->is_open (transport);
@@ -31,9 +36,10 @@ gint32 thrift_transport_read (ThriftTransport * transport, gpointer buf,
                                                          error);
 }
 
-void thrift_transport_read_end (ThriftTransport * transport)
+gboolean thrift_transport_read_end (ThriftTransport * transport, 
+                                    GError ** error)
 {
-    return THRIFT_TRANSPORT_GET_CLASS (transport)->read_end (transport);
+    return THRIFT_TRANSPORT_GET_CLASS (transport)->read_end (transport, error);
 }
 
 gint32 thrift_transport_write (ThriftTransport * transport, const gpointer buf, 
@@ -43,19 +49,21 @@ gint32 thrift_transport_write (ThriftTransport * transport, const gpointer buf,
                                                           error);
 }
 
-void thrift_transport_write_end (ThriftTransport * transport)
+gboolean thrift_transport_write_end (ThriftTransport * transport, 
+                                     GError ** error)
 {
-    return THRIFT_TRANSPORT_GET_CLASS (transport)->write_end (transport);
+    return THRIFT_TRANSPORT_GET_CLASS (transport)->write_end (transport, error);
 }
 
-void thrift_transport_flush (ThriftTransport * transport)
+gboolean thrift_transport_flush (ThriftTransport * transport, GError ** error)
 {
-    THRIFT_TRANSPORT_GET_CLASS (transport)->flush (transport);
+    return THRIFT_TRANSPORT_GET_CLASS (transport)->flush (transport, error);
 }
 
 gboolean _thrift_transport_is_open (ThriftTransport * transport)
 {
     THRIFT_UNUSED_VAR (transport);
+    g_assert_not_reached ();
     return 0;
 }
 
@@ -86,11 +94,13 @@ gint32 _thrift_transport_read (ThriftTransport * transport, gpointer buf,
     return 0;
 }
 
-/* TODO: add gerror's to the rest of the funcs like this one */
-void _thrift_transport_read_end (ThriftTransport * transport)
+gboolean _thrift_transport_read_end (ThriftTransport * transport, 
+                                     GError ** error)
 {
     THRIFT_UNUSED_VAR (transport);
-    return;
+    THRIFT_UNUSED_VAR (error);
+    g_assert_not_reached ();
+    return 0;
 }
 
 gint32 _thrift_transport_write (ThriftTransport * transport, const gpointer buf, 
@@ -104,16 +114,21 @@ gint32 _thrift_transport_write (ThriftTransport * transport, const gpointer buf,
     return 0;
 }
 
-void _thrift_transport_write_end (ThriftTransport * transport)
+gboolean _thrift_transport_write_end (ThriftTransport * transport,
+                                      GError ** error)
 {
     THRIFT_UNUSED_VAR (transport);
-    return;
+    THRIFT_UNUSED_VAR (error);
+    g_assert_not_reached ();
+    return 0;
 }
 
-void _thrift_transport_flush (ThriftTransport * transport)
+gboolean _thrift_transport_flush (ThriftTransport * transport, GError ** error)
 {
     THRIFT_UNUSED_VAR (transport);
-    return;
+    THRIFT_UNUSED_VAR (error);
+    g_assert_not_reached ();
+    return 0;
 }
 
 enum _ThriftTransportProperties

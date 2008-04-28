@@ -25,11 +25,11 @@ struct _ThriftTransportClass
     gboolean (*close) (ThriftTransport * transport, GError ** error);
     gint32 (*read) (ThriftTransport * transport, gpointer buf, 
                     guint32 len, GError ** error);
-    void (*read_end) (ThriftTransport * transport);
+    gboolean (*read_end) (ThriftTransport * transport, GError ** error);
     gint32 (*write) (ThriftTransport * transport, const gpointer buf, 
                      const guint32 len, GError ** error);
-    void (*write_end) (ThriftTransport * transport);
-    void (*flush) (ThriftTransport * transport);
+    gboolean (*write_end) (ThriftTransport * transport, GError ** error);
+    gboolean (*flush) (ThriftTransport * transport, GError ** error);
 }; 
 
 GType thrift_transport_get_type (void);
@@ -54,11 +54,13 @@ gboolean thrift_transport_open (ThriftTransport * transport, GError ** error);
 gboolean thrift_transport_close (ThriftTransport * transport, GError ** error);
 gint32 thrift_transport_read (ThriftTransport * transport, gpointer buf, 
                               guint32 len, GError ** error);
-void thrift_transport_read_end (ThriftTransport * transport);
+gboolean thrift_transport_read_end (ThriftTransport * transport, 
+                                    GError ** error);
 gint32 thrift_transport_write (ThriftTransport * transport, const gpointer buf, 
                                const guint32 len, GError ** error);
-void thrift_transport_write_end (ThriftTransport * transport);
-void thrift_transport_flush (ThriftTransport * transport);
+gboolean thrift_transport_write_end (ThriftTransport * transport, 
+                                     GError ** error);
+gboolean thrift_transport_flush (ThriftTransport * transport, GError ** error);
 
 
 #endif /* THRIFT_TRANSPORT_H */

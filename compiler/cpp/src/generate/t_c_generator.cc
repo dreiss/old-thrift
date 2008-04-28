@@ -11,6 +11,8 @@
  *   we produce, g_strdup is an example. also may help with intl support
  * - use G_UNLIKELY where approrate
  * - collections stuff needs LOTS of work
+ * - all protocol write methods (and others too) that take gerrors need to have
+ *   their return values checked and abrt things accordingly... 
  */
 
 #include <cassert>
@@ -280,6 +282,7 @@ void t_c_generator::init_generator() {
   f_types_impl_ <<
     endl <<
     "#include \"" << program_name_u << "_types.h\"" << endl <<
+    "#include \"thrift.h\"" << endl <<
     endl;
 
   f_types_ << 
@@ -440,6 +443,8 @@ void t_c_generator::generate_object(t_struct* tstruct)
     "{" << endl;
 
   indent_up();
+    
+  indent (f_types_impl_) << "THRIFT_UNUSED_VAR (object);" << endl;
 
   for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
     t_type* t = get_true_type((*m_iter)->get_type());
@@ -1270,7 +1275,10 @@ void t_c_generator::generate_service_client(t_service* tservice) {
     generate_struct_writer (f_service_, arg_struct, "", "", false);
 
     f_service_ <<
-      indent() << "thrift_protocol_write_message_end (protocol, error);" << endl;
+      indent() << "thrift_protocol_write_message_end (protocol, error);" << endl <<
+      endl <<
+      indent () << "thrift_transport_flush (protocol->transport, error);" << endl <<
+      indent () << "thrift_transport_write_end (protocol->transport, error);" << endl;
 
     scope_down(f_service_);
     f_service_ << endl;
