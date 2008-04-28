@@ -7,6 +7,7 @@
  * figure out how to make this class glib-object abstract
  */
 
+#include "thrift.h"
 #include "thrift_protocol.h"
 
 #include <string.h>
@@ -455,6 +456,9 @@ void _thrift_protocol_set_property (GObject * object, guint property_id,
                                     const GValue * value, GParamSpec * pspec)
 {
     ThriftProtocol * protocol = THRIFT_PROTOCOL (object);
+
+    THRIFT_UNUSED_VAR (pspec);
+
     /* TODO: we could check that pspec is the type we want, not sure that's nec
      * TODO: proper error here */
     switch (property_id)
@@ -469,6 +473,9 @@ void _thrift_protocol_get_property (GObject * object, guint property_id,
                                     GValue * value, GParamSpec * pspec)
 {
     ThriftProtocol * protocol = THRIFT_PROTOCOL (object);
+
+    THRIFT_UNUSED_VAR (pspec);
+
     /* TODO: we could check that pspec is the type we want, not sure that's nec
      * TODO: proper error here */
     switch (property_id)

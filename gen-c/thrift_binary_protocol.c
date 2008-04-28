@@ -11,6 +11,7 @@
  * - do we need strict_(write|read) support
  */
 
+#include "thrift.h"
 #include "thrift_binary_protocol.h"
 
 #include <string.h>
@@ -34,6 +35,7 @@ gint32 _thrift_binary_protocol_write_message_begin (ThriftProtocol * protocol,
 gint32 _thrift_binary_protocol_write_message_end (ThriftProtocol * protocol,
                                                   GError ** error)
 {
+    THRIFT_UNUSED_VAR (error);
     g_assert (THRIFT_IS_BINARY_PROTOCOL (protocol));
 
     thrift_transport_flush (protocol->transport);
@@ -44,12 +46,17 @@ gint32 _thrift_binary_protocol_write_struct_begin (ThriftProtocol * protocol,
                                                    const gchar * name,
                                                    GError ** error)
 {
+    THRIFT_UNUSED_VAR (protocol);
+    THRIFT_UNUSED_VAR (name);
+    THRIFT_UNUSED_VAR (error);
     return 0;
 }
 
 gint32 _thrift_binary_protocol_write_struct_end (ThriftProtocol * protocol,
                                                  GError ** error)
 {
+    THRIFT_UNUSED_VAR (protocol);
+    THRIFT_UNUSED_VAR (error);
     return 0;
 }
 
@@ -59,6 +66,7 @@ gint32 _thrift_binary_protocol_write_field_begin (ThriftProtocol * protocol,
                                                   const gint16 field_id,
                                                   GError ** error)
 {
+    THRIFT_UNUSED_VAR (name);
     g_assert (THRIFT_IS_BINARY_PROTOCOL (protocol));
 
     guint32 wsize = 0;
@@ -71,6 +79,8 @@ gint32 _thrift_binary_protocol_write_field_begin (ThriftProtocol * protocol,
 gint32 _thrift_binary_protocol_write_field_end (ThriftProtocol * protocol,
                                                 GError ** error)
 {
+    THRIFT_UNUSED_VAR (protocol);
+    THRIFT_UNUSED_VAR (error);
     return 0;
 }
 
@@ -102,6 +112,8 @@ gint32 _thrift_binary_protocol_write_map_begin (ThriftProtocol * protocol,
 gint32 _thrift_binary_protocol_write_map_end (ThriftProtocol * protocol,
                                               GError ** error)
 {
+    THRIFT_UNUSED_VAR (protocol);
+    THRIFT_UNUSED_VAR (error);
     return 0;
 }
 
@@ -122,6 +134,8 @@ gint32 _thrift_binary_protocol_write_list_begin (ThriftProtocol * protocol,
 gint32 _thrift_binary_protocol_write_list_end (ThriftProtocol * protocol,
                                                GError ** error)
 {
+    THRIFT_UNUSED_VAR (protocol);
+    THRIFT_UNUSED_VAR (error);
     return 0;
 }
 
@@ -139,6 +153,8 @@ gint32 _thrift_binary_protocol_write_set_begin (ThriftProtocol * protocol,
 gint32 _thrift_binary_protocol_write_set_end (ThriftProtocol * protocol,
                                               GError ** error)
 {
+    THRIFT_UNUSED_VAR (protocol);
+    THRIFT_UNUSED_VAR (error);
     return 0;
 }
 
@@ -246,7 +262,7 @@ gint32 _thrift_binary_protocol_read_message_begin (ThriftProtocol * protocol,
     if (sz < 0)
     {
         /* Check for correct version number */
-        gint32 version = sz & VERSION_MASK;
+        guint32 version = sz & VERSION_MASK;
         /* TODO: error handling */
         if (version != VERSION_1)
             return -1;
@@ -262,6 +278,8 @@ gint32 _thrift_binary_protocol_read_message_begin (ThriftProtocol * protocol,
 gint32 _thrift_binary_protocol_read_message_end (ThriftProtocol * protocol,
                                                  GError ** error)
 {
+    THRIFT_UNUSED_VAR (protocol);
+    THRIFT_UNUSED_VAR (error);
     return 0;
 }
 
@@ -269,12 +287,17 @@ gint32 _thrift_binary_protocol_read_struct_begin (ThriftProtocol * protocol,
                                                   gchar ** name,
                                                   GError ** error)
 {
+    THRIFT_UNUSED_VAR (protocol);
+    THRIFT_UNUSED_VAR (error);
     *name = NULL;
+    return 0;
 }
 
 gint32 _thrift_binary_protocol_read_struct_end (ThriftProtocol * protocol,
                                                 GError ** error)
 {
+    THRIFT_UNUSED_VAR (protocol);
+    THRIFT_UNUSED_VAR (error);
     return 0;
 }
 
@@ -284,6 +307,8 @@ gint32 _thrift_binary_protocol_read_field_begin (ThriftProtocol * protocol,
                                                  gint16 * field_id,
                                                  GError ** error)
 {
+    THRIFT_UNUSED_VAR (name);
+    THRIFT_UNUSED_VAR (error);
     g_assert (THRIFT_IS_BINARY_PROTOCOL (protocol));
 
     guint32 result = 0;
@@ -302,6 +327,8 @@ gint32 _thrift_binary_protocol_read_field_begin (ThriftProtocol * protocol,
 gint32 _thrift_binary_protocol_read_field_end (ThriftProtocol * protocol,
                                                GError ** error)
 {
+    THRIFT_UNUSED_VAR (protocol);
+    THRIFT_UNUSED_VAR (error);
     return 0;
 }
 
@@ -340,6 +367,8 @@ TODO: container limit???
 gint32 _thrift_binary_protocol_read_map_end (ThriftProtocol * protocol,
                                              GError ** error)
 {
+    THRIFT_UNUSED_VAR (protocol);
+    THRIFT_UNUSED_VAR (error);
     return 0;
 }
 
@@ -376,6 +405,8 @@ TODO: container limit???
 gint32 _thrift_binary_protocol_read_list_end (ThriftProtocol * protocol,
                                               GError ** error)
 {
+    THRIFT_UNUSED_VAR (protocol);
+    THRIFT_UNUSED_VAR (error);
     return 0;
 }
 
@@ -392,6 +423,8 @@ gint32 _thrift_binary_protocol_read_set_begin (ThriftProtocol * protocol,
 gint32 _thrift_binary_protocol_read_set_end (ThriftProtocol * protocol,
                                              GError ** error)
 {
+    THRIFT_UNUSED_VAR (protocol);
+    THRIFT_UNUSED_VAR (error);
     return 0;
 }
 
@@ -482,13 +515,13 @@ gint32 _thrift_binary_protocol_read_binary (ThriftProtocol * protocol,
 {
     g_assert (THRIFT_IS_BINARY_PROTOCOL (protocol));
 
-    gint32 result = thrift_protocol_read_i32 (protocol, len, error);
+    gint32 result = thrift_protocol_read_i32 (protocol, (gint32*)len, error);
 
     *str = g_new (gchar, *len);
     /* TODO: make sure we got the mem */
     gint ret = thrift_transport_read (protocol->transport, *str, *len,
                                       error);
-    if (ret < 0 || ret != *len)
+    if (ret < 0 || (guint)ret != *len)
     {
         /* TODO: error handling */
         return -1;

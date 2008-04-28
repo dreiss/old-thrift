@@ -3,10 +3,12 @@
  *
  */
 
+#include "thrift.h"
 #include "thrift_socket.h"
 
 #include <netdb.h>
 #include <string.h>
+#include <unistd.h>
 
 gboolean _thrift_socket_open (ThriftTransport * transport,
                               GError ** error)
@@ -62,9 +64,13 @@ gboolean _thrift_socket_close (ThriftTransport * transport,
 {
     ThriftSocket * thrift_socket = THRIFT_SOCKET (transport);
 
+    THRIFT_UNUSED_VAR (error);
+
     /* TODO: error handling */
     close (thrift_socket->sd);
     thrift_socket->sd = 0;
+
+    return 1;
 }
 
 gint32 _thrift_socket_read (ThriftTransport * transport, gpointer buf,
@@ -73,8 +79,8 @@ gint32 _thrift_socket_read (ThriftTransport * transport, gpointer buf,
     ThriftSocket * thrift_socket = THRIFT_SOCKET (transport);
 
     /* TODO: look at all the stuff in TSocket.cpp */
-    guint ret;
-    gint got = 0;
+    gint ret;
+    guint got = 0;
     while (got < len)
     {
         ret = recv (thrift_socket->sd, buf, len, 0); 
@@ -101,7 +107,7 @@ gint32 _thrift_socket_write (ThriftTransport * transport,
 
     /* TODO: take a look at the flags stuff in TSocket.cpp */
     gint ret;
-    gint sent = 0;
+    guint sent = 0;
     while (sent < len)
     {
         ret = send (thrift_socket->sd, buf + sent, len - sent, 0);
@@ -129,6 +135,9 @@ void _thrift_socket_set_property (GObject * object, guint property_id,
                                   const GValue * value, GParamSpec * pspec)
 {
     ThriftSocket * socket = THRIFT_SOCKET (object);
+
+    THRIFT_UNUSED_VAR (pspec);
+
     /* TODO: we could check that pspec is the type we want, not sure that's nec
      * TODO: proper error here */
     switch (property_id)
@@ -146,6 +155,9 @@ void _thrift_socket_get_property (GObject * object, guint property_id,
                                   GValue * value, GParamSpec * pspec)
 {
     ThriftSocket * socket = THRIFT_SOCKET (object);
+
+    THRIFT_UNUSED_VAR (pspec);
+
     /* TODO: we could check that pspec is the type we want, not sure that's nec
      * TODO: proper error here */
     switch (property_id)

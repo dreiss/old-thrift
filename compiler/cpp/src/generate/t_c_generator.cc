@@ -797,14 +797,14 @@ void t_c_generator::generate_serialize_container(ofstream& out,
   } else if (ttype->is_list()) {
     indent(out) <<
       "xfer += thrift_protocol_write_list_begin(protocol, " <<
-      type_to_enum(((t_list*)ttype)->get_elem_type()) << ", " <<
+      type_to_enum(((t_list*)ttype)->get_elem_type()) << ", (gint32)" <<
       prefix << "->len, error);" << endl;
   }
 
   string iter = tmp("_iter");
   out <<
     indent() << "int i;" << endl <<
-    indent() << "for (i = 0; i < " << prefix << "->len; i++)" << endl;
+    indent() << "for (i = 0; i < (gint32)" << prefix << "->len; i++)" << endl;
   scope_up(out);
     if (ttype->is_map()) {
       generate_serialize_map_element(out, (t_map*)ttype, iter);
@@ -1124,6 +1124,7 @@ void t_c_generator::generate_service(t_service* tservice) {
   f_service_ <<
     "#include \"" << svcname << ".h\"" << endl << 
     "#include \"thrift_client.h\"" << endl <<
+    "#include <string.h>" << endl <<
     endl;
 
   // Generate all the components
@@ -1296,20 +1297,20 @@ void t_c_generator::generate_service_client(t_service* tservice) {
         indent() << "if (mtype == T_EXCEPTION) {" << endl <<
         indent() << "  /* ThriftApplicationException x;" << endl <<
         indent() << "  x.read(iprot_); */" << endl <<
-        indent() << "  thrift_protocol_skip (protocol, T_STRUCT);" << endl <<
+        indent() << "  thrift_protocol_skip (protocol, T_STRUCT, error);" << endl <<
         indent() << "  thrift_protocol_read_message_end (protocol, error);" << endl <<
         indent() << "  /* TODO: error handling throw x; */" << endl <<
         indent() << "  return;" << endl <<
         indent() << "}" << endl <<
         indent() << "if (mtype != T_REPLY) {" << endl <<
-        indent() << "  thrift_protocol_skip (protocol, T_STRUCT);" << endl <<
+        indent() << "  thrift_protocol_skip (protocol, T_STRUCT, error);" << endl <<
         indent() << "  thrift_protocol_read_message_end (protocol, error);" << endl <<
         indent() << "  /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE); */" << endl <<
         indent() << "  return;" << endl <<
         indent() << "}" << endl <<
 
         indent() << "if (strncmp (fname, \"" << name << "\", " << name.length () << ") != 0) {" << endl <<
-        indent() << "  thrift_protocol_skip (protocol, T_STRUCT);" << endl <<
+        indent() << "  thrift_protocol_skip (protocol, T_STRUCT, error);" << endl <<
         indent() << "  thrift_protocol_read_message_end (protocol, error);" << endl <<
         indent() << "  /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */" << endl <<
         indent() << "  return;" << endl <<

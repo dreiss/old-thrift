@@ -5,6 +5,7 @@
  */
 #include "thrudoc.h"
 #include "thrift_client.h"
+#include <string.h>
 
 void thrift_thrudoc_get_buckets (ThriftThrudocClient * client, GPtrArray ** _return, GError ** error)
 {
@@ -43,19 +44,19 @@ void thrift_thrudoc_recv_get_buckets (ThriftThrudocClient * client, GPtrArray **
   if (mtype == T_EXCEPTION) {
     /* ThriftApplicationException x;
     x.read(iprot_); */
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw x; */
     return;
   }
   if (mtype != T_REPLY) {
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE); */
     return;
   }
   if (strncmp (fname, "getBuckets", 10) != 0) {
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
     return;
@@ -165,19 +166,19 @@ void thrift_thrudoc_recv_put (ThriftThrudocClient * client, GError ** error)
   if (mtype == T_EXCEPTION) {
     /* ThriftApplicationException x;
     x.read(iprot_); */
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw x; */
     return;
   }
   if (mtype != T_REPLY) {
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE); */
     return;
   }
   if (strncmp (fname, "put", 3) != 0) {
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
     return;
@@ -264,19 +265,19 @@ void thrift_thrudoc_recv_get (ThriftThrudocClient * client, gchar ** _return, GE
   if (mtype == T_EXCEPTION) {
     /* ThriftApplicationException x;
     x.read(iprot_); */
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw x; */
     return;
   }
   if (mtype != T_REPLY) {
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE); */
     return;
   }
   if (strncmp (fname, "get", 3) != 0) {
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
     return;
@@ -370,19 +371,19 @@ void thrift_thrudoc_recv_remove (ThriftThrudocClient * client, GError ** error)
   if (mtype == T_EXCEPTION) {
     /* ThriftApplicationException x;
     x.read(iprot_); */
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw x; */
     return;
   }
   if (mtype != T_REPLY) {
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE); */
     return;
   }
   if (strncmp (fname, "remove", 6) != 0) {
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
     return;
@@ -469,19 +470,19 @@ void thrift_thrudoc_recv_put_value (ThriftThrudocClient * client, gchar ** _retu
   if (mtype == T_EXCEPTION) {
     /* ThriftApplicationException x;
     x.read(iprot_); */
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw x; */
     return;
   }
   if (mtype != T_REPLY) {
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE); */
     return;
   }
   if (strncmp (fname, "putValue", 8) != 0) {
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
     return;
@@ -578,19 +579,19 @@ void thrift_thrudoc_recv_scan (ThriftThrudocClient * client, ThriftThrudocScanRe
   if (mtype == T_EXCEPTION) {
     /* ThriftApplicationException x;
     x.read(iprot_); */
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw x; */
     return;
   }
   if (mtype != T_REPLY) {
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE); */
     return;
   }
   if (strncmp (fname, "scan", 4) != 0) {
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
     return;
@@ -660,9 +661,9 @@ void thrift_thrudoc_send_put_list (ThriftThrudocClient * client, const GPtrArray
     xfer += thrift_protocol_write_struct_begin (protocol, "putList_args", error);
     xfer += thrift_protocol_write_field_begin (protocol, "elements", T_LIST, 1, error);
     {
-      xfer += thrift_protocol_write_list_begin(protocol, T_STRUCT, elements->len, error);
+      xfer += thrift_protocol_write_list_begin(protocol, T_STRUCT, (gint32)elements->len, error);
       int i;
-      for (i = 0; i < elements->len; i++)
+      for (i = 0; i < (gint32)elements->len; i++)
       {
         xfer += thrift_struct_write (THRIFT_STRUCT (g_ptr_array_index(elements, i)), protocol, error);
       }
@@ -689,19 +690,19 @@ void thrift_thrudoc_recv_put_list (ThriftThrudocClient * client, GPtrArray ** _r
   if (mtype == T_EXCEPTION) {
     /* ThriftApplicationException x;
     x.read(iprot_); */
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw x; */
     return;
   }
   if (mtype != T_REPLY) {
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE); */
     return;
   }
   if (strncmp (fname, "putList", 7) != 0) {
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
     return;
@@ -784,9 +785,9 @@ void thrift_thrudoc_send_get_list (ThriftThrudocClient * client, const GPtrArray
     xfer += thrift_protocol_write_struct_begin (protocol, "getList_args", error);
     xfer += thrift_protocol_write_field_begin (protocol, "elements", T_LIST, 1, error);
     {
-      xfer += thrift_protocol_write_list_begin(protocol, T_STRUCT, elements->len, error);
+      xfer += thrift_protocol_write_list_begin(protocol, T_STRUCT, (gint32)elements->len, error);
       int i;
-      for (i = 0; i < elements->len; i++)
+      for (i = 0; i < (gint32)elements->len; i++)
       {
         xfer += thrift_struct_write (THRIFT_STRUCT (g_ptr_array_index(elements, i)), protocol, error);
       }
@@ -813,19 +814,19 @@ void thrift_thrudoc_recv_get_list (ThriftThrudocClient * client, GPtrArray ** _r
   if (mtype == T_EXCEPTION) {
     /* ThriftApplicationException x;
     x.read(iprot_); */
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw x; */
     return;
   }
   if (mtype != T_REPLY) {
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE); */
     return;
   }
   if (strncmp (fname, "getList", 7) != 0) {
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
     return;
@@ -908,9 +909,9 @@ void thrift_thrudoc_send_remove_list (ThriftThrudocClient * client, const GPtrAr
     xfer += thrift_protocol_write_struct_begin (protocol, "removeList_args", error);
     xfer += thrift_protocol_write_field_begin (protocol, "elements", T_LIST, 1, error);
     {
-      xfer += thrift_protocol_write_list_begin(protocol, T_STRUCT, elements->len, error);
+      xfer += thrift_protocol_write_list_begin(protocol, T_STRUCT, (gint32)elements->len, error);
       int i;
-      for (i = 0; i < elements->len; i++)
+      for (i = 0; i < (gint32)elements->len; i++)
       {
         xfer += thrift_struct_write (THRIFT_STRUCT (g_ptr_array_index(elements, i)), protocol, error);
       }
@@ -937,19 +938,19 @@ void thrift_thrudoc_recv_remove_list (ThriftThrudocClient * client, GPtrArray **
   if (mtype == T_EXCEPTION) {
     /* ThriftApplicationException x;
     x.read(iprot_); */
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw x; */
     return;
   }
   if (mtype != T_REPLY) {
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE); */
     return;
   }
   if (strncmp (fname, "removeList", 10) != 0) {
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
     return;
@@ -1032,9 +1033,9 @@ void thrift_thrudoc_send_put_value_list (ThriftThrudocClient * client, const GPt
     xfer += thrift_protocol_write_struct_begin (protocol, "putValueList_args", error);
     xfer += thrift_protocol_write_field_begin (protocol, "elements", T_LIST, 1, error);
     {
-      xfer += thrift_protocol_write_list_begin(protocol, T_STRUCT, elements->len, error);
+      xfer += thrift_protocol_write_list_begin(protocol, T_STRUCT, (gint32)elements->len, error);
       int i;
-      for (i = 0; i < elements->len; i++)
+      for (i = 0; i < (gint32)elements->len; i++)
       {
         xfer += thrift_struct_write (THRIFT_STRUCT (g_ptr_array_index(elements, i)), protocol, error);
       }
@@ -1061,19 +1062,19 @@ void thrift_thrudoc_recv_put_value_list (ThriftThrudocClient * client, GPtrArray
   if (mtype == T_EXCEPTION) {
     /* ThriftApplicationException x;
     x.read(iprot_); */
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw x; */
     return;
   }
   if (mtype != T_REPLY) {
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE); */
     return;
   }
   if (strncmp (fname, "putValueList", 12) != 0) {
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
     return;
@@ -1180,19 +1181,19 @@ void thrift_thrudoc_recv_admin (ThriftThrudocClient * client, gchar ** _return, 
   if (mtype == T_EXCEPTION) {
     /* ThriftApplicationException x;
     x.read(iprot_); */
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw x; */
     return;
   }
   if (mtype != T_REPLY) {
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE); */
     return;
   }
   if (strncmp (fname, "admin", 5) != 0) {
-    thrift_protocol_skip (protocol, T_STRUCT);
+    thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
     return;

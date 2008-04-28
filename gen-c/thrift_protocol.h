@@ -263,4 +263,7 @@ gint32 thrift_protocol_read_binary (ThriftProtocol * thrift_protocol,
                                     gchar ** str, guint32 * len,
                                     GError ** error);
 
+gint32 thrift_protocol_skip (ThriftProtocol * thrift_protocol, ThriftType type,
+                             GError ** error);
+
 #endif /* THRIFT_PROTOCOL_H */

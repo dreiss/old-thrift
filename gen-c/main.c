@@ -6,6 +6,7 @@
 #include <netdb.h>
 #include <string.h>
 
+#include "thrift.h"
 #include "thrift_socket.h"
 #include "thrift_binary_protocol.h"
 #include "thrudoc.h"
@@ -15,6 +16,9 @@
 
 int main (int argc, char **argv)
 {
+    THRIFT_UNUSED_VAR (argc);
+    THRIFT_UNUSED_VAR (argv);
+
     g_type_init ();
 
     ThriftSocket * socket = g_object_new (THRIFT_TYPE_SOCKET,
@@ -33,10 +37,12 @@ int main (int argc, char **argv)
 
     if (0)
     {
-        GValue host_value = {G_TYPE_STRING,};
+        GValue host_value;
+        g_value_init (&host_value, G_TYPE_STRING);
         g_object_get_property (G_OBJECT (socket), "hostname", &host_value);
 
-        GValue port_value = {G_TYPE_UINT,};
+        GValue port_value;
+        g_value_init (&port_value, G_TYPE_STRING);
         g_object_get_property (G_OBJECT (socket), "port", &port_value);
 
         fprintf (stderr, "socket: hostname=%s, port=%d\n", 
@@ -64,9 +70,7 @@ int main (int argc, char **argv)
     }
     if (0)
     {
-      gchar * _return;
       thrift_thrudoc_put (client, "bucket", "key", "value", NULL);
-      fprintf (stderr, "put ('bucket', 'key', 'value')=%s\n");
     }
 
 #if 0

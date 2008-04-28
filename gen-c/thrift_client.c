@@ -3,6 +3,7 @@
  *
  */
 
+#include "thrift.h"
 #include "thrift_client.h"
 
 #include <netdb.h>
@@ -18,6 +19,9 @@ void _thrift_client_set_property (GObject * object, guint property_id,
                                   const GValue * value, GParamSpec * pspec)
 {
     ThriftClient * client = THRIFT_CLIENT (object);
+
+    THRIFT_UNUSED_VAR (pspec);
+
     /* TODO: we could check that pspec is the type we want, not sure that's nec
      * TODO: proper error here */
     switch (property_id)
@@ -32,6 +36,9 @@ void _thrift_client_get_property (GObject * object, guint property_id,
                                   GValue * value, GParamSpec * pspec)
 {
     ThriftClient * client = THRIFT_CLIENT (object);
+
+    THRIFT_UNUSED_VAR (pspec);
+
     /* TODO: we could check that pspec is the type we want, not sure that's nec
      * TODO: proper error here */
     switch (property_id)

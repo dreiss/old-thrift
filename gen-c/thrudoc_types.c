@@ -4,6 +4,7 @@
  * DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING
  */
 
+#include "thrift.h"
 #include "thrudoc_types.h"
 
 gint32 thrift_thrudoc_thrudoc_exception_write (ThriftStruct * object, ThriftProtocol * protocol, GError ** error)
@@ -223,9 +224,9 @@ gint32 thrift_thrudoc_scan_response_write (ThriftStruct * object, ThriftProtocol
   xfer += thrift_protocol_write_struct_begin (protocol, "ScanResponse", error);
   xfer += thrift_protocol_write_field_begin (protocol, "elements", T_LIST, 1, error);
   {
-    xfer += thrift_protocol_write_list_begin(protocol, T_STRUCT, this_object->elements->len, error);
+    xfer += thrift_protocol_write_list_begin(protocol, T_STRUCT, (gint32)this_object->elements->len, error);
     int i;
-    for (i = 0; i < this_object->elements->len; i++)
+    for (i = 0; i < (gint32)this_object->elements->len; i++)
     {
       xfer += thrift_struct_write (THRIFT_STRUCT (g_ptr_array_index(this_object->elements, i)), protocol, error);
     }
@@ -397,6 +398,7 @@ gint32 thrift_thrudoc_list_response_read (ThriftStruct * object, ThriftProtocol 
 
 void thrift_thrudoc_list_response_instance_init (ThriftThrudocListResponse * object)
 {
+    THRIFT_UNUSED_VAR (object);
 }
 
 void thrift_thrudoc_list_response_class_init (ThriftStructClass * thrift_struct_class)

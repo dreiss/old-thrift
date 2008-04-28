@@ -3,6 +3,7 @@
  *
  */
 
+#include "thrift.h"
 #include "thrift_transport.h"
 
 #include <netdb.h>
@@ -54,17 +55,22 @@ void thrift_transport_flush (ThriftTransport * transport)
 
 gboolean _thrift_transport_is_open (ThriftTransport * transport)
 {
+    THRIFT_UNUSED_VAR (transport);
     return 0;
 }
 
 gboolean _thrift_transport_open (ThriftTransport * transport, GError ** error)
 {
+    THRIFT_UNUSED_VAR (transport);
+    THRIFT_UNUSED_VAR (error);
     g_assert_not_reached ();
     return 0;
 }
 
 gboolean _thrift_transport_close (ThriftTransport * transport, GError ** error)
 {
+    THRIFT_UNUSED_VAR (transport);
+    THRIFT_UNUSED_VAR (error);
     g_assert_not_reached ();
     return 0;
 }
@@ -72,29 +78,41 @@ gboolean _thrift_transport_close (ThriftTransport * transport, GError ** error)
 gint32 _thrift_transport_read (ThriftTransport * transport, gpointer buf, 
                               guint32 len, GError ** error)
 {
+    THRIFT_UNUSED_VAR (transport);
+    THRIFT_UNUSED_VAR (buf);
+    THRIFT_UNUSED_VAR (len);
+    THRIFT_UNUSED_VAR (error);
     g_assert_not_reached ();
     return 0;
 }
 
+/* TODO: add gerror's to the rest of the funcs like this one */
 void _thrift_transport_read_end (ThriftTransport * transport)
 {
+    THRIFT_UNUSED_VAR (transport);
     return;
 }
 
 gint32 _thrift_transport_write (ThriftTransport * transport, const gpointer buf, 
                                const guint32 len, GError ** error)
 {
+    THRIFT_UNUSED_VAR (transport);
+    THRIFT_UNUSED_VAR (buf);
+    THRIFT_UNUSED_VAR (len);
+    THRIFT_UNUSED_VAR (error);
     g_assert_not_reached ();
     return 0;
 }
 
 void _thrift_transport_write_end (ThriftTransport * transport)
 {
+    THRIFT_UNUSED_VAR (transport);
     return;
 }
 
 void _thrift_transport_flush (ThriftTransport * transport)
 {
+    THRIFT_UNUSED_VAR (transport);
     return;
 }
 
@@ -102,13 +120,6 @@ enum _ThriftTransportProperties
 {
     PROP_DUMMY
 };
-
-static void _thrift_transport_instance_init (ThriftTransport * transport)
-{
-}
-
-// TODO: destroy, free hostname memory, close transport, etc.
-
 
 static void _thrift_transport_class_init (ThriftTransportClass * thrift_transport_class)
 {
@@ -144,7 +155,7 @@ GType thrift_transport_get_type (void)
             NULL, /* class_data */
             sizeof (ThriftTransport),
             0, /* n_preallocs */
-            (GInstanceInitFunc)_thrift_transport_instance_init,
+            NULL, /* instance_init */
             NULL, /* value_table */
         };
 
