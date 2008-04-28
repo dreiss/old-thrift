@@ -23,7 +23,7 @@ void _thrift_client_set_property (GObject * object, guint property_id,
     switch (property_id)
     {
         case PROP_PROTOCOL:
-            client->thrift_protocol = g_value_get_object (value);
+            client->protocol = g_value_get_object (value);
             break;
     }
 }
@@ -37,14 +37,14 @@ void _thrift_client_get_property (GObject * object, guint property_id,
     switch (property_id)
     {
         case PROP_PROTOCOL:
-            g_value_set_object (value, client->thrift_protocol);
+            g_value_set_object (value, client->protocol);
             break;
     }
 }
 
 static void _thrift_client_instance_init (ThriftClient * client)
 {
-    client->thrift_protocol = NULL;
+    client->protocol = NULL;
 }
 
 static void _thrift_client_class_init (ThriftClientClass * klass)

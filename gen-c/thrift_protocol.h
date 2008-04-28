@@ -1,16 +1,18 @@
 /**
- * Thrift c 
+ * Thrift c
+ *
+ * THIS CLASS IS ABSTRACT, INSTANTIATE ONE OF ITS CHILDREN
  *
  */
 #ifndef THRIFT_PROTOCOL_H
 #define THRIFT_PROTOCOL_H
 
-#include "thrift_socket.h"
+#include "thrift_transport.h"
 
 #include <glib-object.h>
 
 typedef enum _ThriftType ThriftType;
-enum _ThriftType 
+enum _ThriftType
 {
     T_STOP       = 0,
     T_VOID       = 1,
@@ -33,7 +35,7 @@ enum _ThriftType
 };
 
 typedef enum _ThriftMessageType ThriftMessageType;
-enum _ThriftMessageType 
+enum _ThriftMessageType
 {
     T_CALL       = 1,
     T_REPLY      = 2,
@@ -42,93 +44,110 @@ enum _ThriftMessageType
 
 typedef struct _ThriftProtocol ThriftProtocol;
 struct _ThriftProtocol
-{ 
-    GObject parent; 
+{
+    GObject parent;
 
     /* private */
-    ThriftSocket * thrift_socket;
-}; 
+    ThriftTransport * transport;
+};
 
 typedef struct _ThriftProtocolClass ThriftProtocolClass;
 struct _ThriftProtocolClass
-{ 
-    GObjectClass parent; 
+{
+    GObjectClass parent;
 
     gint32 (*write_message_begin) (ThriftProtocol * thrift_protocol,
-                                   const gchar * name, 
-                                   const ThriftMessageType message_type, 
-                                   const gint32 seqid);
-    gint32 (*write_message_end) (ThriftProtocol * thrift_protocol);
+                                   const gchar * name,
+                                   const ThriftMessageType message_type,
+                                   const gint32 seqid, GError ** error);
+    gint32 (*write_message_end) (ThriftProtocol * thrift_protocol,
+                                 GError ** error);
     gint32 (*write_struct_begin) (ThriftProtocol * thrift_protocol,
-                                  const gchar * name);
-    gint32 (*write_struct_end) (ThriftProtocol * thrift_protocol);
+                                  const gchar * name, GError ** error);
+    gint32 (*write_struct_end) (ThriftProtocol * thrift_protocol,
+                                GError ** error);
     gint32 (*write_field_begin) (ThriftProtocol * thrift_protocol,
                                  const gchar * name,
                                  const ThriftType field_type,
-                                 const gint16 field_id);
-    gint32 (*write_field_end) (ThriftProtocol * thrift_protocol);
-    gint32 (*write_field_stop) (ThriftProtocol * thrift_protocol);
+                                 const gint16 field_id, GError ** error);
+    gint32 (*write_field_end) (ThriftProtocol * thrift_protocol,
+                               GError ** error);
+    gint32 (*write_field_stop) (ThriftProtocol * thrift_protocol,
+                                GError ** error);
     gint32 (*write_map_begin) (ThriftProtocol * thrift_protocol,
                                const ThriftType key_type,
                                const ThriftType value_type,
-                               const guint32 size);
-    gint32 (*write_map_end) (ThriftProtocol * thrift_protocol);
+                               const guint32 size, GError ** error);
+    gint32 (*write_map_end) (ThriftProtocol * thrift_protocol, GError ** error);
     gint32 (*write_list_begin) (ThriftProtocol * thrift_protocol,
                                 const ThriftType element_type,
-                                const guint32 size);
-    gint32 (*write_list_end) (ThriftProtocol * thrift_protocol);
+                                const guint32 size, GError ** error);
+    gint32 (*write_list_end) (ThriftProtocol * thrift_protocol, GError ** error);
     gint32 (*write_set_begin) (ThriftProtocol * thrift_protocol,
                                const ThriftType element_type,
-                               const guint32 size);
-    gint32 (*write_set_end) (ThriftProtocol * thrift_protocol);
+                               const guint32 size, GError ** error);
+    gint32 (*write_set_end) (ThriftProtocol * thrift_protocol, GError ** error);
     gint32 (*write_bool) (ThriftProtocol * thrift_protocol,
-                          const gboolean value);
+                          const gboolean value, GError ** error);
     gint32 (*write_byte) (ThriftProtocol * thrift_protocol,
-                          const gint8 value);
+                          const gint8 value, GError ** error);
     gint32 (*write_i16) (ThriftProtocol * thrift_protocol,
-                         const gint16 value);
+                         const gint16 value, GError ** error);
     gint32 (*write_i32) (ThriftProtocol * thrift_protocol,
-                         const gint32 value);
+                         const gint32 value, GError ** error);
     gint32 (*write_i64) (ThriftProtocol * thrift_protocol,
-                         const gint64 value);
+                         const gint64 value, GError ** error);
     gint32 (*write_double) (ThriftProtocol * thrift_protocol,
-                            const double value);
+                            const double value, GError ** error);
     gint32 (*write_string) (ThriftProtocol * thrift_protocol,
-                            const gchar * str);
+                            const gchar * str, GError ** error);
     gint32 (*write_binary) (ThriftProtocol * thrift_protocol,
-                            const char * buf, const guint32 len);
+                            const char * buf, const guint32 len, GError ** error);
 
     gint32 (*read_message_begin) (ThriftProtocol * thrift_protocol,
-                                  gchar ** name, 
+                                  gchar ** name,
                                   ThriftMessageType * message_type,
-                                  gint32 * seqid);
-    gint32 (*read_message_end) (ThriftProtocol * thrift_protocol);
+                                  gint32 * seqid, GError ** error);
+    gint32 (*read_message_end) (ThriftProtocol * thrift_protocol,
+                                GError ** error);
     gint32 (*read_struct_begin) (ThriftProtocol * thrift_protocol,
-                                 gchar ** name);
-    gint32 (*read_struct_end) (ThriftProtocol * thrift_protocol);
+                                 gchar ** name, GError ** error);
+    gint32 (*read_struct_end) (ThriftProtocol * thrift_protocol,
+                               GError ** error);
     gint32 (*read_field_begin) (ThriftProtocol * thrift_protocol, gchar ** name,
-                                ThriftType * field_type, gint16 * field_id);
-    gint32 (*read_field_end) (ThriftProtocol * thrift_protocol);
+                                ThriftType * field_type, gint16 * field_id,
+                                GError ** error);
+    gint32 (*read_field_end) (ThriftProtocol * thrift_protocol,
+                              GError ** error);
     gint32 (*read_map_begin) (ThriftProtocol * thrift_protocol,
                               ThriftType * key_type, ThriftType * value_type,
-                              guint32 * size);
-    gint32 (*read_map_end) (ThriftProtocol * thrift_protocol);
+                              guint32 * size, GError ** error);
+    gint32 (*read_map_end) (ThriftProtocol * thrift_protocol, GError ** error);
     gint32 (*read_list_begin) (ThriftProtocol * thrift_protocol,
-                               ThriftType * element_type, guint32 * size);
-    gint32 (*read_list_end) (ThriftProtocol * thrift_protocol);
+                               ThriftType * element_type, guint32 * size,
+                               GError ** error);
+    gint32 (*read_list_end) (ThriftProtocol * thrift_protocol, GError ** error);
     gint32 (*read_set_begin) (ThriftProtocol * thrift_protocol,
-                              ThriftType * element_type, guint32 * size);
-    gint32 (*read_set_end) (ThriftProtocol * thrift_protocol);
-    gint32 (*read_bool) (ThriftProtocol * thrift_protocol, gboolean * value);
-    gint32 (*read_byte) (ThriftProtocol * thrift_protocol, gint8 * value);
-    gint32 (*read_i16) (ThriftProtocol * thrift_protocol, gint16 * value);
-    gint32 (*read_i32) (ThriftProtocol * thrift_protocol, gint32 * value);
-    gint32 (*read_i64) (ThriftProtocol * thrift_protocol, gint64 * value);
-    gint32 (*read_double) (ThriftProtocol * thrift_protocol, double * value);
-    gint32 (*read_string) (ThriftProtocol * thrift_protocol, gchar ** str);
-    gint32 (*read_binary) (ThriftProtocol * thrift_protocol, gchar ** str, 
-                           guint32 * len);
-}; 
+                              ThriftType * element_type, guint32 * size,
+                              GError ** error);
+    gint32 (*read_set_end) (ThriftProtocol * thrift_protocol, GError ** error);
+    gint32 (*read_bool) (ThriftProtocol * thrift_protocol, gboolean * value,
+                         GError ** error);
+    gint32 (*read_byte) (ThriftProtocol * thrift_protocol, gint8 * value,
+                         GError ** error);
+    gint32 (*read_i16) (ThriftProtocol * thrift_protocol, gint16 * value,
+                        GError ** error);
+    gint32 (*read_i32) (ThriftProtocol * thrift_protocol, gint32 * value,
+                        GError ** error);
+    gint32 (*read_i64) (ThriftProtocol * thrift_protocol, gint64 * value,
+                        GError ** error);
+    gint32 (*read_double) (ThriftProtocol * thrift_protocol, double * value,
+                           GError ** error);
+    gint32 (*read_string) (ThriftProtocol * thrift_protocol, gchar ** str,
+                           GError ** error);
+    gint32 (*read_binary) (ThriftProtocol * thrift_protocol, gchar ** str,
+                           guint32 * len, GError ** error);
+};
 
 GType thrift_protocol_get_type (void);
 
@@ -140,90 +159,108 @@ GType thrift_protocol_get_type (void);
 #define THRIFT_PROTOCOL_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), THRIFT_TYPE_PROTOCOL, ThriftProtocolClass))
 
 gint32 thrift_protocol_write_message_begin (ThriftProtocol * thrift_protocol,
-                                            const gchar * name, 
-                                            const ThriftMessageType message_type, 
-                                            const gint32 seqid);
-gint32 thrift_protocol_write_message_end (ThriftProtocol * thrift_protocol);
+                                            const gchar * name,
+                                            const ThriftMessageType message_type,
+                                            const gint32 seqid,
+                                            GError ** error);
+gint32 thrift_protocol_write_message_end (ThriftProtocol * thrift_protocol,
+                                          GError ** error);
 gint32 thrift_protocol_write_struct_begin (ThriftProtocol * thrift_protocol,
-                                           const gchar * name);
-gint32 thrift_protocol_write_struct_end (ThriftProtocol * thrift_protocol);
+                                           const gchar * name,
+                                           GError ** error);
+gint32 thrift_protocol_write_struct_end (ThriftProtocol * thrift_protocol,
+                                         GError ** error);
 gint32 thrift_protocol_write_field_begin (ThriftProtocol * thrift_protocol,
                                           const gchar * name,
                                           const ThriftType field_type,
-                                          const gint16 field_id);
-gint32 thrift_protocol_write_field_end (ThriftProtocol * thrift_protocol);
-gint32 thrift_protocol_write_field_stop (ThriftProtocol * thrift_protocol);
+                                          const gint16 field_id,
+                                          GError ** error);
+gint32 thrift_protocol_write_field_end (ThriftProtocol * thrift_protocol,
+                                        GError ** error);
+gint32 thrift_protocol_write_field_stop (ThriftProtocol * thrift_protocol,
+                                         GError ** error);
 gint32 thrift_protocol_write_map_begin (ThriftProtocol * thrift_protocol,
                                         const ThriftType key_type,
                                         const ThriftType value_type,
-                                        const guint32 size);
-gint32 thrift_protocol_write_map_end (ThriftProtocol * thrift_protocol);
+                                        const guint32 size, GError ** error);
+gint32 thrift_protocol_write_map_end (ThriftProtocol * thrift_protocol,
+                                      GError ** error);
 gint32 thrift_protocol_write_list_begin (ThriftProtocol * thrift_protocol,
                                          const ThriftType element_type,
-                                         const guint32 size);
-gint32 thrift_protocol_write_list_end (ThriftProtocol * thrift_protocol);
+                                         const guint32 size, GError ** error);
+gint32 thrift_protocol_write_list_end (ThriftProtocol * thrift_protocol,
+                                       GError ** error);
 gint32 thrift_protocol_write_set_begin (ThriftProtocol * thrift_protocol,
                                         const ThriftType element_type,
-                                        const guint32 size);
-gint32 thrift_protocol_write_set_end (ThriftProtocol * thrift_protocol);
+                                        const guint32 size, GError ** error);
+gint32 thrift_protocol_write_set_end (ThriftProtocol * thrift_protocol,
+                                      GError ** error);
 gint32 thrift_protocol_write_bool (ThriftProtocol * thrift_protocol,
-                                   const gboolean value);
+                                   const gboolean value, GError ** error);
 gint32 thrift_protocol_write_byte (ThriftProtocol * thrift_protocol,
-                                   const gint8 value);
+                                   const gint8 value, GError ** error);
 gint32 thrift_protocol_write_i16 (ThriftProtocol * thrift_protocol,
-                                  const gint16 value);
+                                  const gint16 value, GError ** error);
 gint32 thrift_protocol_write_i32 (ThriftProtocol * thrift_protocol,
-                                  const gint32 value);
+                                  const gint32 value, GError ** error);
 gint32 thrift_protocol_write_i64 (ThriftProtocol * thrift_protocol,
-                                  const gint64 value);
+                                  const gint64 value, GError ** error);
 gint32 thrift_protocol_write_double (ThriftProtocol * thrift_protocol,
-                                     const double value);
+                                     const double value, GError ** error);
 gint32 thrift_protocol_write_string (ThriftProtocol * thrift_protocol,
-                                     const gchar * str);
+                                     const gchar * str, GError ** error);
 gint32 thrift_protocol_write_binary (ThriftProtocol * thrift_protocol,
-                                     const char * buf, const guint32 len);
+                                     const char * buf, const guint32 len,
+                                     GError ** error);
 
 gint32 thrift_protocol_read_message_begin (ThriftProtocol * thrift_protocol,
-                                           gchar ** name, 
+                                           gchar ** name,
                                            ThriftMessageType * message_type,
-                                           gint32 * seqid);
-gint32 thrift_protocol_read_message_end (ThriftProtocol * thrift_protocol);
+                                           gint32 * seqid, GError ** error);
+gint32 thrift_protocol_read_message_end (ThriftProtocol * thrift_protocol,
+                                         GError ** error);
 gint32 thrift_protocol_read_struct_begin (ThriftProtocol * thrift_protocol,
-                                          gchar ** name);
-gint32 thrift_protocol_read_struct_end (ThriftProtocol * thrift_protocol);
+                                          gchar ** name, GError ** error);
+gint32 thrift_protocol_read_struct_end (ThriftProtocol * thrift_protocol,
+                                        GError ** error);
 gint32 thrift_protocol_read_field_begin (ThriftProtocol * thrift_protocol,
                                          gchar ** name,
                                          ThriftType * field_type,
-                                         gint16 * field_id);
-gint32 thrift_protocol_read_field_end (ThriftProtocol * thrift_protocol);
+                                         gint16 * field_id, GError ** error);
+gint32 thrift_protocol_read_field_end (ThriftProtocol * thrift_protocol,
+                                       GError ** error);
 gint32 thrift_protocol_read_map_begin (ThriftProtocol * thrift_protocol,
                                        ThriftType * key_type,
                                        ThriftType * value_type,
-                                       guint32 * size);
-gint32 thrift_protocol_read_map_end (ThriftProtocol * thrift_protocol);
+                                       guint32 * size, GError ** error);
+gint32 thrift_protocol_read_map_end (ThriftProtocol * thrift_protocol,
+                                     GError ** error);
 gint32 thrift_protocol_read_list_begin (ThriftProtocol * thrift_protocol,
                                         ThriftType * element_type,
-                                        guint32 * size);
-gint32 thrift_protocol_read_list_end (ThriftProtocol * thrift_protocol);
+                                        guint32 * size, GError ** error);
+gint32 thrift_protocol_read_list_end (ThriftProtocol * thrift_protocol,
+                                      GError ** error);
 gint32 thrift_protocol_read_set_begin (ThriftProtocol * thrift_protocol,
                                        ThriftType * element_type,
-                                       guint32 * size);
-gint32 thrift_protocol_read_set_end (ThriftProtocol * thrift_protocol);
+                                       guint32 * size, GError ** error);
+gint32 thrift_protocol_read_set_end (ThriftProtocol * thrift_protocol,
+                                     GError ** error);
 gint32 thrift_protocol_read_bool (ThriftProtocol * thrift_protocol,
-                                  gboolean * value);
+                                  gboolean * value, GError ** error);
 gint32 thrift_protocol_read_byte (ThriftProtocol * thrift_protocol,
-                                  gint8 * value);
+                                  gint8 * value, GError ** error);
 gint32 thrift_protocol_read_i16 (ThriftProtocol * thrift_protocol,
-                                 gint16 * value);
+                                 gint16 * value, GError ** error);
 gint32 thrift_protocol_read_i32 (ThriftProtocol * thrift_protocol,
-                                 gint32 * value);
+                                 gint32 * value, GError ** error);
 gint32 thrift_protocol_read_i64 (ThriftProtocol * thrift_protocol,
-                                 gint64 * value);
+                                 gint64 * value, GError ** error);
 gint32 thrift_protocol_read_double (ThriftProtocol * thrift_protocol,
-                                    double * value);
+                                    double * value, GError ** error);
 gint32 thrift_protocol_read_string (ThriftProtocol * thrift_protocol,
-                                    gchar ** str);
+                                    gchar ** str, GError ** error);
 gint32 thrift_protocol_read_binary (ThriftProtocol * thrift_protocol,
-                                    gchar ** str, guint32 * len);
+                                    gchar ** str, guint32 * len,
+                                    GError ** error);
 
 #endif /* THRIFT_PROTOCOL_H */

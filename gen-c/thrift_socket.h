@@ -1,32 +1,34 @@
 /**
- * Thrift c 
+ * Thrift c
  *
  */
 #ifndef THRIFT_SOCKET_H
 #define THRIFT_SOCKET_H
 
+#include "thrift_transport.h"
+
 #include <glib-object.h>
 
 typedef struct _ThriftSocket ThriftSocket;
 struct _ThriftSocket
-{ 
-    GObject parent; 
+{
+    ThriftTransport parent;
 
     /* private */
     gchar * hostname;
     gshort port;
-    int socket;
 
+    int sd;
     guint8 * buf;
     guint32 buf_size;
     guint32 buf_len;
-}; 
+};
 
 typedef struct _ThriftSocketClass ThriftSocketClass;
 struct _ThriftSocketClass
-{ 
-    GObjectClass parent; 
-}; 
+{
+    ThriftTransportClass parent;
+};
 
 GType thrift_socket_get_type (void);
 
@@ -37,9 +39,16 @@ GType thrift_socket_get_type (void);
 #define THRIFT_IS_SOCKET_CLASS(c) (G_TYPE_CHECK_CLASS_TYPE ((c), THRIFT_TYPE_SOCKET))
 #define THRIFT_SOCKET_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), THRIFT_TYPE_SOCKET, ThriftSocketClass))
 
-gboolean thrift_socket_connect (ThriftSocket * socket);
-gint thrift_socket_send (ThriftSocket * socket, const gpointer buf, guint len);
-gint thrift_socket_receive (ThriftSocket * socket, gpointer buf, guint len);
-gint thrift_socket_flush (ThriftSocket * socket);
+typedef enum
+{
+    THRIFT_SOCKET_ERROR_HOST,
+    THRIFT_SOCKET_ERROR_SOCKET,
+    THRIFT_SOCKET_ERROR_CONNECT,
+    THRIFT_SOCKET_ERROR_SEND,
+    THRIFT_SOCKET_ERROR_RECEIVE
+} ThriftSocketError;
+
+GQuark thrift_socket_error_quark (void);
+#define THRIFT_SOCKET_ERROR (thrift_socket_error_quark ())
 
 #endif /* THRIFT_SOCKET_H */

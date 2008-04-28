@@ -16,7 +16,7 @@ struct _ThriftClient
   GObject parent;
 
   /* private */
-  ThriftProtocol * thrift_protocol;
+  ThriftProtocol * protocol;
 };
 typedef struct _ThriftClientClass ThriftClientClass;
 struct _ThriftClientClass

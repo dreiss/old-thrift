@@ -24,7 +24,7 @@ int main (int argc, char **argv)
 
     // TODO: figure out why sending it as a property seg-faults
     ThriftBinaryProtocol * prot = g_object_new (THRIFT_TYPE_BINARY_PROTOCOL, 
-                                                "socket", socket, 
+                                                "transport", socket, 
                                                 NULL);
 
     ThriftThrudocClient * client = g_object_new (THRIFT_THRUDOC_TYPE_CLIENT,
@@ -44,23 +44,28 @@ int main (int argc, char **argv)
                  g_value_get_uint (&port_value));
     }
 
-    thrift_socket_connect (socket);
+    GError * err = NULL;
+    if (!thrift_transport_open (THRIFT_TRANSPORT (socket), &err))
+    {
+        fprintf (stderr, "failed to connect to host");
+        exit (-1);
+    }
 
     if (0)
     {
       GPtrArray * _return;
-      thrift_thrudoc_get_buckets (client, &_return);
+      thrift_thrudoc_get_buckets (client, &_return, NULL);
     }
     if (1)
     {
       gchar * _return;
-      thrift_thrudoc_admin (client, &_return, "echo", "data");
+      thrift_thrudoc_admin (client, &_return, "echo", "data", NULL);
       fprintf (stderr, "admin ('echo', 'data')=%s\n", _return);
     }
     if (0)
     {
       gchar * _return;
-      thrift_thrudoc_put (client, "bucket", "key", "value");
+      thrift_thrudoc_put (client, "bucket", "key", "value", NULL);
       fprintf (stderr, "put ('bucket', 'key', 'value')=%s\n");
     }
 

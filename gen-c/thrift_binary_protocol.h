@@ -15,7 +15,7 @@ struct _ThriftBinaryProtocol
     ThriftProtocol parent; 
 
     /* private */
-    ThriftSocket * thrift_socket;
+    ThriftTransport * transport;
 }; 
 
 typedef struct _ThriftBinaryProtocolClass ThriftBinaryProtocolClass;

@@ -26,8 +26,8 @@ struct _ThriftStructClass
     GObjectClass parent; 
 
     /* public */
-    gint32 (*read) (ThriftStruct * object, ThriftProtocol * thrift_protocol);
-    gint32 (*write) (ThriftStruct * object, ThriftProtocol * thrift_protocol);
+    gint32 (*read) (ThriftStruct * object, ThriftProtocol * protocol, GError ** error);
+    gint32 (*write) (ThriftStruct * object, ThriftProtocol * protocol, GError ** error);
 }; 
 GType thrift_struct_get_type (void);
 void thrift_struct_instance_init (GTypeInstance *instance, gpointer g_class);
@@ -38,8 +38,8 @@ void thrift_struct_instance_init (GTypeInstance *instance, gpointer g_class);
 #define THRIFT_IS_STRUCT_CLASS(c) (G_TYPE_CHECK_CLASS_TYPE ((c), THRIFT_TYPE_STRUCT))
 #define THRIFT_STRUCT_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), THRIFT_TYPE_STRUCT, ThriftStructClass))
 
-gint32 thrift_struct_read (ThriftStruct * object, ThriftProtocol * thift_protocol);
-gint32 thrift_struct_write (ThriftStruct * object, ThriftProtocol * thift_protocol);
+gint32 thrift_struct_read (ThriftStruct * object, ThriftProtocol * thift_protocol, GError ** error);
+gint32 thrift_struct_write (ThriftStruct * object, ThriftProtocol * thift_protocol, GError ** error);
 
 #endif /* THRIFT_STRUCT_H */
 

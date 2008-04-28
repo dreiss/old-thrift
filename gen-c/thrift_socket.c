@@ -8,10 +8,11 @@
 #include <netdb.h>
 #include <string.h>
 
-gboolean thrift_socket_connect (ThriftSocket * thrift_socket)
+gboolean _thrift_socket_open (ThriftTransport * transport,
+                              GError ** error)
 {
-    g_assert (THRIFT_IS_SOCKET (thrift_socket));
-    g_assert (thrift_socket->socket == 0);
+    ThriftSocket * thrift_socket = THRIFT_SOCKET (transport);
+    g_assert (thrift_socket->sd == 0);
 
     struct hostent * hp;
     struct sockaddr_in pin;
@@ -19,7 +20,10 @@ gboolean thrift_socket_connect (ThriftSocket * thrift_socket)
     /* go find out about the desired host machine */
     if ((hp = gethostbyname (thrift_socket->hostname)) == 0)
     {
-        perror ("gethostbyname");
+        /* TODO: pass through h_error info */
+        g_set_error (error, THRIFT_SOCKET_ERROR, THRIFT_SOCKET_ERROR_HOST, 
+                     "failed to lookup host: %s:%d", 
+                     thrift_socket->hostname, thrift_socket->port);
         return 0;
     }
 
@@ -30,80 +34,88 @@ gboolean thrift_socket_connect (ThriftSocket * thrift_socket)
     pin.sin_port = htons (thrift_socket->port);
 
     /* grab an Internet domain socket */
-    if ((thrift_socket->socket = socket (AF_INET, SOCK_STREAM, 0)) == -1) 
+    if ((thrift_socket->sd = socket (AF_INET, SOCK_STREAM, 0)) == -1) 
     {
-        perror ("socket");
+        /* TODO: pass through error info */
+        g_set_error (error, THRIFT_SOCKET_ERROR, THRIFT_SOCKET_ERROR_SOCKET, 
+                     "failed to create socket for host: %s:%d", 
+                     thrift_socket->hostname, thrift_socket->port);
         return 0;
     }
 
     /* connect to PORT on HOST */
-    if (connect (thrift_socket->socket, (struct sockaddr *)&pin, sizeof (pin)) ==
+    if (connect (thrift_socket->sd, (struct sockaddr *)&pin, sizeof (pin)) ==
         -1)
     {
-        perror ("connect");
+        /* TODO: pass through error info */
+        g_set_error (error, THRIFT_SOCKET_ERROR, THRIFT_SOCKET_ERROR_CONNECT, 
+                     "failed to connect to host: %s:%d", 
+                     thrift_socket->hostname, thrift_socket->port);
         return 0;
     }
 
     return 1;
 }
 
-gint thrift_socket_send (ThriftSocket * socket, const gpointer buf, guint len)
+gboolean _thrift_socket_close (ThriftTransport * transport,
+                               GError ** error)
 {
-    g_assert (THRIFT_IS_SOCKET (socket));
+    ThriftSocket * thrift_socket = THRIFT_SOCKET (transport);
 
-    if (socket->buf_len + len > socket->buf_size)
-    {
-        // grow the buffer
-        socket->buf = g_realloc (socket->buf, socket->buf_size * 2);
-        socket->buf_size *= 2;
-    }
-
-    memcpy (socket->buf + socket->buf_len, buf, len);
-    socket->buf_len += len;
-
-    return len;
+    /* TODO: error handling */
+    close (thrift_socket->sd);
+    thrift_socket->sd = 0;
 }
 
-gint thrift_socket_receive (ThriftSocket * socket, gpointer buf, guint len)
+gint32 _thrift_socket_read (ThriftTransport * transport, gpointer buf,
+                            guint len, GError ** error)
 {
-    g_assert (THRIFT_IS_SOCKET (socket));
+    ThriftSocket * thrift_socket = THRIFT_SOCKET (transport);
 
+    /* TODO: look at all the stuff in TSocket.cpp */
     guint ret;
+    gint got = 0;
+    while (got < len)
+    {
+        ret = recv (thrift_socket->sd, buf, len, 0); 
+        if (ret < 0)
+        {
+            /* TODO: pass on error info */
+            g_set_error (error, THRIFT_SOCKET_ERROR, 
+                         THRIFT_SOCKET_ERROR_RECEIVE, 
+                         "failed to send %d bytes", len);
+            return -1;
+        }
+        got += ret;
+    }
 
-    /* wait for a message to come back from the server */
-    ret = recv (socket->socket, buf, len, 0); 
-    if (ret == -1)
-        perror ("recv");
-    return ret;
+    return got;
 }
 
-gint thrift_socket_flush (ThriftSocket * socket)
+gint32 _thrift_socket_write (ThriftTransport * transport,
+                             const gpointer buf, const guint len,
+                             GError ** error)
 {
-    guint ret;
+    ThriftSocket * thrift_socket = THRIFT_SOCKET (transport);
+    g_assert (thrift_socket->sd != 0);
 
-    g_assert (THRIFT_IS_SOCKET (socket));
-
-    /* send the "frame" size */
-    gint32 sz = socket->buf_len;
-    sz = (gint32)g_htonl(sz);
-    ret = send (socket->socket, &sz, 4, 0);
-    if (ret == -1)
+    /* TODO: take a look at the flags stuff in TSocket.cpp */
+    gint ret;
+    gint sent = 0;
+    while (sent < len)
     {
-        perror ("send");
-        return -1;
+        ret = send (thrift_socket->sd, buf + sent, len - sent, 0);
+        if (ret < 0)
+        {
+            /* TODO: pass on error info */
+            g_set_error (error, THRIFT_SOCKET_ERROR, THRIFT_SOCKET_ERROR_SEND, 
+                         "failed to send %d bytes", len);
+            return -1;
+        }
+        sent += ret;
     }
 
-    /* send a message to the server PORT on machine HOST */
-    ret = send (socket->socket, socket->buf, socket->buf_len, 0);
-    if (ret == -1)
-    {
-        perror ("send");
-        return -1;
-    }
-
-    socket->buf_len = 0;
-
-    return ret + 4;
+    return sent;
 }
 
 enum _ThriftSocketProperties
@@ -149,7 +161,7 @@ void _thrift_socket_get_property (GObject * object, guint property_id,
 
 static void _thrift_socket_instance_init (ThriftSocket * socket)
 {
-    socket->socket = 0;
+    socket->sd = 0;
     socket->buf_size = 256;
     socket->buf = g_new (guint8, socket->buf_size);
 }
@@ -181,6 +193,20 @@ static void _thrift_socket_class_init (ThriftSocketClass * klass)
                                     1024 /* default value */,
                                     G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE);
     g_object_class_install_property (gobject_class, PROP_PORT, param_spec);
+
+    ThriftTransportClass * thrift_transport_class = 
+        THRIFT_TRANSPORT_CLASS(klass);
+
+    thrift_transport_class->open = _thrift_socket_open;
+    thrift_transport_class->close = _thrift_socket_close;
+    thrift_transport_class->read = _thrift_socket_read;
+    thrift_transport_class->write = _thrift_socket_write;
+}
+
+GQuark
+thrift_socket_error_quark (void)
+{
+    return g_quark_from_static_string ("thrift-socket-error-quark");
 }
 
 GType thrift_socket_get_type (void)
@@ -203,7 +229,7 @@ GType thrift_socket_get_type (void)
             NULL, /* value_table */
         };
 
-        type = g_type_register_static (G_TYPE_OBJECT,
+        type = g_type_register_static (THRIFT_TYPE_TRANSPORT,
                                        "ThriftSocketType",
                                        &type_info, 0);
     }

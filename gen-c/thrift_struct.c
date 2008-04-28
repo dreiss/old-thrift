@@ -5,14 +5,14 @@
 
 #include "thrift_struct.h"
 
-gint32 thrift_struct_read (ThriftStruct * object, ThriftProtocol * thrift_protocol)
+gint32 thrift_struct_read (ThriftStruct * object, ThriftProtocol * protocol, GError ** error)
 {
-    return THRIFT_STRUCT_GET_CLASS (object)->read (object, thrift_protocol);
+    return THRIFT_STRUCT_GET_CLASS (object)->read (object, protocol, error);
 }
 
-gint32 thrift_struct_write (ThriftStruct * object, ThriftProtocol * thrift_protocol)
+gint32 thrift_struct_write (ThriftStruct * object, ThriftProtocol * protocol, GError ** error)
 {
-    return THRIFT_STRUCT_GET_CLASS (object)->write (object, thrift_protocol);
+    return THRIFT_STRUCT_GET_CLASS (object)->write (object, protocol, error);
 }
 
 static void _thrift_struct_instance_init (ThriftStruct * object)
