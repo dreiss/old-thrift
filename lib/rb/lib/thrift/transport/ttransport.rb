@@ -302,8 +302,7 @@ class TMemoryBuffer < TTransport
       @buf[@rpos..-1]
     else
       if size > @buf.length - @rpos
-        # TODO: Replace with real exception
-        raise NotImplementedError # Memory buffers only get one shot.
+        raise EOFError # Memory buffers only get one shot.
       else
         @buf[@rpos..(@rpos + size)]
       end
