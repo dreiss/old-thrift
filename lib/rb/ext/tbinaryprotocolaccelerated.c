@@ -12,6 +12,7 @@
 
 #ifndef HAVE_STRLCPY
 
+static
 size_t
 strlcpy (char *dst, const char *src, size_t dst_sz)
 {
@@ -392,7 +393,6 @@ static int encode_field(VALUE fid, VALUE data, VALUE ary) {
   name_buf[0] = '@';
   strlcpy(&name_buf[1], spec->name, sizeof(name_buf) - 1);
   
-  // TODO(kevinclark): Replace with the strlcpy method used in read
   VALUE value = rb_ivar_get(obj, rb_intern(name_buf));
   
   if (Qnil == value) {
@@ -500,13 +500,13 @@ typedef struct {
 } field_header;
 
 typedef struct {
-  int key_type;
-  int val_type;
+  int8_t key_type;
+  int8_t val_type;
   int num_entries;
 } map_header;
 
 typedef struct {
-  int type;
+  int8_t type;
   int num_elements;
 } list_header;
 
@@ -527,28 +527,89 @@ typedef struct {
 #define read_struct_begin(buf)
 #define read_struct_end(buf)
 
-static void consume(decode_buffer* buf, int32_t size) {
-  if (size != 0) {
-    rb_funcall(buf->trans, consume_bang_id, 1, INT2FIX(size));
-  }
+// This prototype is required to be able to run a call through rb_protect
+// which rescues from ruby exceptions
+static VALUE protectable_consume(VALUE args) {
+  VALUE trans = rb_ary_entry(args, 0);
+  VALUE size = rb_ary_entry(args, 1);
+  
+  return rb_funcall(trans, consume_bang_id, 1, size);
 }
 
-static VALUE borrow(decode_buffer* buf, int32_t size) {
-  if (size == 0) {
-    return rb_funcall(buf->trans, borrow_id, 0);
-  } else {
-    return rb_funcall(buf->trans, borrow_id, 1, INT2FIX(size));
+// Clears size bytes from the transport's string buffer
+static bool consume(decode_buffer* buf, int32_t size) {
+  if (size != 0) {
+    VALUE ret;
+    VALUE args = rb_ary_new3(2, buf->trans, INT2FIX(size));
+    int status = 0;
+    
+    ret = rb_protect(protectable_consume, args, &status);
+    
+    if (status) {
+      return false;
+    } else {
+      return true;
+    }
   }
+  
+  // Nothing to consume, we're all good
+  return true;
+}
+
+// This prototype is required to be able to run a call through rb_protect
+// which rescues from ruby exceptions
+static VALUE protectable_borrow(VALUE args) {
+  VALUE trans = rb_ary_entry(args, 0);
+  
+  switch(RARRAY(args)->len) {
+    case 1:
+      return rb_funcall(trans, borrow_id, 0);
+    
+    case 2: {
+      VALUE size = rb_ary_entry(args, 1);
+      return rb_funcall(trans, borrow_id, 1, size);
+    }
+  }
+  
+  return Qnil;
+}
+
+// Calls into the transport to get the available string buffer
+static bool borrow(decode_buffer* buf, int32_t size, VALUE* dst) {
+  int status = 0;
+  VALUE args;
+  
+  if (size == 0) {
+    args = rb_ary_new3(1, buf->trans);
+  } else {
+    args = rb_ary_new3(2, buf->trans, INT2FIX(size));
+  }
+
+  *dst = rb_protect(protectable_borrow, args, &status);
+  
+  return (status == 0);
 }
 
 // Refills the buffer by calling borrow. If buf->pos is nonzero that number of bytes
-// is cleared through consume
-static void fill_buffer(decode_buffer* buf, int32_t req_len) {
-  consume(buf, buf->pos);
-  VALUE refill = borrow(buf, req_len);
+// is cleared through consume.
+//
+// returns: 0 on success, non-zero on failure. On error buf is unchanged.
+static int fill_buffer(decode_buffer* buf, int32_t req_len) {
+  VALUE refill;
+  
+  if (!consume(buf, buf->pos)) {
+    return -1;
+  }
+
+  if (!borrow(buf, req_len, &refill)) {
+    return -2;
+  }
+  
   buf->data = StringValuePtr(refill);
   buf->len = RSTRING(refill)->len;
   buf->pos = 0;
+  
+  return 0;
 }
 
 
@@ -569,7 +630,10 @@ static bool read_bytes(decode_buffer* buf, void* dst, size_t size) {
       buf->pos += avail;
     }
 
-    fill_buffer(buf, size);
+    if (fill_buffer(buf, size - avail) < 0) {
+      return false;
+    }
+    
     memcpy(dst + avail, buf->data, size - avail);
     buf->pos += size - avail;
   }
@@ -581,97 +645,112 @@ static bool read_bytes(decode_buffer* buf, void* dst, size_t size) {
 // Helpers for grabbing specific types from the buffer
 // -----------------------------------------------------------------------------
 
-static int8_t read_byte(decode_buffer* buf) {
-  int8_t data;
-  read_bytes(buf, &data, sizeof(int8_t));
-  return data;
+static bool read_byte(decode_buffer* buf, int8_t* data) {
+  return read_bytes(buf, data, sizeof(int8_t));
 }
 
-static int16_t read_int16(decode_buffer* buf) {
-  int16_t data;
-  read_bytes(buf, &data, sizeof(int16_t));
-  return ntohs(data);
-}
-
-static int32_t read_int32(decode_buffer* buf) {
-  int32_t data;
-  read_bytes(buf, &data, sizeof(int32_t));
-  return ntohl(data);
-}
-
-static int64_t read_int64(decode_buffer* buf) {
-  int64_t data;
-  read_bytes(buf, &data, sizeof(int64_t));
-  return ntohll(data);
-}
-
-static double read_double(decode_buffer* buf) {
-  union {
-    double f;
-    int64_t t;
-  } transfer;
+static bool read_int16(decode_buffer* buf, int16_t* data) {
+  bool success = read_bytes(buf, data, sizeof(int16_t));
+  *data = ntohs(*data);
   
-  transfer.t = read_int64(buf);
-  return transfer.f;
+  return success;
 }
 
-static VALUE read_string(decode_buffer* buf) {
-  VALUE ret_str;
-  int len = read_int32(buf);
+static bool read_int32(decode_buffer* buf, int32_t* data) {
+  bool success = read_bytes(buf, data, sizeof(int32_t));
+  *data = ntohl(*data);
+  
+  return success;
+}
+
+static bool read_int64(decode_buffer* buf, int64_t* data) {
+  bool success = read_bytes(buf, data, sizeof(int64_t));
+  *data = ntohll(*data);
+  
+  return success;
+}
+
+static bool read_double(decode_buffer* buf, double* data) {
+  return read_int64(buf, (int64_t*)data);
+}
+
+static bool read_string(decode_buffer* buf, VALUE* data) {
+  int len;
+  
+  if (!read_int32(buf, &len)) {
+    return false;
+  }
   
   if (buf->len - buf->pos >= len) {
-    ret_str = rb_str_new(buf->data + buf->pos, len);
+    *data = rb_str_new(buf->data + buf->pos, len);
     buf->pos += len;
   } 
   else {
     char* str;
     
-    str = (char*) malloc(len);
+    if ((str = (char*) malloc(len)) == NULL) {
+      return false;
+    }
     
-    read_bytes(buf, str, len);
-    ret_str = rb_str_new(str, len);
+    if (!read_bytes(buf, str, len)) {
+      free(str);
+      return false;
+    }
+    
+    *data = rb_str_new(str, len);
     
     free(str);
   }
   
-  return ret_str;
+  return true;
 }
 
-static void read_field_begin(decode_buffer* buf, field_header* header) {
+static bool read_field_begin(decode_buffer* buf, field_header* header) {
 #ifdef __DEBUG__ // No need for this in prod since I set all the fields
   bzero(header, sizeof(field_header));
 #endif
 
   header->name = NULL;
-  header->type = read_byte(buf);
+  
+  if (!read_byte(buf, &header->type)) {
+    return false;
+  }
+  
   if (header->type == T_STOP) {
     header->id = 0;
   } else {
-    header->id = read_int16(buf);
+    if (!read_int16(buf, &header->id)) {
+      return false;
+    }
   }
+  
+  return true;
 }
 
 #define read_field_end(buf)
 
-static void read_map_begin(decode_buffer* buf, map_header* header) {
+static bool read_map_begin(decode_buffer* buf, map_header* header) {
 #ifdef __DEBUG__ // No need for this in prod since I set all the fields
   bzero(header, sizeof(map_header));
 #endif
   
-  header->key_type = read_byte(buf);
-  header->val_type = read_byte(buf);
-  header->num_entries = read_int32(buf);
+  return (read_byte(buf, &header->key_type) && 
+          read_byte(buf, &header->val_type) &&
+          read_int32(buf, &header->num_entries));
 }
 
 #define read_map_end(buf)
 
-static void read_list_begin(decode_buffer* buf, list_header* header) {
+static bool read_list_begin(decode_buffer* buf, list_header* header) {
 #ifdef __DEBUG__ // No need for this in prod since I set all the fields
   bzero(header, sizeof(list_header));
 #endif
   
-  header->type = read_byte(buf);
-  header->num_elements = read_int32(buf);
+  if (!read_byte(buf, &header->type) || !read_int32(buf, &header->num_elements)) {
+    return false;
+  } else {
+    return true;
+  }
 }
 
 #define read_list_end(buf)
@@ -681,46 +760,101 @@ static void read_list_begin(decode_buffer* buf, list_header* header) {
 
 
 // High level reader function with ruby type coercion
-static VALUE read_type(int type, decode_buffer* buf) {
+static bool read_type(int type, decode_buffer* buf, VALUE* dst) {
   switch(type) {
     case T_BOOL: {
-      int8_t byte = read_byte(buf);
-      if (0 == byte) {
-        return Qfalse;
-      } else {
-        return Qtrue;
+      int8_t byte;
+      
+      if (!read_byte(buf, &byte)) {
+        return false;
       }
+      
+      if (0 == byte) {
+        *dst = Qfalse;
+      } else {
+        *dst = Qtrue;
+      }
+      
+      break;
     }
     
-    case T_BYTE:
-      return INT2FIX(read_byte(buf));
-    
-    case T_I16:
-      return INT2FIX(read_int16(buf));
+    case T_BYTE: {
+      int8_t byte;
 
-    case T_I32:
-      return INT2NUM(read_int32(buf));
+      if (!read_byte(buf, &byte)) {
+        return false;
+      }
 
-    case T_I64:
-      return rb_ll2inum(read_int64(buf));
+      *dst = INT2FIX(byte);
+      break;
+    }
     
-    case T_DBL:
-      return rb_float_new(read_double(buf));
+    case T_I16: {
+      int16_t i16;
+      
+      if (!read_int16(buf, &i16)) {
+        return false;
+      }
+      
+      *dst = INT2FIX(i16);
+      break;
+    }
+
+    case T_I32: {
+      int32_t i32;
+      
+      if (!read_int32(buf, &i32)) {
+        return false;
+      }
+      
+      *dst = INT2NUM(i32);
+      break;
+    }
+
+    case T_I64: {
+      int64_t i64;
+      
+      if (!read_int64(buf, &i64)) {
+        return false;
+      }
+      
+      *dst = rb_ll2inum(i64);
+      break;
+    }
+    
+    case T_DBL: {
+      double dbl;
+      
+      if (!read_double(buf, &dbl)) {
+        return false;
+      }
+      
+      *dst = rb_float_new(dbl);
+      break;
+    }
 
     case T_STR: {
-      return read_string(buf);
+      VALUE str;
+      
+      if (!read_string(buf, &str)) {
+        return false;
+      }
+      
+      *dst = str;
+      break;
     }
   }
   
-  return Qnil;
+  return true;
 }
 
 // TODO(kevinclark): Now that read_string does a malloc,
 // This maybe could be modified to avoid that, and the type coercion
 
 // Read the bytes but don't do anything with the value
-static void skip_type(int type, decode_buffer* buf) {
-  read_type(type, buf);
+static bool skip_type(int type, decode_buffer* buf) {
+  VALUE v;
+  return read_type(type, buf, &v);
 }
 
 
@@ -728,11 +862,13 @@ static VALUE read_struct(VALUE obj, decode_buffer* buf);
 
 // Read the right thing from the buffer given the field spec
 // and return the ruby object
-static VALUE read_field(decode_buffer* buf, field_spec* spec) {
+static bool read_field(decode_buffer* buf, field_spec* spec, VALUE* dst) {
   switch (spec->type) {
     case T_STRCT: {
       VALUE obj = rb_class_new_instance(0, NULL, spec->data.class);
-      return read_struct(obj, buf);
+      
+      *dst = read_struct(obj, buf);
+      break;
     }
     
     case T_MAP: {
@@ -744,35 +880,49 @@ static VALUE read_field(decode_buffer* buf, field_spec* spec) {
       hsh = rb_hash_new();
       
       for (i = 0; i < hdr.num_entries; ++i) {
-        VALUE key = read_field(buf, spec->data.map->key);
-        VALUE val = read_field(buf, spec->data.map->value);
+        VALUE key, val;
+        
+        if (!read_field(buf, spec->data.map->key, &key)) {
+          return false;
+        }
+        
+        if (!read_field(buf, spec->data.map->value, &val)) {
+          return false;
+        }
+        
         rb_hash_aset(hsh, key, val);
       }
       
       read_map_end(buf);
       
-      return hsh;
+      *dst = hsh;
+      break;
     }
     
     case T_LIST: {
       list_header hdr;
-      VALUE arr;
+      VALUE arr, element;
       int i;
       
       read_list_begin(buf, &hdr);
       arr = rb_ary_new2(hdr.num_elements);
       
       for (i = 0; i < hdr.num_elements; ++i) {
-        rb_ary_push(arr, read_field(buf, spec->data.element));
+        if (!read_field(buf, spec->data.element, &element)) {
+          return false;
+        }
+
+        rb_ary_push(arr, element);
       }
       
       read_list_end(buf);
       
-      return arr;
+      *dst = arr;
+      break;
     }
     
     case T_SET: {
-      VALUE set;
+      VALUE set, item;
       set_header hdr;
       int i;
       
@@ -780,18 +930,36 @@ static VALUE read_field(decode_buffer* buf, field_spec* spec) {
       set = rb_hash_new();
       
       for (i = 0; i < hdr.num_elements; ++i) {
-        rb_hash_aset(set, read_field(buf, spec->data.element), Qtrue);
+        if (!read_field(buf, spec->data.element, &item)) {
+          return false;
+        }
+        
+        rb_hash_aset(set, item, Qtrue);
       }
       
-      return set;
+      *dst = set;
+      break;
     }
     
     
     default:
-      return read_type(spec->type, buf);
+      return read_type(spec->type, buf, dst);
   }
+  
+  return true;
 }
 
+static void handle_read_error() {
+  // If it was an exception, reraise
+  if (!NIL_P(ruby_errinfo)) {
+    rb_exc_raise(ruby_errinfo);
+  } else {
+    // Something else went wrong, no idea what would call this yet
+    // So far, the only thing to cause failures underneath is ruby
+    // exceptions. Follow up on this regularly -- Kevin Clark (TODO)
+    rb_raise(rb_eStandardError, "[BUG] Something went wrong in the field reading, but not a ruby exception");
+  }
+}
 
 // Fill in the instance variables in an object (thrift struct)
 // from the decode buffer
@@ -806,7 +974,10 @@ static VALUE read_struct(VALUE obj, decode_buffer* buf) {
   read_struct_begin(buf);
   
   while(true) {
-    read_field_begin(buf, &f_header);
+    if (!read_field_begin(buf, &f_header)) {
+      handle_read_error();
+    }
+    
     if (T_STOP == f_header.type) {
       break;
     }
@@ -814,15 +985,28 @@ static VALUE read_struct(VALUE obj, decode_buffer* buf) {
     field = rb_hash_aref(fields, INT2FIX(f_header.id));
     
     if (NIL_P(field)) {
-      skip_type(f_header.type, buf);
+      if (!skip_type(f_header.type, buf)) {
+        handle_read_error();
+        return Qnil;
+      }
     } 
     else {
       spec = parse_field_spec(field);
 
       if (spec->type != f_header.type) {
-        skip_type(spec->type, buf);
+        if (!skip_type(spec->type, buf)) {
+          free_field_spec(spec);
+          handle_read_error();
+          return Qnil;
+        }
       } else {
-        value = read_field(buf, spec);
+        // Read busted somewhere (probably borrow/consume), bail
+        if (!read_field(buf, spec, &value)) {
+          free_field_spec(spec);
+          handle_read_error();
+          return Qnil;
+        }
+        
         name_buf[0] = '@';
         strlcpy(&name_buf[1], spec->name, sizeof(name_buf) - 1);
         
@@ -849,7 +1033,11 @@ static VALUE tbpa_decode_binary(VALUE self, VALUE obj, VALUE transport) {
 
   buf.pos = 0;    // This needs to be set so an arbitrary number of bytes isn't consumed
   buf.trans = transport;       // We need to hold this so the buffer can be refilled
-  fill_buffer(&buf, 0);
+  
+  if (fill_buffer(&buf, 0) < 0) {
+    handle_read_error();
+    return Qnil;
+  }
 
 #ifdef __DEBUG__
   rb_p(rb_str_new2("Running decode binary with data:"));
@@ -880,21 +1068,35 @@ static VALUE tbpa_read_message_begin(VALUE self) {
   
   buf.pos = 0;              // This needs to be set so fill_buffer doesn't consume
   buf.trans = trans;        // We need to hold this so the buffer can be refilled
-  fill_buffer(&buf, 0);
+  
 
-  version = read_int32(&buf);
+  if (fill_buffer(&buf, 0) < 0 || !read_int32(&buf, &version)) {
+    // Consume whatever was read
+    consume(&buf, buf.pos);
+    handle_read_error();
+    return Qnil;
+  }
   
   if ((version & VERSION_MASK) != VERSION_1) {
-    ID tprotocol_exception = rb_intern("TProtocolException");
+    VALUE tprotocol_exception = rb_const_get(rb_cObject, rb_intern("TProtocolException"));
     VALUE exception = rb_funcall(tprotocol_exception, rb_intern("new"), 2, rb_const_get(tprotocol_exception, rb_intern("BAD_VERSION")), rb_str_new2("Missing version identifier"));
     rb_raise(exception, "");
   }
   
   type = version & 0x000000ff;
-  name = read_string(&buf);
-  seqid = read_int32(&buf);
-
-  consume(&buf, buf.pos);
+  
+  if (!read_string(&buf, &name) || !read_int32(&buf, &seqid)) {
+    // Consume whatever was read
+    consume(&buf, buf.pos);
+    handle_read_error();
+    return Qnil;
+  }
+  
+  // Consume whatever was read
+  if (consume(&buf, buf.pos) < 0) {
+    handle_read_error();
+    return Qnil;
+  }
   
   return rb_ary_new3(3, name, INT2FIX(type), INT2FIX(seqid));
 }
