@@ -18,6 +18,7 @@ struct _ThriftFramed
     ThriftTransport * transport;
 
     guint8 * read_buf;
+    guint32 read_buf_size;
     guint32 read_buf_pos;
     guint32 read_buf_len;
 

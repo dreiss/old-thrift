@@ -209,7 +209,17 @@ void _thrift_framed_get_property (GObject * object, guint property_id,
 static void _thrift_framed_instance_init (ThriftFramed * framed)
 {
     framed->transport = NULL;
+
+    framed->read_buf_pos = 0;
+    framed->read_buf_len = 0;
+    framed->read_buf = NULL;
+
+    framed->write_buf_size = 512;
+    framed->write_buf_len = 0;
+    framed->write_buf = g_new (guint8, framed->write_buf_size);
 }
+
+/* TODO: destroy/free */
 
 static void _thrift_framed_class_init (ThriftTransportClass * transport_class)
 {

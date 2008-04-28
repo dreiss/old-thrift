@@ -64,20 +64,23 @@ void thrift_thrudoc_recv_get_buckets (ThriftThrudocClient * client, GPtrArray **
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
     return;
   }
+  g_free (fname);
 
   ThriftThrudocThrudocException * e;
   {
     gint32 xfer = 0;
-    gchar * fname;
+    gchar * name;
     ThriftType ftype;
     gint16 fid;
 
-    xfer += thrift_protocol_read_struct_begin (protocol, &fname, error);
+    xfer += thrift_protocol_read_struct_begin (protocol, &name, error);
+    g_free (name);
     
 
     while (1)
     {
-      xfer += thrift_protocol_read_field_begin (protocol, &fname, &ftype, &fid, error);
+      xfer += thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error);
+      g_free (name);
       if (ftype == T_STOP) {
         break;
       }
@@ -189,20 +192,23 @@ void thrift_thrudoc_recv_put (ThriftThrudocClient * client, GError ** error)
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
     return;
   }
+  g_free (fname);
 
   ThriftThrudocThrudocException * e;
   {
     gint32 xfer = 0;
-    gchar * fname;
+    gchar * name;
     ThriftType ftype;
     gint16 fid;
 
-    xfer += thrift_protocol_read_struct_begin (protocol, &fname, error);
+    xfer += thrift_protocol_read_struct_begin (protocol, &name, error);
+    g_free (name);
     
 
     while (1)
     {
-      xfer += thrift_protocol_read_field_begin (protocol, &fname, &ftype, &fid, error);
+      xfer += thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error);
+      g_free (name);
       if (ftype == T_STOP) {
         break;
       }
@@ -291,20 +297,23 @@ void thrift_thrudoc_recv_get (ThriftThrudocClient * client, gchar ** _return, GE
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
     return;
   }
+  g_free (fname);
 
   ThriftThrudocThrudocException * e;
   {
     gint32 xfer = 0;
-    gchar * fname;
+    gchar * name;
     ThriftType ftype;
     gint16 fid;
 
-    xfer += thrift_protocol_read_struct_begin (protocol, &fname, error);
+    xfer += thrift_protocol_read_struct_begin (protocol, &name, error);
+    g_free (name);
     
 
     while (1)
     {
-      xfer += thrift_protocol_read_field_begin (protocol, &fname, &ftype, &fid, error);
+      xfer += thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error);
+      g_free (name);
       if (ftype == T_STOP) {
         break;
       }
@@ -400,20 +409,23 @@ void thrift_thrudoc_recv_remove (ThriftThrudocClient * client, GError ** error)
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
     return;
   }
+  g_free (fname);
 
   ThriftThrudocThrudocException * e;
   {
     gint32 xfer = 0;
-    gchar * fname;
+    gchar * name;
     ThriftType ftype;
     gint16 fid;
 
-    xfer += thrift_protocol_read_struct_begin (protocol, &fname, error);
+    xfer += thrift_protocol_read_struct_begin (protocol, &name, error);
+    g_free (name);
     
 
     while (1)
     {
-      xfer += thrift_protocol_read_field_begin (protocol, &fname, &ftype, &fid, error);
+      xfer += thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error);
+      g_free (name);
       if (ftype == T_STOP) {
         break;
       }
@@ -502,20 +514,23 @@ void thrift_thrudoc_recv_put_value (ThriftThrudocClient * client, gchar ** _retu
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
     return;
   }
+  g_free (fname);
 
   ThriftThrudocThrudocException * e;
   {
     gint32 xfer = 0;
-    gchar * fname;
+    gchar * name;
     ThriftType ftype;
     gint16 fid;
 
-    xfer += thrift_protocol_read_struct_begin (protocol, &fname, error);
+    xfer += thrift_protocol_read_struct_begin (protocol, &name, error);
+    g_free (name);
     
 
     while (1)
     {
-      xfer += thrift_protocol_read_field_begin (protocol, &fname, &ftype, &fid, error);
+      xfer += thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error);
+      g_free (name);
       if (ftype == T_STOP) {
         break;
       }
@@ -614,20 +629,23 @@ void thrift_thrudoc_recv_scan (ThriftThrudocClient * client, ThriftThrudocScanRe
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
     return;
   }
+  g_free (fname);
 
   ThriftThrudocThrudocException * e;
   {
     gint32 xfer = 0;
-    gchar * fname;
+    gchar * name;
     ThriftType ftype;
     gint16 fid;
 
-    xfer += thrift_protocol_read_struct_begin (protocol, &fname, error);
+    xfer += thrift_protocol_read_struct_begin (protocol, &name, error);
+    g_free (name);
     
 
     while (1)
     {
-      xfer += thrift_protocol_read_field_begin (protocol, &fname, &ftype, &fid, error);
+      xfer += thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error);
+      g_free (name);
       if (ftype == T_STOP) {
         break;
       }
@@ -728,20 +746,23 @@ void thrift_thrudoc_recv_put_list (ThriftThrudocClient * client, GPtrArray ** _r
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
     return;
   }
+  g_free (fname);
 
   ThriftThrudocThrudocException * e;
   {
     gint32 xfer = 0;
-    gchar * fname;
+    gchar * name;
     ThriftType ftype;
     gint16 fid;
 
-    xfer += thrift_protocol_read_struct_begin (protocol, &fname, error);
+    xfer += thrift_protocol_read_struct_begin (protocol, &name, error);
+    g_free (name);
     
 
     while (1)
     {
-      xfer += thrift_protocol_read_field_begin (protocol, &fname, &ftype, &fid, error);
+      xfer += thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error);
+      g_free (name);
       if (ftype == T_STOP) {
         break;
       }
@@ -855,20 +876,23 @@ void thrift_thrudoc_recv_get_list (ThriftThrudocClient * client, GPtrArray ** _r
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
     return;
   }
+  g_free (fname);
 
   ThriftThrudocThrudocException * e;
   {
     gint32 xfer = 0;
-    gchar * fname;
+    gchar * name;
     ThriftType ftype;
     gint16 fid;
 
-    xfer += thrift_protocol_read_struct_begin (protocol, &fname, error);
+    xfer += thrift_protocol_read_struct_begin (protocol, &name, error);
+    g_free (name);
     
 
     while (1)
     {
-      xfer += thrift_protocol_read_field_begin (protocol, &fname, &ftype, &fid, error);
+      xfer += thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error);
+      g_free (name);
       if (ftype == T_STOP) {
         break;
       }
@@ -982,20 +1006,23 @@ void thrift_thrudoc_recv_remove_list (ThriftThrudocClient * client, GPtrArray **
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
     return;
   }
+  g_free (fname);
 
   ThriftThrudocThrudocException * e;
   {
     gint32 xfer = 0;
-    gchar * fname;
+    gchar * name;
     ThriftType ftype;
     gint16 fid;
 
-    xfer += thrift_protocol_read_struct_begin (protocol, &fname, error);
+    xfer += thrift_protocol_read_struct_begin (protocol, &name, error);
+    g_free (name);
     
 
     while (1)
     {
-      xfer += thrift_protocol_read_field_begin (protocol, &fname, &ftype, &fid, error);
+      xfer += thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error);
+      g_free (name);
       if (ftype == T_STOP) {
         break;
       }
@@ -1109,20 +1136,23 @@ void thrift_thrudoc_recv_put_value_list (ThriftThrudocClient * client, GPtrArray
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
     return;
   }
+  g_free (fname);
 
   ThriftThrudocThrudocException * e;
   {
     gint32 xfer = 0;
-    gchar * fname;
+    gchar * name;
     ThriftType ftype;
     gint16 fid;
 
-    xfer += thrift_protocol_read_struct_begin (protocol, &fname, error);
+    xfer += thrift_protocol_read_struct_begin (protocol, &name, error);
+    g_free (name);
     
 
     while (1)
     {
-      xfer += thrift_protocol_read_field_begin (protocol, &fname, &ftype, &fid, error);
+      xfer += thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error);
+      g_free (name);
       if (ftype == T_STOP) {
         break;
       }
@@ -1231,20 +1261,23 @@ void thrift_thrudoc_recv_admin (ThriftThrudocClient * client, gchar ** _return, 
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
     return;
   }
+  g_free (fname);
 
   ThriftThrudocThrudocException * e;
   {
     gint32 xfer = 0;
-    gchar * fname;
+    gchar * name;
     ThriftType ftype;
     gint16 fid;
 
-    xfer += thrift_protocol_read_struct_begin (protocol, &fname, error);
+    xfer += thrift_protocol_read_struct_begin (protocol, &name, error);
+    g_free (name);
     
 
     while (1)
     {
-      xfer += thrift_protocol_read_field_begin (protocol, &fname, &ftype, &fid, error);
+      xfer += thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error);
+      g_free (name);
       if (ftype == T_STOP) {
         break;
       }

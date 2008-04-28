@@ -504,28 +504,27 @@ gint32 _thrift_binary_protocol_read_string (ThriftProtocol * protocol,
     guint32 len;
     guint32 result = thrift_protocol_read_binary (protocol, str, &len,
                                                   error);
-    /* TODO: null term string, why am i having to do this */
-    (*str)[len] = '\0';
     return result;
 }
 
 gint32 _thrift_binary_protocol_read_binary (ThriftProtocol * protocol,
-                                            gchar ** str, guint32 * len,
+                                            gchar ** buf, guint32 * len,
                                             GError ** error)
 {
     g_assert (THRIFT_IS_BINARY_PROTOCOL (protocol));
 
     gint32 result = thrift_protocol_read_i32 (protocol, (gint32*)len, error);
 
-    *str = g_new (gchar, *len);
+    *buf= g_new (gchar, *len + 1);
     /* TODO: make sure we got the mem */
-    gint ret = thrift_transport_read (protocol->transport, *str, *len,
+    gint ret = thrift_transport_read (protocol->transport, *buf, *len,
                                       error);
     if (ret < 0 || (guint)ret != *len)
     {
         /* TODO: error handling */
         return -1;
     }
+    (*buf)[*len] = '\0';
 
     return result + *len;
 }

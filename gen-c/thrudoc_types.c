@@ -26,16 +26,18 @@ gint32 thrift_thrudoc_thrudoc_exception_write (ThriftStruct * object, ThriftProt
 gint32 thrift_thrudoc_thrudoc_exception_read (ThriftStruct * object, ThriftProtocol * protocol, GError ** error)
 {
   gint32 xfer = 0;
-  gchar * fname;
+  gchar * name;
   ThriftType ftype;
   gint16 fid;
 
-  xfer += thrift_protocol_read_struct_begin (protocol, &fname, error);
+  xfer += thrift_protocol_read_struct_begin (protocol, &name, error);
+  g_free (name);
   ThriftThrudocThrudocException * this_object = THRIFT_THRUDOC_THRUDOC_EXCEPTION(object);
 
   while (1)
   {
-    xfer += thrift_protocol_read_field_begin (protocol, &fname, &ftype, &fid, error);
+    xfer += thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error);
+    g_free (name);
     if (ftype == T_STOP) {
       break;
     }
@@ -130,16 +132,18 @@ gint32 thrift_thrudoc_element_write (ThriftStruct * object, ThriftProtocol * pro
 gint32 thrift_thrudoc_element_read (ThriftStruct * object, ThriftProtocol * protocol, GError ** error)
 {
   gint32 xfer = 0;
-  gchar * fname;
+  gchar * name;
   ThriftType ftype;
   gint16 fid;
 
-  xfer += thrift_protocol_read_struct_begin (protocol, &fname, error);
+  xfer += thrift_protocol_read_struct_begin (protocol, &name, error);
+  g_free (name);
   ThriftThrudocElement * this_object = THRIFT_THRUDOC_ELEMENT(object);
 
   while (1)
   {
-    xfer += thrift_protocol_read_field_begin (protocol, &fname, &ftype, &fid, error);
+    xfer += thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error);
+    g_free (name);
     if (ftype == T_STOP) {
       break;
     }
@@ -246,16 +250,18 @@ gint32 thrift_thrudoc_scan_response_write (ThriftStruct * object, ThriftProtocol
 gint32 thrift_thrudoc_scan_response_read (ThriftStruct * object, ThriftProtocol * protocol, GError ** error)
 {
   gint32 xfer = 0;
-  gchar * fname;
+  gchar * name;
   ThriftType ftype;
   gint16 fid;
 
-  xfer += thrift_protocol_read_struct_begin (protocol, &fname, error);
+  xfer += thrift_protocol_read_struct_begin (protocol, &name, error);
+  g_free (name);
   ThriftThrudocScanResponse * this_object = THRIFT_THRUDOC_SCAN_RESPONSE(object);
 
   while (1)
   {
-    xfer += thrift_protocol_read_field_begin (protocol, &fname, &ftype, &fid, error);
+    xfer += thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error);
+    g_free (name);
     if (ftype == T_STOP) {
       break;
     }
@@ -358,16 +364,18 @@ gint32 thrift_thrudoc_list_response_write (ThriftStruct * object, ThriftProtocol
 gint32 thrift_thrudoc_list_response_read (ThriftStruct * object, ThriftProtocol * protocol, GError ** error)
 {
   gint32 xfer = 0;
-  gchar * fname;
+  gchar * name;
   ThriftType ftype;
   gint16 fid;
 
-  xfer += thrift_protocol_read_struct_begin (protocol, &fname, error);
+  xfer += thrift_protocol_read_struct_begin (protocol, &name, error);
+  g_free (name);
   ThriftThrudocListResponse * this_object = THRIFT_THRUDOC_LIST_RESPONSE(object);
 
   while (1)
   {
-    xfer += thrift_protocol_read_field_begin (protocol, &fname, &ftype, &fid, error);
+    xfer += thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error);
+    g_free (name);
     if (ftype == T_STOP) {
       break;
     }

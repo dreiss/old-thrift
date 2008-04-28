@@ -598,11 +598,12 @@ void t_c_generator::generate_struct_reader(ofstream& out, t_struct* tstruct,
   // Declare stack tmp variables
   out <<
     indent() << "gint32 xfer = 0;" << endl <<
-    indent() << "gchar * fname;" << endl <<
+    indent() << "gchar * name;" << endl <<
     indent() << "ThriftType ftype;" << endl <<
     indent() << "gint16 fid;" << endl <<
     endl <<
-    indent() << "xfer += thrift_protocol_read_struct_begin (protocol, &fname, error);" << endl <<
+    indent() << "xfer += thrift_protocol_read_struct_begin (protocol, &name, error);" << endl <<
+    indent() << "g_free (name);" << endl << 
     indent() << this_get << endl;
 
   // Required variables aren't in __isset, so we need tmp vars to check them.
@@ -620,8 +621,9 @@ void t_c_generator::generate_struct_reader(ofstream& out, t_struct* tstruct,
   scope_up(out);
 
   // Read beginning field marker
-  indent(out) <<
-    "xfer += thrift_protocol_read_field_begin (protocol, &fname, &ftype, &fid, error);" << endl;
+  out <<
+    indent() << "xfer += thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error);" << endl <<
+    indent() << "g_free (name);" << endl;
 
   // Check for field STOP marker
   out <<
@@ -1323,6 +1325,7 @@ void t_c_generator::generate_service_client(t_service* tservice) {
         indent() << "  /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */" << endl <<
         indent() << "  return;" << endl <<
         indent() << "}" << endl <<
+        indent() << "g_free (fname);" << endl << 
         endl;
 
       if (!(*f_iter)->get_returntype()->is_void() &&

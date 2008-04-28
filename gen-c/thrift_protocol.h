@@ -145,7 +145,7 @@ struct _ThriftProtocolClass
                            GError ** error);
     gint32 (*read_string) (ThriftProtocol * thrift_protocol, gchar ** str,
                            GError ** error);
-    gint32 (*read_binary) (ThriftProtocol * thrift_protocol, gchar ** str,
+    gint32 (*read_binary) (ThriftProtocol * thrift_protocol, gchar ** buf,
                            guint32 * len, GError ** error);
 };
 
@@ -260,7 +260,7 @@ gint32 thrift_protocol_read_double (ThriftProtocol * thrift_protocol,
 gint32 thrift_protocol_read_string (ThriftProtocol * thrift_protocol,
                                     gchar ** str, GError ** error);
 gint32 thrift_protocol_read_binary (ThriftProtocol * thrift_protocol,
-                                    gchar ** str, guint32 * len,
+                                    gchar ** buf, guint32 * len,
                                     GError ** error);
 
 gint32 thrift_protocol_skip (ThriftProtocol * thrift_protocol, ThriftType type,
