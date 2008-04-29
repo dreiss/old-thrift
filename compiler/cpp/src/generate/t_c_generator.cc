@@ -168,29 +168,34 @@ class t_c_generator : public t_oop_generator {
                               bool is_function=true);
 
   void generate_serialize_field(ofstream& out, t_field* tfield,
-                                string prefix="", string suffix="");
+                                string prefix, string suffix, 
+                                int error_ret);
   void generate_serialize_struct(ofstream& out, t_struct* tstruct,
-                                 string prefix="");
+                                 string prefix, int error_ret);
   void generate_serialize_container(ofstream& out, t_type* ttype,
-                                    string prefix="");
-  void generate_serialize_map_element(ofstream& out, t_map* tmap, string iter);
-  void generate_serialize_set_element(ofstream& out, t_set* tmap, string iter);
+                                    string prefix, int error_ret);
+  void generate_serialize_map_element(ofstream& out, t_map* tmap, string iter,
+                                      int error_ret);
+  void generate_serialize_set_element(ofstream& out, t_set* tmap, string iter,
+                                      int error_ret);
   void generate_serialize_list_element(ofstream& out, t_list* tlist,
-                                       string list, string index);
+                                       string list, string index, 
+                                       int error_ret);
 
   void generate_deserialize_field(std::ofstream& out, t_field* tfield,
-                                  std::string prefix="", std::string suffix="");
+                                  std::string prefix, std::string suffix,
+                                  int error_ret);
   void generate_deserialize_struct (std::ofstream& out, t_struct* tstruct,
-                                    std::string prefix="");
+                                    std::string prefix, int error_ret);
   void generate_deserialize_container (std::ofstream& out, t_type* ttype,
-                                       std::string prefix="");
+                                       std::string prefix, int error_ret);
   void generate_deserialize_set_element (std::ofstream& out, t_set* tset,
-                                         std::string prefix="");
+                                         std::string prefix, int error_ret);
   void generate_deserialize_map_element (std::ofstream& out, t_map* tmap,
-                                         std::string prefix="");
+                                         std::string prefix, int error_ret);
   void generate_deserialize_list_element (std::ofstream& out, t_list* tlist,
-                                          std::string prefix, 
-                                          std::string index);
+                                          std::string prefix, std::string index, 
+                                          int error_ret);
 
   std::string function_signature(t_function* tfunction);
   std::string argument_list(t_struct* tstruct, bool name_params=true);
@@ -518,7 +523,10 @@ void t_c_generator::generate_struct_writer(ofstream& out, t_struct* tstruct,
   const vector<t_field*>& fields = tstruct->get_members();
   vector<t_field*>::const_iterator f_iter;
 
+  int error_ret = 0;
+
   if (is_function) {
+    error_ret = -1;
     indent(out) <<
       "gint32 " << this->nspace_u << name_u <<
       "_write (ThriftStruct * object, ThriftProtocol * protocol, GError ** error)" << endl;
@@ -527,11 +535,16 @@ void t_c_generator::generate_struct_writer(ofstream& out, t_struct* tstruct,
   indent(out) << "{" << endl;
   indent_up();
 
-  indent(out) << "gint32 xfer = 0;" << endl;
+  out << 
+    indent() << "gint32 ret;" << endl <<
+    indent() << "gint32 xfer = 0;" << endl;
 
   indent(out) << this_get << endl;
 
-  indent(out) << "xfer += thrift_protocol_write_struct_begin (protocol, \"" << name << "\", error);" << endl;
+  out << 
+    indent() << "if ((ret = thrift_protocol_write_struct_begin (protocol, \"" << name << "\", error)) < 0)" << endl <<
+    indent() << "  return " << error_ret << ";" << endl <<
+    indent() << "xfer += ret;" << endl;
 
   for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
     // TODO: optional fields
@@ -541,15 +554,19 @@ void t_c_generator::generate_struct_writer(ofstream& out, t_struct* tstruct,
     }
     // Write field header
     out <<
-      indent() << "xfer += thrift_protocol_write_field_begin (protocol, " <<
+      indent() << "if ((ret = thrift_protocol_write_field_begin (protocol, " <<
       "\"" << (*f_iter)->get_name() << "\", " <<
       type_to_enum((*f_iter)->get_type()) << ", " <<
-      (*f_iter)->get_key() << ", error);" << endl;
+      (*f_iter)->get_key() << ", error)) < 0)" << endl <<
+      indent() << "  return " << error_ret << ";" << endl <<
+      indent() << "xfer += ret;" << endl;
     // Write field contents
-    generate_serialize_field(out, *f_iter, this_name);
+    generate_serialize_field(out, *f_iter, this_name, "", error_ret);
     // Write field closer
-    indent(out) <<
-      "xfer += thrift_protocol_write_field_end (protocol, error);" << endl;
+    out <<
+      indent() << "if ((ret = thrift_protocol_write_field_end (protocol, error)) < 0)" << endl <<
+      indent() << "  return " << error_ret << ";" << endl <<
+      indent() << "xfer += ret;" << endl;
     if ((*f_iter)->get_req() == t_field::T_OPTIONAL) {
       indent_down();
       indent(out) << '}' << endl;
@@ -558,8 +575,12 @@ void t_c_generator::generate_struct_writer(ofstream& out, t_struct* tstruct,
 
   // Write the struct map
   out <<
-    indent() << "xfer += thrift_protocol_write_field_stop(protocol, error);" << endl <<
-    indent() << "xfer += thrift_protocol_write_struct_end(protocol, error);" << endl;
+    indent() << "if ((ret = thrift_protocol_write_field_stop(protocol, error)) < 0)" << endl <<
+    indent() << "  return " << error_ret << ";" << endl <<
+    indent() << "xfer += ret;" << endl <<
+    indent() << "if ((ret = thrift_protocol_write_struct_end(protocol, error)) < 0)" << endl <<
+    indent() << "  return " << error_ret << ";" << endl <<
+    indent() << "xfer += ret;" << endl;
 
   if (is_function)
     indent(out) << "return xfer;" << endl;
@@ -583,7 +604,10 @@ void t_c_generator::generate_struct_reader(ofstream& out, t_struct* tstruct,
   string name_u = initial_caps_to_underscores (name);
   string name_uc = to_upper_case (name_u);
 
+  int error_ret = 0;
+
   if (is_function) {
+    error_ret = -1;
     indent(out) <<
       "gint32 " << this->nspace_u << name_u << 
       "_read (ThriftStruct * object, ThriftProtocol * protocol, GError ** error)" << endl;
@@ -597,13 +621,16 @@ void t_c_generator::generate_struct_reader(ofstream& out, t_struct* tstruct,
 
   // Declare stack tmp variables
   out <<
+    indent() << "gint32 ret;" << endl <<
     indent() << "gint32 xfer = 0;" << endl <<
     indent() << "gchar * name;" << endl <<
     indent() << "ThriftType ftype;" << endl <<
     indent() << "gint16 fid;" << endl <<
     endl <<
-    indent() << "xfer += thrift_protocol_read_struct_begin (protocol, &name, error);" << endl <<
-    indent() << "g_free (name);" << endl << 
+    indent() << "if ((ret = thrift_protocol_read_struct_begin (protocol, &name, error)) < 0)" << endl <<
+    indent() << "  return " << error_ret << ";" << endl <<
+    indent() << "xfer += ret;" << endl <<
+    indent() << "if (name) g_free (name);" << endl << 
     indent() << this_get << endl;
 
   // Required variables aren't in __isset, so we need tmp vars to check them.
@@ -622,8 +649,10 @@ void t_c_generator::generate_struct_reader(ofstream& out, t_struct* tstruct,
 
   // Read beginning field marker
   out <<
-    indent() << "xfer += thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error);" << endl <<
-    indent() << "g_free (name);" << endl;
+    indent() << "if ((ret = thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error)) < 0)" << endl <<
+    indent() << "  return " << error_ret << ";" << endl <<
+    indent() << "xfer += ret;" << endl <<
+    indent() << "if (name) g_free (name);" << endl;
 
   // Check for field STOP marker
   out <<
@@ -647,12 +676,14 @@ void t_c_generator::generate_struct_reader(ofstream& out, t_struct* tstruct,
       "if (ftype == " << type_to_enum((*f_iter)->get_type()) << ") {" << endl;
     indent_up();
 
-    generate_deserialize_field(out, *f_iter, this_name);
+    generate_deserialize_field(out, *f_iter, this_name, "", error_ret);
 
     indent_down();
     out <<
       indent() << "} else {" << endl <<
-      indent() << "  xfer += thrift_protocol_skip (protocol, ftype, error);" << endl <<
+      indent() << "  if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)" << endl <<
+      indent() << "    return " << error_ret << ";" << endl <<
+      indent() << "  xfer += ret;" << endl <<
       indent() << "}" << endl <<
       indent() << "break;" << endl;
     indent_down();
@@ -661,20 +692,26 @@ void t_c_generator::generate_struct_reader(ofstream& out, t_struct* tstruct,
   // In the default case we skip the field
   out <<
     indent() << "default:" << endl <<
-    indent() << "  xfer += thrift_protocol_skip (protocol, ftype, error);" << endl <<
+    indent() << "  if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)" << endl <<
+    indent() << "    return " << error_ret << ";" << endl <<
+    indent() << "  xfer += ret;" << endl <<
     indent() << "  break;" << endl;
 
   scope_down(out);
 
   // Read field end marker
-  indent(out) <<
-    "xfer += thrift_protocol_read_field_end (protocol, error);" << endl;
+  out <<
+    indent () << "if ((ret = thrift_protocol_read_field_end (protocol, error)) < 0)" << endl <<
+    indent() << "  return " << error_ret << ";" << endl <<
+    indent() << "xfer += ret;" << endl;
 
   scope_down(out);
 
   out <<
     endl <<
-    indent() << "xfer += thrift_protocol_read_struct_end (protocol, error);" << endl;
+    indent() << "if ((ret = thrift_protocol_read_struct_end (protocol, error)) < 0)" << endl <<
+    indent() << "  return " << error_ret << ";" << endl <<
+    indent() << "xfer += ret;" << endl;
 
   // Throw if any required fields are missing.
   // We do this after reading the struct end so that
@@ -704,7 +741,8 @@ void t_c_generator::generate_struct_reader(ofstream& out, t_struct* tstruct,
  * @param prefix Name to prepend to field name
  */
 void t_c_generator::generate_serialize_field(ofstream& out, t_field* tfield,
-                                             string prefix, string suffix) {
+                                             string prefix, string suffix, 
+                                             int error_ret) {
   t_type* type = get_true_type(tfield->get_type());
 
   string name = prefix + tfield->get_name() + suffix;
@@ -715,15 +753,13 @@ void t_c_generator::generate_serialize_field(ofstream& out, t_field* tfield,
   }
 
   if (type->is_struct() || type->is_xception()) {
-    generate_serialize_struct(out,
-                              (t_struct*)type,
-                              name);
+    generate_serialize_struct(out, (t_struct*)type, name, error_ret);
   } else if (type->is_container()) {
-    generate_serialize_container(out, type, name);
+    generate_serialize_container(out, type, name, error_ret);
   } else if (type->is_base_type() || type->is_enum()) {
 
     indent(out) <<
-      "xfer += thrift_protocol_write_";
+      "if ((ret = thrift_protocol_write_";
 
     if (type->is_base_type()) {
       t_base_type::t_base tbase = ((t_base_type*)type)->get_base();
@@ -764,7 +800,9 @@ void t_c_generator::generate_serialize_field(ofstream& out, t_field* tfield,
     } else if (type->is_enum()) {
       out << "i32(protocol, (gint32)" << name;
     }
-    out << ", error);" << endl;
+    out << ", error)) < 0)" << endl <<
+      indent() << "  return " << error_ret << ";" << endl;
+
   } else {
     printf("DO NOT KNOW HOW TO SERIALIZE FIELD '%s' TYPE '%s'\n",
            name.c_str(),
@@ -778,34 +816,40 @@ void t_c_generator::generate_serialize_field(ofstream& out, t_field* tfield,
  * @param tstruct The struct to serialize
  * @param prefix  String prefix to attach to all fields
  */
-void t_c_generator::generate_serialize_struct(ofstream& out,
-                                                t_struct* tstruct,
-                                                string prefix) {
-  indent(out) <<
-    "xfer += thrift_struct_write (THRIFT_STRUCT (" << prefix << "), protocol, error);" << endl;
+void t_c_generator::generate_serialize_struct(ofstream& out, t_struct* tstruct,
+                                              string prefix, int error_ret) {
+  out <<
+    indent() << "if ((ret = thrift_struct_write (THRIFT_STRUCT (" << prefix << "), protocol, error)) < 0)" << endl <<
+    indent() << "  return " << error_ret << ";" << endl << 
+    indent() << "xfer += ret;" << endl;
 }
 
-void t_c_generator::generate_serialize_container(ofstream& out,
-                                                   t_type* ttype,
-                                                   string prefix) {
+void t_c_generator::generate_serialize_container(ofstream& out, t_type* ttype,
+                                                 string prefix, int error_ret) {
   scope_up(out);
 
   if (ttype->is_map()) {
-    indent(out) <<
-      "xfer += thrift_protocol_write_map_begin(protocol, " <<
+    out <<
+      indent() << "if ((ret = thrift_protocol_write_map_begin(protocol, " <<
       type_to_enum(((t_map*)ttype)->get_key_type()) << ", " <<
       type_to_enum(((t_map*)ttype)->get_val_type()) << ", g_hash_table_size(" <<
-      prefix << "), error);" << endl;
+      prefix << "), error)) < 0)" << endl <<
+      indent() << "  return " << error_ret << ";" << endl <<
+      indent() << "xfer += ret;" << endl;
   } else if (ttype->is_set()) {
-    indent(out) <<
-      "xfer += thrift_protocol_write_set_begin(protocol, " <<
+    out <<
+      indent() << "if ((ret = thrift_protocol_write_set_begin(protocol, " <<
       type_to_enum(((t_set*)ttype)->get_elem_type()) << ", g_hash_table_size(" <<
-      prefix << "), error);" << endl;
+      prefix << "), error)) < 0)" << endl <<
+      indent() << "  return " << error_ret << ";" << endl <<
+      indent() << "xfer += ret;" << endl;
   } else if (ttype->is_list()) {
-    indent(out) <<
-      "xfer += thrift_protocol_write_list_begin(protocol, " <<
+    out <<
+      indent() << "if ((ret = thrift_protocol_write_list_begin(protocol, " <<
       type_to_enum(((t_list*)ttype)->get_elem_type()) << ", (gint32)" <<
-      prefix << "->len, error);" << endl;
+      prefix << "->len, error)) < 0)" << endl <<
+      indent() << "  return " << error_ret << ";" << endl <<
+      indent() << "xfer += ret;" << endl;
   }
 
   string iter = tmp("_iter");
@@ -814,23 +858,30 @@ void t_c_generator::generate_serialize_container(ofstream& out,
     indent() << "for (i = 0; i < (gint32)" << prefix << "->len; i++)" << endl;
   scope_up(out);
     if (ttype->is_map()) {
-      generate_serialize_map_element(out, (t_map*)ttype, iter);
+      generate_serialize_map_element(out, (t_map*)ttype, iter, error_ret);
     } else if (ttype->is_set()) {
-      generate_serialize_set_element(out, (t_set*)ttype, iter);
+      generate_serialize_set_element(out, (t_set*)ttype, iter, error_ret);
     } else if (ttype->is_list()) {
-      generate_serialize_list_element(out, (t_list*)ttype, prefix, "i");
+      generate_serialize_list_element(out, (t_list*)ttype, prefix, "i", 
+                                      error_ret);
     }
   scope_down(out);
 
   if (ttype->is_map()) {
-    indent(out) <<
-      "xfer += thrift_protocol_write_map_end(protocol, error);" << endl;
+    out <<
+      indent() << "if ((ret = thrift_protocol_write_map_end(protocol, error)) < 0)" << endl <<
+      indent() << "  return " << error_ret << ";" << endl <<
+      indent() << "xfer += ret;" << endl;
   } else if (ttype->is_set()) {
-    indent(out) <<
-      "xfer += thrift_protocol_write_set_end(protocol, error);" << endl;
+    out <<
+      indent() << "if ((ret = thrift_protocol_write_set_end(protocol, error)) < 0)" << endl <<
+      indent() << "  return " << error_ret << ";" << endl <<
+      indent() << "xfer += ret;" << endl;
   } else if (ttype->is_list()) {
-    indent(out) <<
-      "xfer += thrift_protocol_write_list_end(protocol, error);" << endl;
+    out <<
+      indent() << "if ((ret = thrift_protocol_write_list_end(protocol, error)) < 0)" << endl <<
+      indent() << "  return " << error_ret << ";" << endl <<
+      indent() << "xfer += ret;" << endl;
   }
 
   scope_down(out);
@@ -842,12 +893,13 @@ void t_c_generator::generate_serialize_container(ofstream& out,
  */
 void t_c_generator::generate_serialize_map_element(ofstream& out,
                                                      t_map* tmap,
-                                                     string iter) {
+                                                     string iter,
+                                                     int error_ret) {
   t_field kfield(tmap->get_key_type(), iter + "->first");
-  generate_serialize_field(out, &kfield, "");
+  generate_serialize_field(out, &kfield, "", "", error_ret);
 
   t_field vfield(tmap->get_val_type(), iter + "->second");
-  generate_serialize_field(out, &vfield, "");
+  generate_serialize_field(out, &vfield, "", "", error_ret);
 }
 
 /**
@@ -855,9 +907,10 @@ void t_c_generator::generate_serialize_map_element(ofstream& out,
  */
 void t_c_generator::generate_serialize_set_element(ofstream& out,
                                                      t_set* tset,
-                                                     string iter) {
+                                                     string iter,
+                                                     int error_ret) {
   t_field efield(tset->get_elem_type(), "(*" + iter + ")");
-  generate_serialize_field(out, &efield, "");
+  generate_serialize_field(out, &efield, "", "", error_ret);
 }
 
 /**
@@ -866,17 +919,19 @@ void t_c_generator::generate_serialize_set_element(ofstream& out,
 void t_c_generator::generate_serialize_list_element(ofstream& out,
                                                     t_list* tlist,
                                                     string list,
-                                                    string index) {
+                                                    string index, 
+                                                    int error_ret) {
   t_field efield(tlist->get_elem_type(), 
                  "g_ptr_array_index(" + list + ", " + index + ")");
-  generate_serialize_field(out, &efield, "");
+  generate_serialize_field(out, &efield, "", "", error_ret);
 }
 
 /**
  * Deserializes a field of any type.
  */
 void t_c_generator::generate_deserialize_field(ofstream& out, t_field* tfield,
-                                               string prefix, string suffix) {
+                                               string prefix, string suffix,
+                                               int error_ret) {
   t_type* type = get_true_type(tfield->get_type());
 
   if (type->is_void()) {
@@ -887,12 +942,11 @@ void t_c_generator::generate_deserialize_field(ofstream& out, t_field* tfield,
   string name = prefix + tfield->get_name() + suffix;
 
   if (type->is_struct() || type->is_xception()) {
-    generate_deserialize_struct(out, (t_struct*)type, name);
+    generate_deserialize_struct(out, (t_struct*)type, name, error_ret);
   } else if (type->is_container()) {
-    generate_deserialize_container(out, type, name);
+    generate_deserialize_container(out, type, name, error_ret);
   } else if (type->is_base_type()) {
-    indent(out) <<
-      "xfer += thrift_protocol_read_";
+    indent(out) << "if ((ret = thrift_protocol_read_";
     t_base_type::t_base tbase = ((t_base_type*)type)->get_base();
     switch (tbase) {
     case t_base_type::TYPE_VOID:
@@ -928,12 +982,16 @@ void t_c_generator::generate_deserialize_field(ofstream& out, t_field* tfield,
     default:
       throw "compiler error: no C reader for base type " + t_base_type::t_base_name(tbase) + name;
     }
-    out << ", error);" << endl;
+    out << ", error)) < 0)" << endl <<
+      indent() << "  return " << error_ret << ";" << endl <<
+      indent() << "xfer += ret;" << endl;
   } else if (type->is_enum()) {
     string t = tmp("ecast");
     out <<
       indent() << "gint32 " << t << ";" << endl <<
-      indent() << "xfer += thrift_protocol_read_i32 (protocol, &" << t << ", error);" << endl <<
+      indent() << "if ((ret = thrift_protocol_read_i32 (protocol, &" << t << ", error)) < 0)" << endl <<
+      indent() << "  return " << error_ret << ";" << endl <<
+      indent() << "xfer += ret;" << endl <<
       indent() << name << " = (" << type_name(type) << ")" << t << ";" << endl;
   } else {
     printf("DO NOT KNOW HOW TO DESERIALIZE FIELD '%s' TYPE '%s'\n",
@@ -947,16 +1005,18 @@ void t_c_generator::generate_deserialize_field(ofstream& out, t_field* tfield,
  * buffer for deserialization, and that there is a variable protocol which
  * is a reference to a TProtocol serialization object.
  */
-void t_c_generator::generate_deserialize_struct(ofstream& out,
-                                                  t_struct* tstruct,
-                                                  string prefix) {
-  indent(out) <<
-    "xfer += thrift_struct_read (THRIFT_STRUCT (" << prefix << "), protocol, error);" << endl;
+void t_c_generator::generate_deserialize_struct(ofstream& out, 
+                                                t_struct* tstruct,
+                                                string prefix, int error_ret) {
+  out <<
+    indent() << "if ((ret = thrift_struct_read (THRIFT_STRUCT (" << prefix << "), protocol, error)) < 0)" << endl <<
+    indent() << "  return " << error_ret << ";" << endl << 
+    indent() << "xfer += ret;" << endl;
 }
 
-void t_c_generator::generate_deserialize_container(ofstream& out,
-                                                     t_type* ttype,
-                                                     string prefix) {
+void t_c_generator::generate_deserialize_container(ofstream& out, t_type* ttype,
+                                                   string prefix, 
+                                                   int error_ret) {
   scope_up(out);
 
   string size = tmp("_size");
@@ -964,26 +1024,29 @@ void t_c_generator::generate_deserialize_container(ofstream& out,
   string vtype = tmp("_vtype");
   string etype = tmp("_etype");
 
-  indent(out) <<
-    "guint32 " << size << ";" << endl;
+  out <<
+    indent() << "guint32 " << size << ";" << endl;
 
   // Declare variables, read header
   if (ttype->is_map()) {
     out <<
       indent() << "ThriftType " << ktype << ";" << endl <<
       indent() << "ThriftType " << vtype << ";" << endl <<
-      indent() << "thrift_protocol_read_map_begin (protocol, &" <<
-      ktype << ", &" << vtype << ", &" << size << ", error);" << endl;
+      indent() << "if ((ret = thrift_protocol_read_map_begin (protocol, &" << ktype << ", &" << vtype << ", &" << size << ", error)) < 0)" << endl <<
+      indent() << "  return " << error_ret << ";" << endl <<
+      indent() << "xfer += ret;" << endl;
   } else if (ttype->is_set()) {
     out <<
       indent() << "ThriftType " << etype << ";" << endl <<
-      indent() << "thrift_protocol_read_set_begin (protocol, &" <<
-      etype << ", &" << size << ", error);" << endl;
+      indent() << "if ((ret = thrift_protocol_read_set_begin (protocol, &" << etype << ", &" << size << ", error)) < 0)" << endl <<
+      indent() << "  return " << error_ret << ";" << endl <<
+      indent() << "xfer += ret;" << endl;
   } else if (ttype->is_list()) {
     out <<
       indent() << "ThriftType " << etype << ";" << endl <<
-      indent() << "thrift_protocol_read_list_begin (protocol, &" <<
-      etype << ", &" << size << ", error);" << endl <<
+      indent() << "if ((ret = thrift_protocol_read_list_begin (protocol, &" << etype << ", &" << size << ", error)) < 0)" << endl << 
+      indent() << "  return " << error_ret << ";" << endl <<
+      indent() << "xfer += ret;" << endl <<
       indent() << prefix << " = g_ptr_array_new ();" << endl;
   }
 
@@ -997,22 +1060,32 @@ void t_c_generator::generate_deserialize_container(ofstream& out,
     scope_up(out);
 
     if (ttype->is_map()) {
-      generate_deserialize_map_element(out, (t_map*)ttype, prefix);
+      generate_deserialize_map_element(out, (t_map*)ttype, prefix, error_ret);
     } else if (ttype->is_set()) {
-      generate_deserialize_set_element(out, (t_set*)ttype, prefix);
+      generate_deserialize_set_element(out, (t_set*)ttype, prefix, error_ret);
     } else if (ttype->is_list()) {
-      generate_deserialize_list_element(out, (t_list*)ttype, prefix, i);
+      generate_deserialize_list_element(out, (t_list*)ttype, prefix, i, 
+                                        error_ret);
     }
 
     scope_down(out);
 
   // Read container end
   if (ttype->is_map()) {
-    indent(out) << "thrift_protocol_read_map_end (protocol, error);" << endl;
+    out << 
+      indent() << "if ((ret = thrift_protocol_read_map_end (protocol, error)) < 0)" << endl <<
+      indent() << "  return " << error_ret << ";" << endl <<
+      indent() << "xfer += ret;" << endl;
   } else if (ttype->is_set()) {
-    indent(out) << "thrift_protocol_read_set_end (protocol, error);" << endl;
+    out << 
+      indent() << "if ((ret = thrift_protocol_read_set_end (protocol, error)) < 0)" << endl << 
+      indent() << "  return " << error_ret << ";" << endl <<
+      indent() << "xfer += ret;" << endl;
   } else if (ttype->is_list()) {
-    indent(out) << "thrift_protocol_read_list_end (protocol, error);" << endl;
+    out << 
+      indent() << "if ((ret = thrift_protocol_read_list_end (protocol, error)) < 0)" << endl <<
+      indent() << "  return " << error_ret << ";" << endl <<
+      indent() << "xfer += ret;" << endl;
   }
 
   scope_down(out);
@@ -1024,7 +1097,8 @@ void t_c_generator::generate_deserialize_container(ofstream& out,
  */
 void t_c_generator::generate_deserialize_map_element(ofstream& out,
                                                        t_map* tmap,
-                                                       string prefix) {
+                                                       string prefix,
+                                                       int error_ret) {
   string key = tmp("_key");
   string val = tmp("_val");
   t_field fkey(tmap->get_key_type(), key);
@@ -1033,37 +1107,39 @@ void t_c_generator::generate_deserialize_map_element(ofstream& out,
   out <<
     indent() << declare_field(&fkey) << endl;
 
-  generate_deserialize_field(out, &fkey);
+  generate_deserialize_field(out, &fkey, "", "", error_ret);
   indent(out) <<
     declare_field(&fval, false, false, false, true) << " = " <<
     prefix << "[" << key << "];" << endl;
 
-  generate_deserialize_field(out, &fval);
+  generate_deserialize_field(out, &fval, "", "", error_ret);
 }
 
 void t_c_generator::generate_deserialize_set_element(ofstream& out,
                                                        t_set* tset,
-                                                       string prefix) {
+                                                       string prefix,
+                                                       int error_ret) {
   string elem = tmp("_elem");
   t_field felem(tset->get_elem_type(), elem);
 
   indent(out) <<
     declare_field(&felem) << endl;
 
-  generate_deserialize_field(out, &felem);
+  generate_deserialize_field(out, &felem, "", "", error_ret);
 
   indent(out) <<
     prefix << ".insert(" << elem << ");" << endl;
 }
 
 void t_c_generator::generate_deserialize_list_element(ofstream& out,
-                                                        t_list* tlist,
-                                                        string prefix,
-                                                        string index) {
+                                                      t_list* tlist,
+                                                      string prefix,
+                                                      string index,
+                                                      int error_ret) {
   string elem = tmp("_elem");
   t_field felem(tlist->get_elem_type(), elem);
   indent(out) << declare_field(&felem) << endl;
-  generate_deserialize_field(out, &felem);
+  generate_deserialize_field(out, &felem, "", "", error_ret);
   indent(out) << "g_ptr_array_add (" << prefix << ", " << elem << ");" << endl;
 }
 
@@ -1199,7 +1275,7 @@ void t_c_generator::generate_service_client(t_service* tservice) {
   vector<t_function*> functions = tservice->get_functions();
   vector<t_function*>::const_iterator f_iter;
   for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
-    t_function send_function(g_type_void,
+    t_function send_function(g_type_bool,
                              string("send_") + (*f_iter)->get_name(),
                              (*f_iter)->get_arglist());
     indent(f_header_) << function_signature(*f_iter) << ";" << endl;
@@ -1224,8 +1300,8 @@ void t_c_generator::generate_service_client(t_service* tservice) {
     indent(f_service_) <<
       function_signature(*f_iter) << endl;
     scope_up(f_service_);
-    indent(f_service_) <<
-      this->nspace_u << "send_" << funname << " (client";
+    f_service_ <<
+      indent() << "if (!" << this->nspace_u << "send_" << funname << " (client";
 
     // Get the struct of function call params
     t_struct* arg_struct = (*f_iter)->get_arglist();
@@ -1236,29 +1312,30 @@ void t_c_generator::generate_service_client(t_service* tservice) {
     for (fld_iter = fields.begin(); fld_iter != fields.end(); ++fld_iter) {
       f_service_ << ", " << (*fld_iter)->get_name();
     }
-    f_service_ << ", error);" << endl;
+    f_service_ << ", error))" << endl <<
+      indent() << "  return 0;" << endl;
 
     if (!(*f_iter)->is_async()) {
-      f_service_ << indent();
       if (!(*f_iter)->get_returntype()->is_void()) {
         if (is_complex_type((*f_iter)->get_returntype())) {
-          f_service_ << this->nspace_u << "recv_" << funname <<
-            " (client, _return, error);" <<
-            endl;
+          f_service_ << 
+            indent() << "if (!" << this->nspace_u << "recv_" << funname << " (client, _return, error))" << endl <<
+            indent() << "  return 0;" << endl;
         } else {
-          f_service_ << "return " << this->nspace_u << "recv_" << funname <<
-            " (client, error);" << endl;
+          f_service_ <<
+            indent() << "return " << this->nspace_u << "recv_" << funname << " (client, error);" << endl;
         }
       } else {
         f_service_ <<
-          this->nspace_u << "recv_" << funname << " (client, error);" << endl;
+          indent() << this->nspace_u << "recv_" << funname << " (client, error);" << endl;
       }
     }
+    indent(f_service_) << "return 1;" << endl;
     scope_down(f_service_);
     f_service_ << endl;
 
     // Function for sending
-    t_function send_function(g_type_void, string("send_") + name,
+    t_function send_function(g_type_bool, string("send_") + name,
                              (*f_iter)->get_arglist());
 
     // Open the send function
@@ -1271,16 +1348,22 @@ void t_c_generator::generate_service_client(t_service* tservice) {
       indent() << "gint32 cseqid = 0;" << endl <<
       indent() << "ThriftProtocol * protocol = THRIFT_CLIENT (client)->protocol;" << endl <<
       endl <<
-      indent() << "thrift_protocol_write_message_begin (protocol, \"" << name << "\", T_CALL, cseqid, error);" << endl <<
+      indent() << "if (thrift_protocol_write_message_begin (protocol, \"" << name << "\", T_CALL, cseqid, error) < 0)" << endl <<
+      indent() << "  return 0;" << endl <<
       endl;
 
     generate_struct_writer (f_service_, arg_struct, "", "", false);
 
     f_service_ <<
-      indent() << "thrift_protocol_write_message_end (protocol, error);" << endl <<
+      indent() << "if (thrift_protocol_write_message_end (protocol, error) < 0)" << endl <<
+      indent() << "  return 0;" << endl <<
       endl <<
-      indent () << "thrift_transport_flush (protocol->transport, error);" << endl <<
-      indent () << "thrift_transport_write_end (protocol->transport, error);" << endl;
+      indent () << "if (!thrift_transport_flush (protocol->transport, error))" << endl <<
+      indent() << "  return 0;" << endl <<
+      indent () << "if (!thrift_transport_write_end (protocol->transport, error))" << endl <<
+      indent() << "  return 0;" << endl <<
+      endl <<
+      indent() << "return 1;" << endl;
 
     scope_down(f_service_);
     f_service_ << endl;
@@ -1305,27 +1388,27 @@ void t_c_generator::generate_service_client(t_service* tservice) {
         indent() << "thrift_protocol_read_message_begin (protocol, &fname, &mtype, &rseqid, error);" << endl <<
         endl <<
         indent() << "if (mtype == T_EXCEPTION) {" << endl <<
-        indent() << "  /* ThriftApplicationException x;" << endl <<
+        indent() << "  /* TODO: ThriftApplicationException x;" << endl <<
         indent() << "  x.read(iprot_); */" << endl <<
         indent() << "  thrift_protocol_skip (protocol, T_STRUCT, error);" << endl <<
         indent() << "  thrift_protocol_read_message_end (protocol, error);" << endl <<
+        indent() << "  thrift_transport_read_end (protocol->transport, error);" << endl <<
         indent() << "  /* TODO: error handling throw x; */" << endl <<
-        indent() << "  return;" << endl <<
-        indent() << "}" << endl <<
-        indent() << "if (mtype != T_REPLY) {" << endl <<
+        indent() << "  return 0;" << endl <<
+        indent() << "} else if (mtype != T_REPLY) {" << endl <<
         indent() << "  thrift_protocol_skip (protocol, T_STRUCT, error);" << endl <<
         indent() << "  thrift_protocol_read_message_end (protocol, error);" << endl <<
+        indent() << "  thrift_transport_read_end (protocol->transport, error);" << endl <<
         indent() << "  /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE); */" << endl <<
-        indent() << "  return;" << endl <<
-        indent() << "}" << endl <<
-
-        indent() << "if (strncmp (fname, \"" << name << "\", " << name.length () << ") != 0) {" << endl <<
+        indent() << "  return 0;" << endl <<
+        indent() << "} else if (strncmp (fname, \"" << name << "\", " << name.length () << ") != 0) {" << endl <<
         indent() << "  thrift_protocol_skip (protocol, T_STRUCT, error);" << endl <<
         indent() << "  thrift_protocol_read_message_end (protocol, error);" << endl <<
+        indent() << "  thrift_transport_read_end (protocol->transport, error);" << endl <<
         indent() << "  /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */" << endl <<
-        indent() << "  return;" << endl <<
+        indent() << "  return 0;" << endl <<
         indent() << "}" << endl <<
-        indent() << "g_free (fname);" << endl << 
+        indent() << "if (fname) g_free (fname);" << endl << 
         endl;
 
       if (!(*f_iter)->get_returntype()->is_void() &&
@@ -1358,8 +1441,16 @@ void t_c_generator::generate_service_client(t_service* tservice) {
       }
 
       // TODO: error handling, throw on exceptions etc.
+      f_service_ <<
+        indent() << "if (thrift_protocol_read_message_end (protocol, error) < 0)" << endl <<
+        indent() << "  return 0;" << endl <<
+        endl <<
+        indent() << "if (!thrift_transport_read_end (protocol->transport, error))" << endl <<
+        indent() << "  return 0;" << endl <<
+        endl;
 
       // Close function
+      indent(f_service_) << "return 1;" << endl;
       scope_down(f_service_);
       f_service_ << endl;
     }
@@ -1411,12 +1502,12 @@ string t_c_generator::function_signature(t_function* tfunction) {
   bool empty = arglist->get_members().size() == 0;
   if (is_complex_type(ttype)) {
     return
-      "void " + this->nspace_u + fname + " (Thrift" + service_name_ +
+      "gboolean " + this->nspace_u + fname + " (Thrift" + service_name_ +
       "Client * client, " + type_name(ttype) + "* _return" +
       (empty ? "" : (", " + argument_list(arglist))) + ", GError ** error)";
   } else {
     return
-      type_name(ttype) + " " + this->nspace_u + fname +
+      "gboolean " + this->nspace_u + fname +
       " (Thrift" + service_name_ + "Client * client" + 
       (empty ? "" : ", " + argument_list(arglist)) + ", GError ** error)";
   }
@@ -1583,7 +1674,7 @@ string t_c_generator::base_type_name(t_base_type::t_base tbase) {
   case t_base_type::TYPE_STRING:
     return "gchar *";
   case t_base_type::TYPE_BOOL:
-    return "bool";
+    return "gboolean";
   case t_base_type::TYPE_BYTE:
     return "gint8";
   case t_base_type::TYPE_I16:

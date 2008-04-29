@@ -7,34 +7,50 @@
 #include "thrift_client.h"
 #include <string.h>
 
-void thrift_thrudoc_get_buckets (ThriftThrudocClient * client, GPtrArray ** _return, GError ** error)
+gboolean thrift_thrudoc_get_buckets (ThriftThrudocClient * client, GPtrArray ** _return, GError ** error)
 {
-  thrift_thrudoc_send_get_buckets (client, error);
-  thrift_thrudoc_recv_get_buckets (client, _return, error);
+  if (!thrift_thrudoc_send_get_buckets (client, error))
+    return 0;
+  if (!thrift_thrudoc_recv_get_buckets (client, _return, error))
+    return 0;
+  return 1;
 }
 
-void thrift_thrudoc_send_get_buckets (ThriftThrudocClient * client, GError ** error)
+gboolean thrift_thrudoc_send_get_buckets (ThriftThrudocClient * client, GError ** error)
 {
   gint32 cseqid = 0;
   ThriftProtocol * protocol = THRIFT_CLIENT (client)->protocol;
 
-  thrift_protocol_write_message_begin (protocol, "getBuckets", T_CALL, cseqid, error);
+  if (thrift_protocol_write_message_begin (protocol, "getBuckets", T_CALL, cseqid, error) < 0)
+    return 0;
 
   {
+    gint32 ret;
     gint32 xfer = 0;
     
-    xfer += thrift_protocol_write_struct_begin (protocol, "getBuckets_args", error);
-    xfer += thrift_protocol_write_field_stop(protocol, error);
-    xfer += thrift_protocol_write_struct_end(protocol, error);
+    if ((ret = thrift_protocol_write_struct_begin (protocol, "getBuckets_args", error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_field_stop(protocol, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_struct_end(protocol, error)) < 0)
+      return 0;
+    xfer += ret;
   }
 
-  thrift_protocol_write_message_end (protocol, error);
+  if (thrift_protocol_write_message_end (protocol, error) < 0)
+    return 0;
 
-  thrift_transport_flush (protocol->transport, error);
-  thrift_transport_write_end (protocol->transport, error);
+  if (!thrift_transport_flush (protocol->transport, error))
+    return 0;
+  if (!thrift_transport_write_end (protocol->transport, error))
+    return 0;
+
+  return 1;
 }
 
-void thrift_thrudoc_recv_get_buckets (ThriftThrudocClient * client, GPtrArray ** _return, GError ** error)
+gboolean thrift_thrudoc_recv_get_buckets (ThriftThrudocClient * client, GPtrArray ** _return, GError ** error)
 {
 
   gint32 rseqid;
@@ -45,42 +61,48 @@ void thrift_thrudoc_recv_get_buckets (ThriftThrudocClient * client, GPtrArray **
   thrift_protocol_read_message_begin (protocol, &fname, &mtype, &rseqid, error);
 
   if (mtype == T_EXCEPTION) {
-    /* ThriftApplicationException x;
+    /* TODO: ThriftApplicationException x;
     x.read(iprot_); */
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw x; */
-    return;
-  }
-  if (mtype != T_REPLY) {
+    return 0;
+  } else if (mtype != T_REPLY) {
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE); */
-    return;
-  }
-  if (strncmp (fname, "getBuckets", 10) != 0) {
+    return 0;
+  } else if (strncmp (fname, "getBuckets", 10) != 0) {
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
-    return;
+    return 0;
   }
-  g_free (fname);
+  if (fname) g_free (fname);
 
   ThriftThrudocThrudocException * e;
   {
+    gint32 ret;
     gint32 xfer = 0;
     gchar * name;
     ThriftType ftype;
     gint16 fid;
 
-    xfer += thrift_protocol_read_struct_begin (protocol, &name, error);
-    g_free (name);
+    if ((ret = thrift_protocol_read_struct_begin (protocol, &name, error)) < 0)
+      return 0;
+    xfer += ret;
+    if (name) g_free (name);
     
 
     while (1)
     {
-      xfer += thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error);
-      g_free (name);
+      if ((ret = thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error)) < 0)
+        return 0;
+      xfer += ret;
+      if (name) g_free (name);
       if (ftype == T_STOP) {
         break;
       }
@@ -91,78 +113,133 @@ void thrift_thrudoc_recv_get_buckets (ThriftThrudocClient * client, GPtrArray **
             {
               guint32 _size8;
               ThriftType _etype11;
-              thrift_protocol_read_list_begin (protocol, &_etype11, &_size8, error);
+              if ((ret = thrift_protocol_read_list_begin (protocol, &_etype11, &_size8, error)) < 0)
+                return 0;
+              xfer += ret;
               *_return = g_ptr_array_new ();
               guint32 _i12;
               for (_i12 = 0; _i12 < _size8; ++_i12)
               {
                 gchar * _elem13;
-                xfer += thrift_protocol_read_string (protocol, &_elem13, error);
+                if ((ret = thrift_protocol_read_string (protocol, &_elem13, error)) < 0)
+                  return 0;
+                xfer += ret;
                 g_ptr_array_add (*_return, _elem13);
               }
-              thrift_protocol_read_list_end (protocol, error);
+              if ((ret = thrift_protocol_read_list_end (protocol, error)) < 0)
+                return 0;
+              xfer += ret;
             }
           } else {
-            xfer += thrift_protocol_skip (protocol, ftype, error);
+            if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+              return 0;
+            xfer += ret;
           }
           break;
         case -1:
           if (ftype == T_STRUCT) {
-            xfer += thrift_struct_read (THRIFT_STRUCT (e), protocol, error);
+            if ((ret = thrift_struct_read (THRIFT_STRUCT (e), protocol, error)) < 0)
+              return 0;
+            xfer += ret;
           } else {
-            xfer += thrift_protocol_skip (protocol, ftype, error);
+            if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+              return 0;
+            xfer += ret;
           }
           break;
         default:
-          xfer += thrift_protocol_skip (protocol, ftype, error);
+          if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+            return 0;
+          xfer += ret;
           break;
       }
-      xfer += thrift_protocol_read_field_end (protocol, error);
+      if ((ret = thrift_protocol_read_field_end (protocol, error)) < 0)
+        return 0;
+      xfer += ret;
     }
 
-    xfer += thrift_protocol_read_struct_end (protocol, error);
+    if ((ret = thrift_protocol_read_struct_end (protocol, error)) < 0)
+      return 0;
+    xfer += ret;
 
   }
 
+  if (thrift_protocol_read_message_end (protocol, error) < 0)
+    return 0;
+
+  if (!thrift_transport_read_end (protocol->transport, error))
+    return 0;
+
+  return 1;
 }
 
-void thrift_thrudoc_put (ThriftThrudocClient * client, const gchar * bucket, const gchar * key, const gchar * value, GError ** error)
+gboolean thrift_thrudoc_put (ThriftThrudocClient * client, const gchar * bucket, const gchar * key, const gchar * value, GError ** error)
 {
-  thrift_thrudoc_send_put (client, bucket, key, value, error);
+  if (!thrift_thrudoc_send_put (client, bucket, key, value, error))
+    return 0;
   thrift_thrudoc_recv_put (client, error);
+  return 1;
 }
 
-void thrift_thrudoc_send_put (ThriftThrudocClient * client, const gchar * bucket, const gchar * key, const gchar * value, GError ** error)
+gboolean thrift_thrudoc_send_put (ThriftThrudocClient * client, const gchar * bucket, const gchar * key, const gchar * value, GError ** error)
 {
   gint32 cseqid = 0;
   ThriftProtocol * protocol = THRIFT_CLIENT (client)->protocol;
 
-  thrift_protocol_write_message_begin (protocol, "put", T_CALL, cseqid, error);
+  if (thrift_protocol_write_message_begin (protocol, "put", T_CALL, cseqid, error) < 0)
+    return 0;
 
   {
+    gint32 ret;
     gint32 xfer = 0;
     
-    xfer += thrift_protocol_write_struct_begin (protocol, "put_args", error);
-    xfer += thrift_protocol_write_field_begin (protocol, "bucket", T_STRING, 1, error);
-    xfer += thrift_protocol_write_string(protocol, bucket, error);
-    xfer += thrift_protocol_write_field_end (protocol, error);
-    xfer += thrift_protocol_write_field_begin (protocol, "key", T_STRING, 2, error);
-    xfer += thrift_protocol_write_string(protocol, key, error);
-    xfer += thrift_protocol_write_field_end (protocol, error);
-    xfer += thrift_protocol_write_field_begin (protocol, "value", T_STRING, 3, error);
-    xfer += thrift_protocol_write_string(protocol, value, error);
-    xfer += thrift_protocol_write_field_end (protocol, error);
-    xfer += thrift_protocol_write_field_stop(protocol, error);
-    xfer += thrift_protocol_write_struct_end(protocol, error);
+    if ((ret = thrift_protocol_write_struct_begin (protocol, "put_args", error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_field_begin (protocol, "bucket", T_STRING, 1, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_string(protocol, bucket, error)) < 0)
+      return 0;
+    if ((ret = thrift_protocol_write_field_end (protocol, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_field_begin (protocol, "key", T_STRING, 2, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_string(protocol, key, error)) < 0)
+      return 0;
+    if ((ret = thrift_protocol_write_field_end (protocol, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_field_begin (protocol, "value", T_STRING, 3, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_string(protocol, value, error)) < 0)
+      return 0;
+    if ((ret = thrift_protocol_write_field_end (protocol, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_field_stop(protocol, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_struct_end(protocol, error)) < 0)
+      return 0;
+    xfer += ret;
   }
 
-  thrift_protocol_write_message_end (protocol, error);
+  if (thrift_protocol_write_message_end (protocol, error) < 0)
+    return 0;
 
-  thrift_transport_flush (protocol->transport, error);
-  thrift_transport_write_end (protocol->transport, error);
+  if (!thrift_transport_flush (protocol->transport, error))
+    return 0;
+  if (!thrift_transport_write_end (protocol->transport, error))
+    return 0;
+
+  return 1;
 }
 
-void thrift_thrudoc_recv_put (ThriftThrudocClient * client, GError ** error)
+gboolean thrift_thrudoc_recv_put (ThriftThrudocClient * client, GError ** error)
 {
 
   gint32 rseqid;
@@ -173,42 +250,48 @@ void thrift_thrudoc_recv_put (ThriftThrudocClient * client, GError ** error)
   thrift_protocol_read_message_begin (protocol, &fname, &mtype, &rseqid, error);
 
   if (mtype == T_EXCEPTION) {
-    /* ThriftApplicationException x;
+    /* TODO: ThriftApplicationException x;
     x.read(iprot_); */
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw x; */
-    return;
-  }
-  if (mtype != T_REPLY) {
+    return 0;
+  } else if (mtype != T_REPLY) {
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE); */
-    return;
-  }
-  if (strncmp (fname, "put", 3) != 0) {
+    return 0;
+  } else if (strncmp (fname, "put", 3) != 0) {
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
-    return;
+    return 0;
   }
-  g_free (fname);
+  if (fname) g_free (fname);
 
   ThriftThrudocThrudocException * e;
   {
+    gint32 ret;
     gint32 xfer = 0;
     gchar * name;
     ThriftType ftype;
     gint16 fid;
 
-    xfer += thrift_protocol_read_struct_begin (protocol, &name, error);
-    g_free (name);
+    if ((ret = thrift_protocol_read_struct_begin (protocol, &name, error)) < 0)
+      return 0;
+    xfer += ret;
+    if (name) g_free (name);
     
 
     while (1)
     {
-      xfer += thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error);
-      g_free (name);
+      if ((ret = thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error)) < 0)
+        return 0;
+      xfer += ret;
+      if (name) g_free (name);
       if (ftype == T_STOP) {
         break;
       }
@@ -216,58 +299,101 @@ void thrift_thrudoc_recv_put (ThriftThrudocClient * client, GError ** error)
       {
         case -1:
           if (ftype == T_STRUCT) {
-            xfer += thrift_struct_read (THRIFT_STRUCT (e), protocol, error);
+            if ((ret = thrift_struct_read (THRIFT_STRUCT (e), protocol, error)) < 0)
+              return 0;
+            xfer += ret;
           } else {
-            xfer += thrift_protocol_skip (protocol, ftype, error);
+            if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+              return 0;
+            xfer += ret;
           }
           break;
         default:
-          xfer += thrift_protocol_skip (protocol, ftype, error);
+          if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+            return 0;
+          xfer += ret;
           break;
       }
-      xfer += thrift_protocol_read_field_end (protocol, error);
+      if ((ret = thrift_protocol_read_field_end (protocol, error)) < 0)
+        return 0;
+      xfer += ret;
     }
 
-    xfer += thrift_protocol_read_struct_end (protocol, error);
+    if ((ret = thrift_protocol_read_struct_end (protocol, error)) < 0)
+      return 0;
+    xfer += ret;
 
   }
 
+  if (thrift_protocol_read_message_end (protocol, error) < 0)
+    return 0;
+
+  if (!thrift_transport_read_end (protocol->transport, error))
+    return 0;
+
+  return 1;
 }
 
-void thrift_thrudoc_get (ThriftThrudocClient * client, gchar ** _return, const gchar * bucket, const gchar * key, GError ** error)
+gboolean thrift_thrudoc_get (ThriftThrudocClient * client, gchar ** _return, const gchar * bucket, const gchar * key, GError ** error)
 {
-  thrift_thrudoc_send_get (client, bucket, key, error);
-  thrift_thrudoc_recv_get (client, _return, error);
+  if (!thrift_thrudoc_send_get (client, bucket, key, error))
+    return 0;
+  if (!thrift_thrudoc_recv_get (client, _return, error))
+    return 0;
+  return 1;
 }
 
-void thrift_thrudoc_send_get (ThriftThrudocClient * client, const gchar * bucket, const gchar * key, GError ** error)
+gboolean thrift_thrudoc_send_get (ThriftThrudocClient * client, const gchar * bucket, const gchar * key, GError ** error)
 {
   gint32 cseqid = 0;
   ThriftProtocol * protocol = THRIFT_CLIENT (client)->protocol;
 
-  thrift_protocol_write_message_begin (protocol, "get", T_CALL, cseqid, error);
+  if (thrift_protocol_write_message_begin (protocol, "get", T_CALL, cseqid, error) < 0)
+    return 0;
 
   {
+    gint32 ret;
     gint32 xfer = 0;
     
-    xfer += thrift_protocol_write_struct_begin (protocol, "get_args", error);
-    xfer += thrift_protocol_write_field_begin (protocol, "bucket", T_STRING, 1, error);
-    xfer += thrift_protocol_write_string(protocol, bucket, error);
-    xfer += thrift_protocol_write_field_end (protocol, error);
-    xfer += thrift_protocol_write_field_begin (protocol, "key", T_STRING, 2, error);
-    xfer += thrift_protocol_write_string(protocol, key, error);
-    xfer += thrift_protocol_write_field_end (protocol, error);
-    xfer += thrift_protocol_write_field_stop(protocol, error);
-    xfer += thrift_protocol_write_struct_end(protocol, error);
+    if ((ret = thrift_protocol_write_struct_begin (protocol, "get_args", error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_field_begin (protocol, "bucket", T_STRING, 1, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_string(protocol, bucket, error)) < 0)
+      return 0;
+    if ((ret = thrift_protocol_write_field_end (protocol, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_field_begin (protocol, "key", T_STRING, 2, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_string(protocol, key, error)) < 0)
+      return 0;
+    if ((ret = thrift_protocol_write_field_end (protocol, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_field_stop(protocol, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_struct_end(protocol, error)) < 0)
+      return 0;
+    xfer += ret;
   }
 
-  thrift_protocol_write_message_end (protocol, error);
+  if (thrift_protocol_write_message_end (protocol, error) < 0)
+    return 0;
 
-  thrift_transport_flush (protocol->transport, error);
-  thrift_transport_write_end (protocol->transport, error);
+  if (!thrift_transport_flush (protocol->transport, error))
+    return 0;
+  if (!thrift_transport_write_end (protocol->transport, error))
+    return 0;
+
+  return 1;
 }
 
-void thrift_thrudoc_recv_get (ThriftThrudocClient * client, gchar ** _return, GError ** error)
+gboolean thrift_thrudoc_recv_get (ThriftThrudocClient * client, gchar ** _return, GError ** error)
 {
 
   gint32 rseqid;
@@ -278,42 +404,48 @@ void thrift_thrudoc_recv_get (ThriftThrudocClient * client, gchar ** _return, GE
   thrift_protocol_read_message_begin (protocol, &fname, &mtype, &rseqid, error);
 
   if (mtype == T_EXCEPTION) {
-    /* ThriftApplicationException x;
+    /* TODO: ThriftApplicationException x;
     x.read(iprot_); */
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw x; */
-    return;
-  }
-  if (mtype != T_REPLY) {
+    return 0;
+  } else if (mtype != T_REPLY) {
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE); */
-    return;
-  }
-  if (strncmp (fname, "get", 3) != 0) {
+    return 0;
+  } else if (strncmp (fname, "get", 3) != 0) {
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
-    return;
+    return 0;
   }
-  g_free (fname);
+  if (fname) g_free (fname);
 
   ThriftThrudocThrudocException * e;
   {
+    gint32 ret;
     gint32 xfer = 0;
     gchar * name;
     ThriftType ftype;
     gint16 fid;
 
-    xfer += thrift_protocol_read_struct_begin (protocol, &name, error);
-    g_free (name);
+    if ((ret = thrift_protocol_read_struct_begin (protocol, &name, error)) < 0)
+      return 0;
+    xfer += ret;
+    if (name) g_free (name);
     
 
     while (1)
     {
-      xfer += thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error);
-      g_free (name);
+      if ((ret = thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error)) < 0)
+        return 0;
+      xfer += ret;
+      if (name) g_free (name);
       if (ftype == T_STOP) {
         break;
       }
@@ -321,65 +453,111 @@ void thrift_thrudoc_recv_get (ThriftThrudocClient * client, gchar ** _return, GE
       {
         case 0:
           if (ftype == T_STRING) {
-            xfer += thrift_protocol_read_string (protocol, &*_return, error);
+            if ((ret = thrift_protocol_read_string (protocol, &*_return, error)) < 0)
+              return 0;
+            xfer += ret;
           } else {
-            xfer += thrift_protocol_skip (protocol, ftype, error);
+            if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+              return 0;
+            xfer += ret;
           }
           break;
         case -1:
           if (ftype == T_STRUCT) {
-            xfer += thrift_struct_read (THRIFT_STRUCT (e), protocol, error);
+            if ((ret = thrift_struct_read (THRIFT_STRUCT (e), protocol, error)) < 0)
+              return 0;
+            xfer += ret;
           } else {
-            xfer += thrift_protocol_skip (protocol, ftype, error);
+            if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+              return 0;
+            xfer += ret;
           }
           break;
         default:
-          xfer += thrift_protocol_skip (protocol, ftype, error);
+          if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+            return 0;
+          xfer += ret;
           break;
       }
-      xfer += thrift_protocol_read_field_end (protocol, error);
+      if ((ret = thrift_protocol_read_field_end (protocol, error)) < 0)
+        return 0;
+      xfer += ret;
     }
 
-    xfer += thrift_protocol_read_struct_end (protocol, error);
+    if ((ret = thrift_protocol_read_struct_end (protocol, error)) < 0)
+      return 0;
+    xfer += ret;
 
   }
 
+  if (thrift_protocol_read_message_end (protocol, error) < 0)
+    return 0;
+
+  if (!thrift_transport_read_end (protocol->transport, error))
+    return 0;
+
+  return 1;
 }
 
-void thrift_thrudoc_remove (ThriftThrudocClient * client, const gchar * bucket, const gchar * key, GError ** error)
+gboolean thrift_thrudoc_remove (ThriftThrudocClient * client, const gchar * bucket, const gchar * key, GError ** error)
 {
-  thrift_thrudoc_send_remove (client, bucket, key, error);
+  if (!thrift_thrudoc_send_remove (client, bucket, key, error))
+    return 0;
   thrift_thrudoc_recv_remove (client, error);
+  return 1;
 }
 
-void thrift_thrudoc_send_remove (ThriftThrudocClient * client, const gchar * bucket, const gchar * key, GError ** error)
+gboolean thrift_thrudoc_send_remove (ThriftThrudocClient * client, const gchar * bucket, const gchar * key, GError ** error)
 {
   gint32 cseqid = 0;
   ThriftProtocol * protocol = THRIFT_CLIENT (client)->protocol;
 
-  thrift_protocol_write_message_begin (protocol, "remove", T_CALL, cseqid, error);
+  if (thrift_protocol_write_message_begin (protocol, "remove", T_CALL, cseqid, error) < 0)
+    return 0;
 
   {
+    gint32 ret;
     gint32 xfer = 0;
     
-    xfer += thrift_protocol_write_struct_begin (protocol, "remove_args", error);
-    xfer += thrift_protocol_write_field_begin (protocol, "bucket", T_STRING, 1, error);
-    xfer += thrift_protocol_write_string(protocol, bucket, error);
-    xfer += thrift_protocol_write_field_end (protocol, error);
-    xfer += thrift_protocol_write_field_begin (protocol, "key", T_STRING, 2, error);
-    xfer += thrift_protocol_write_string(protocol, key, error);
-    xfer += thrift_protocol_write_field_end (protocol, error);
-    xfer += thrift_protocol_write_field_stop(protocol, error);
-    xfer += thrift_protocol_write_struct_end(protocol, error);
+    if ((ret = thrift_protocol_write_struct_begin (protocol, "remove_args", error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_field_begin (protocol, "bucket", T_STRING, 1, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_string(protocol, bucket, error)) < 0)
+      return 0;
+    if ((ret = thrift_protocol_write_field_end (protocol, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_field_begin (protocol, "key", T_STRING, 2, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_string(protocol, key, error)) < 0)
+      return 0;
+    if ((ret = thrift_protocol_write_field_end (protocol, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_field_stop(protocol, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_struct_end(protocol, error)) < 0)
+      return 0;
+    xfer += ret;
   }
 
-  thrift_protocol_write_message_end (protocol, error);
+  if (thrift_protocol_write_message_end (protocol, error) < 0)
+    return 0;
 
-  thrift_transport_flush (protocol->transport, error);
-  thrift_transport_write_end (protocol->transport, error);
+  if (!thrift_transport_flush (protocol->transport, error))
+    return 0;
+  if (!thrift_transport_write_end (protocol->transport, error))
+    return 0;
+
+  return 1;
 }
 
-void thrift_thrudoc_recv_remove (ThriftThrudocClient * client, GError ** error)
+gboolean thrift_thrudoc_recv_remove (ThriftThrudocClient * client, GError ** error)
 {
 
   gint32 rseqid;
@@ -390,42 +568,48 @@ void thrift_thrudoc_recv_remove (ThriftThrudocClient * client, GError ** error)
   thrift_protocol_read_message_begin (protocol, &fname, &mtype, &rseqid, error);
 
   if (mtype == T_EXCEPTION) {
-    /* ThriftApplicationException x;
+    /* TODO: ThriftApplicationException x;
     x.read(iprot_); */
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw x; */
-    return;
-  }
-  if (mtype != T_REPLY) {
+    return 0;
+  } else if (mtype != T_REPLY) {
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE); */
-    return;
-  }
-  if (strncmp (fname, "remove", 6) != 0) {
+    return 0;
+  } else if (strncmp (fname, "remove", 6) != 0) {
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
-    return;
+    return 0;
   }
-  g_free (fname);
+  if (fname) g_free (fname);
 
   ThriftThrudocThrudocException * e;
   {
+    gint32 ret;
     gint32 xfer = 0;
     gchar * name;
     ThriftType ftype;
     gint16 fid;
 
-    xfer += thrift_protocol_read_struct_begin (protocol, &name, error);
-    g_free (name);
+    if ((ret = thrift_protocol_read_struct_begin (protocol, &name, error)) < 0)
+      return 0;
+    xfer += ret;
+    if (name) g_free (name);
     
 
     while (1)
     {
-      xfer += thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error);
-      g_free (name);
+      if ((ret = thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error)) < 0)
+        return 0;
+      xfer += ret;
+      if (name) g_free (name);
       if (ftype == T_STOP) {
         break;
       }
@@ -433,58 +617,101 @@ void thrift_thrudoc_recv_remove (ThriftThrudocClient * client, GError ** error)
       {
         case -1:
           if (ftype == T_STRUCT) {
-            xfer += thrift_struct_read (THRIFT_STRUCT (e), protocol, error);
+            if ((ret = thrift_struct_read (THRIFT_STRUCT (e), protocol, error)) < 0)
+              return 0;
+            xfer += ret;
           } else {
-            xfer += thrift_protocol_skip (protocol, ftype, error);
+            if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+              return 0;
+            xfer += ret;
           }
           break;
         default:
-          xfer += thrift_protocol_skip (protocol, ftype, error);
+          if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+            return 0;
+          xfer += ret;
           break;
       }
-      xfer += thrift_protocol_read_field_end (protocol, error);
+      if ((ret = thrift_protocol_read_field_end (protocol, error)) < 0)
+        return 0;
+      xfer += ret;
     }
 
-    xfer += thrift_protocol_read_struct_end (protocol, error);
+    if ((ret = thrift_protocol_read_struct_end (protocol, error)) < 0)
+      return 0;
+    xfer += ret;
 
   }
 
+  if (thrift_protocol_read_message_end (protocol, error) < 0)
+    return 0;
+
+  if (!thrift_transport_read_end (protocol->transport, error))
+    return 0;
+
+  return 1;
 }
 
-void thrift_thrudoc_put_value (ThriftThrudocClient * client, gchar ** _return, const gchar * bucket, const gchar * value, GError ** error)
+gboolean thrift_thrudoc_put_value (ThriftThrudocClient * client, gchar ** _return, const gchar * bucket, const gchar * value, GError ** error)
 {
-  thrift_thrudoc_send_put_value (client, bucket, value, error);
-  thrift_thrudoc_recv_put_value (client, _return, error);
+  if (!thrift_thrudoc_send_put_value (client, bucket, value, error))
+    return 0;
+  if (!thrift_thrudoc_recv_put_value (client, _return, error))
+    return 0;
+  return 1;
 }
 
-void thrift_thrudoc_send_put_value (ThriftThrudocClient * client, const gchar * bucket, const gchar * value, GError ** error)
+gboolean thrift_thrudoc_send_put_value (ThriftThrudocClient * client, const gchar * bucket, const gchar * value, GError ** error)
 {
   gint32 cseqid = 0;
   ThriftProtocol * protocol = THRIFT_CLIENT (client)->protocol;
 
-  thrift_protocol_write_message_begin (protocol, "putValue", T_CALL, cseqid, error);
+  if (thrift_protocol_write_message_begin (protocol, "putValue", T_CALL, cseqid, error) < 0)
+    return 0;
 
   {
+    gint32 ret;
     gint32 xfer = 0;
     
-    xfer += thrift_protocol_write_struct_begin (protocol, "putValue_args", error);
-    xfer += thrift_protocol_write_field_begin (protocol, "bucket", T_STRING, 1, error);
-    xfer += thrift_protocol_write_string(protocol, bucket, error);
-    xfer += thrift_protocol_write_field_end (protocol, error);
-    xfer += thrift_protocol_write_field_begin (protocol, "value", T_STRING, 2, error);
-    xfer += thrift_protocol_write_string(protocol, value, error);
-    xfer += thrift_protocol_write_field_end (protocol, error);
-    xfer += thrift_protocol_write_field_stop(protocol, error);
-    xfer += thrift_protocol_write_struct_end(protocol, error);
+    if ((ret = thrift_protocol_write_struct_begin (protocol, "putValue_args", error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_field_begin (protocol, "bucket", T_STRING, 1, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_string(protocol, bucket, error)) < 0)
+      return 0;
+    if ((ret = thrift_protocol_write_field_end (protocol, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_field_begin (protocol, "value", T_STRING, 2, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_string(protocol, value, error)) < 0)
+      return 0;
+    if ((ret = thrift_protocol_write_field_end (protocol, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_field_stop(protocol, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_struct_end(protocol, error)) < 0)
+      return 0;
+    xfer += ret;
   }
 
-  thrift_protocol_write_message_end (protocol, error);
+  if (thrift_protocol_write_message_end (protocol, error) < 0)
+    return 0;
 
-  thrift_transport_flush (protocol->transport, error);
-  thrift_transport_write_end (protocol->transport, error);
+  if (!thrift_transport_flush (protocol->transport, error))
+    return 0;
+  if (!thrift_transport_write_end (protocol->transport, error))
+    return 0;
+
+  return 1;
 }
 
-void thrift_thrudoc_recv_put_value (ThriftThrudocClient * client, gchar ** _return, GError ** error)
+gboolean thrift_thrudoc_recv_put_value (ThriftThrudocClient * client, gchar ** _return, GError ** error)
 {
 
   gint32 rseqid;
@@ -495,42 +722,48 @@ void thrift_thrudoc_recv_put_value (ThriftThrudocClient * client, gchar ** _retu
   thrift_protocol_read_message_begin (protocol, &fname, &mtype, &rseqid, error);
 
   if (mtype == T_EXCEPTION) {
-    /* ThriftApplicationException x;
+    /* TODO: ThriftApplicationException x;
     x.read(iprot_); */
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw x; */
-    return;
-  }
-  if (mtype != T_REPLY) {
+    return 0;
+  } else if (mtype != T_REPLY) {
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE); */
-    return;
-  }
-  if (strncmp (fname, "putValue", 8) != 0) {
+    return 0;
+  } else if (strncmp (fname, "putValue", 8) != 0) {
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
-    return;
+    return 0;
   }
-  g_free (fname);
+  if (fname) g_free (fname);
 
   ThriftThrudocThrudocException * e;
   {
+    gint32 ret;
     gint32 xfer = 0;
     gchar * name;
     ThriftType ftype;
     gint16 fid;
 
-    xfer += thrift_protocol_read_struct_begin (protocol, &name, error);
-    g_free (name);
+    if ((ret = thrift_protocol_read_struct_begin (protocol, &name, error)) < 0)
+      return 0;
+    xfer += ret;
+    if (name) g_free (name);
     
 
     while (1)
     {
-      xfer += thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error);
-      g_free (name);
+      if ((ret = thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error)) < 0)
+        return 0;
+      xfer += ret;
+      if (name) g_free (name);
       if (ftype == T_STOP) {
         break;
       }
@@ -538,68 +771,120 @@ void thrift_thrudoc_recv_put_value (ThriftThrudocClient * client, gchar ** _retu
       {
         case 0:
           if (ftype == T_STRING) {
-            xfer += thrift_protocol_read_string (protocol, &*_return, error);
+            if ((ret = thrift_protocol_read_string (protocol, &*_return, error)) < 0)
+              return 0;
+            xfer += ret;
           } else {
-            xfer += thrift_protocol_skip (protocol, ftype, error);
+            if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+              return 0;
+            xfer += ret;
           }
           break;
         case -1:
           if (ftype == T_STRUCT) {
-            xfer += thrift_struct_read (THRIFT_STRUCT (e), protocol, error);
+            if ((ret = thrift_struct_read (THRIFT_STRUCT (e), protocol, error)) < 0)
+              return 0;
+            xfer += ret;
           } else {
-            xfer += thrift_protocol_skip (protocol, ftype, error);
+            if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+              return 0;
+            xfer += ret;
           }
           break;
         default:
-          xfer += thrift_protocol_skip (protocol, ftype, error);
+          if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+            return 0;
+          xfer += ret;
           break;
       }
-      xfer += thrift_protocol_read_field_end (protocol, error);
+      if ((ret = thrift_protocol_read_field_end (protocol, error)) < 0)
+        return 0;
+      xfer += ret;
     }
 
-    xfer += thrift_protocol_read_struct_end (protocol, error);
+    if ((ret = thrift_protocol_read_struct_end (protocol, error)) < 0)
+      return 0;
+    xfer += ret;
 
   }
 
+  if (thrift_protocol_read_message_end (protocol, error) < 0)
+    return 0;
+
+  if (!thrift_transport_read_end (protocol->transport, error))
+    return 0;
+
+  return 1;
 }
 
-void thrift_thrudoc_scan (ThriftThrudocClient * client, ThriftThrudocScanResponse ** _return, const gchar * bucket, const gchar * seed, const gint32 count, GError ** error)
+gboolean thrift_thrudoc_scan (ThriftThrudocClient * client, ThriftThrudocScanResponse ** _return, const gchar * bucket, const gchar * seed, const gint32 count, GError ** error)
 {
-  thrift_thrudoc_send_scan (client, bucket, seed, count, error);
-  thrift_thrudoc_recv_scan (client, _return, error);
+  if (!thrift_thrudoc_send_scan (client, bucket, seed, count, error))
+    return 0;
+  if (!thrift_thrudoc_recv_scan (client, _return, error))
+    return 0;
+  return 1;
 }
 
-void thrift_thrudoc_send_scan (ThriftThrudocClient * client, const gchar * bucket, const gchar * seed, const gint32 count, GError ** error)
+gboolean thrift_thrudoc_send_scan (ThriftThrudocClient * client, const gchar * bucket, const gchar * seed, const gint32 count, GError ** error)
 {
   gint32 cseqid = 0;
   ThriftProtocol * protocol = THRIFT_CLIENT (client)->protocol;
 
-  thrift_protocol_write_message_begin (protocol, "scan", T_CALL, cseqid, error);
+  if (thrift_protocol_write_message_begin (protocol, "scan", T_CALL, cseqid, error) < 0)
+    return 0;
 
   {
+    gint32 ret;
     gint32 xfer = 0;
     
-    xfer += thrift_protocol_write_struct_begin (protocol, "scan_args", error);
-    xfer += thrift_protocol_write_field_begin (protocol, "bucket", T_STRING, 1, error);
-    xfer += thrift_protocol_write_string(protocol, bucket, error);
-    xfer += thrift_protocol_write_field_end (protocol, error);
-    xfer += thrift_protocol_write_field_begin (protocol, "seed", T_STRING, 2, error);
-    xfer += thrift_protocol_write_string(protocol, seed, error);
-    xfer += thrift_protocol_write_field_end (protocol, error);
-    xfer += thrift_protocol_write_field_begin (protocol, "count", T_I32, 3, error);
-    xfer += thrift_protocol_write_i32(protocol, count, error);
-    xfer += thrift_protocol_write_field_end (protocol, error);
-    xfer += thrift_protocol_write_field_stop(protocol, error);
-    xfer += thrift_protocol_write_struct_end(protocol, error);
+    if ((ret = thrift_protocol_write_struct_begin (protocol, "scan_args", error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_field_begin (protocol, "bucket", T_STRING, 1, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_string(protocol, bucket, error)) < 0)
+      return 0;
+    if ((ret = thrift_protocol_write_field_end (protocol, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_field_begin (protocol, "seed", T_STRING, 2, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_string(protocol, seed, error)) < 0)
+      return 0;
+    if ((ret = thrift_protocol_write_field_end (protocol, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_field_begin (protocol, "count", T_I32, 3, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_i32(protocol, count, error)) < 0)
+      return 0;
+    if ((ret = thrift_protocol_write_field_end (protocol, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_field_stop(protocol, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_struct_end(protocol, error)) < 0)
+      return 0;
+    xfer += ret;
   }
 
-  thrift_protocol_write_message_end (protocol, error);
+  if (thrift_protocol_write_message_end (protocol, error) < 0)
+    return 0;
 
-  thrift_transport_flush (protocol->transport, error);
-  thrift_transport_write_end (protocol->transport, error);
+  if (!thrift_transport_flush (protocol->transport, error))
+    return 0;
+  if (!thrift_transport_write_end (protocol->transport, error))
+    return 0;
+
+  return 1;
 }
 
-void thrift_thrudoc_recv_scan (ThriftThrudocClient * client, ThriftThrudocScanResponse ** _return, GError ** error)
+gboolean thrift_thrudoc_recv_scan (ThriftThrudocClient * client, ThriftThrudocScanResponse ** _return, GError ** error)
 {
 
   gint32 rseqid;
@@ -610,42 +895,48 @@ void thrift_thrudoc_recv_scan (ThriftThrudocClient * client, ThriftThrudocScanRe
   thrift_protocol_read_message_begin (protocol, &fname, &mtype, &rseqid, error);
 
   if (mtype == T_EXCEPTION) {
-    /* ThriftApplicationException x;
+    /* TODO: ThriftApplicationException x;
     x.read(iprot_); */
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw x; */
-    return;
-  }
-  if (mtype != T_REPLY) {
+    return 0;
+  } else if (mtype != T_REPLY) {
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE); */
-    return;
-  }
-  if (strncmp (fname, "scan", 4) != 0) {
+    return 0;
+  } else if (strncmp (fname, "scan", 4) != 0) {
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
-    return;
+    return 0;
   }
-  g_free (fname);
+  if (fname) g_free (fname);
 
   ThriftThrudocThrudocException * e;
   {
+    gint32 ret;
     gint32 xfer = 0;
     gchar * name;
     ThriftType ftype;
     gint16 fid;
 
-    xfer += thrift_protocol_read_struct_begin (protocol, &name, error);
-    g_free (name);
+    if ((ret = thrift_protocol_read_struct_begin (protocol, &name, error)) < 0)
+      return 0;
+    xfer += ret;
+    if (name) g_free (name);
     
 
     while (1)
     {
-      xfer += thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error);
-      g_free (name);
+      if ((ret = thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error)) < 0)
+        return 0;
+      xfer += ret;
+      if (name) g_free (name);
       if (ftype == T_STOP) {
         break;
       }
@@ -653,70 +944,117 @@ void thrift_thrudoc_recv_scan (ThriftThrudocClient * client, ThriftThrudocScanRe
       {
         case 0:
           if (ftype == T_STRUCT) {
-            xfer += thrift_struct_read (THRIFT_STRUCT (*_return), protocol, error);
+            if ((ret = thrift_struct_read (THRIFT_STRUCT (*_return), protocol, error)) < 0)
+              return 0;
+            xfer += ret;
           } else {
-            xfer += thrift_protocol_skip (protocol, ftype, error);
+            if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+              return 0;
+            xfer += ret;
           }
           break;
         case -1:
           if (ftype == T_STRUCT) {
-            xfer += thrift_struct_read (THRIFT_STRUCT (e), protocol, error);
+            if ((ret = thrift_struct_read (THRIFT_STRUCT (e), protocol, error)) < 0)
+              return 0;
+            xfer += ret;
           } else {
-            xfer += thrift_protocol_skip (protocol, ftype, error);
+            if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+              return 0;
+            xfer += ret;
           }
           break;
         default:
-          xfer += thrift_protocol_skip (protocol, ftype, error);
+          if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+            return 0;
+          xfer += ret;
           break;
       }
-      xfer += thrift_protocol_read_field_end (protocol, error);
+      if ((ret = thrift_protocol_read_field_end (protocol, error)) < 0)
+        return 0;
+      xfer += ret;
     }
 
-    xfer += thrift_protocol_read_struct_end (protocol, error);
+    if ((ret = thrift_protocol_read_struct_end (protocol, error)) < 0)
+      return 0;
+    xfer += ret;
 
   }
 
+  if (thrift_protocol_read_message_end (protocol, error) < 0)
+    return 0;
+
+  if (!thrift_transport_read_end (protocol->transport, error))
+    return 0;
+
+  return 1;
 }
 
-void thrift_thrudoc_put_list (ThriftThrudocClient * client, GPtrArray ** _return, const GPtrArray * elements, GError ** error)
+gboolean thrift_thrudoc_put_list (ThriftThrudocClient * client, GPtrArray ** _return, const GPtrArray * elements, GError ** error)
 {
-  thrift_thrudoc_send_put_list (client, elements, error);
-  thrift_thrudoc_recv_put_list (client, _return, error);
+  if (!thrift_thrudoc_send_put_list (client, elements, error))
+    return 0;
+  if (!thrift_thrudoc_recv_put_list (client, _return, error))
+    return 0;
+  return 1;
 }
 
-void thrift_thrudoc_send_put_list (ThriftThrudocClient * client, const GPtrArray * elements, GError ** error)
+gboolean thrift_thrudoc_send_put_list (ThriftThrudocClient * client, const GPtrArray * elements, GError ** error)
 {
   gint32 cseqid = 0;
   ThriftProtocol * protocol = THRIFT_CLIENT (client)->protocol;
 
-  thrift_protocol_write_message_begin (protocol, "putList", T_CALL, cseqid, error);
+  if (thrift_protocol_write_message_begin (protocol, "putList", T_CALL, cseqid, error) < 0)
+    return 0;
 
   {
+    gint32 ret;
     gint32 xfer = 0;
     
-    xfer += thrift_protocol_write_struct_begin (protocol, "putList_args", error);
-    xfer += thrift_protocol_write_field_begin (protocol, "elements", T_LIST, 1, error);
+    if ((ret = thrift_protocol_write_struct_begin (protocol, "putList_args", error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_field_begin (protocol, "elements", T_LIST, 1, error)) < 0)
+      return 0;
+    xfer += ret;
     {
-      xfer += thrift_protocol_write_list_begin(protocol, T_STRUCT, (gint32)elements->len, error);
+      if ((ret = thrift_protocol_write_list_begin(protocol, T_STRUCT, (gint32)elements->len, error)) < 0)
+        return 0;
+      xfer += ret;
       int i;
       for (i = 0; i < (gint32)elements->len; i++)
       {
-        xfer += thrift_struct_write (THRIFT_STRUCT (g_ptr_array_index(elements, i)), protocol, error);
+        if ((ret = thrift_struct_write (THRIFT_STRUCT (g_ptr_array_index(elements, i)), protocol, error)) < 0)
+          return 0;
+        xfer += ret;
       }
-      xfer += thrift_protocol_write_list_end(protocol, error);
+      if ((ret = thrift_protocol_write_list_end(protocol, error)) < 0)
+        return 0;
+      xfer += ret;
     }
-    xfer += thrift_protocol_write_field_end (protocol, error);
-    xfer += thrift_protocol_write_field_stop(protocol, error);
-    xfer += thrift_protocol_write_struct_end(protocol, error);
+    if ((ret = thrift_protocol_write_field_end (protocol, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_field_stop(protocol, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_struct_end(protocol, error)) < 0)
+      return 0;
+    xfer += ret;
   }
 
-  thrift_protocol_write_message_end (protocol, error);
+  if (thrift_protocol_write_message_end (protocol, error) < 0)
+    return 0;
 
-  thrift_transport_flush (protocol->transport, error);
-  thrift_transport_write_end (protocol->transport, error);
+  if (!thrift_transport_flush (protocol->transport, error))
+    return 0;
+  if (!thrift_transport_write_end (protocol->transport, error))
+    return 0;
+
+  return 1;
 }
 
-void thrift_thrudoc_recv_put_list (ThriftThrudocClient * client, GPtrArray ** _return, GError ** error)
+gboolean thrift_thrudoc_recv_put_list (ThriftThrudocClient * client, GPtrArray ** _return, GError ** error)
 {
 
   gint32 rseqid;
@@ -727,42 +1065,48 @@ void thrift_thrudoc_recv_put_list (ThriftThrudocClient * client, GPtrArray ** _r
   thrift_protocol_read_message_begin (protocol, &fname, &mtype, &rseqid, error);
 
   if (mtype == T_EXCEPTION) {
-    /* ThriftApplicationException x;
+    /* TODO: ThriftApplicationException x;
     x.read(iprot_); */
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw x; */
-    return;
-  }
-  if (mtype != T_REPLY) {
+    return 0;
+  } else if (mtype != T_REPLY) {
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE); */
-    return;
-  }
-  if (strncmp (fname, "putList", 7) != 0) {
+    return 0;
+  } else if (strncmp (fname, "putList", 7) != 0) {
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
-    return;
+    return 0;
   }
-  g_free (fname);
+  if (fname) g_free (fname);
 
   ThriftThrudocThrudocException * e;
   {
+    gint32 ret;
     gint32 xfer = 0;
     gchar * name;
     ThriftType ftype;
     gint16 fid;
 
-    xfer += thrift_protocol_read_struct_begin (protocol, &name, error);
-    g_free (name);
+    if ((ret = thrift_protocol_read_struct_begin (protocol, &name, error)) < 0)
+      return 0;
+    xfer += ret;
+    if (name) g_free (name);
     
 
     while (1)
     {
-      xfer += thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error);
-      g_free (name);
+      if ((ret = thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error)) < 0)
+        return 0;
+      xfer += ret;
+      if (name) g_free (name);
       if (ftype == T_STOP) {
         break;
       }
@@ -773,80 +1117,131 @@ void thrift_thrudoc_recv_put_list (ThriftThrudocClient * client, GPtrArray ** _r
             {
               guint32 _size15;
               ThriftType _etype18;
-              thrift_protocol_read_list_begin (protocol, &_etype18, &_size15, error);
+              if ((ret = thrift_protocol_read_list_begin (protocol, &_etype18, &_size15, error)) < 0)
+                return 0;
+              xfer += ret;
               *_return = g_ptr_array_new ();
               guint32 _i19;
               for (_i19 = 0; _i19 < _size15; ++_i19)
               {
                 ThriftThrudocThrudocException * _elem20;
-                xfer += thrift_struct_read (THRIFT_STRUCT (_elem20), protocol, error);
+                if ((ret = thrift_struct_read (THRIFT_STRUCT (_elem20), protocol, error)) < 0)
+                  return 0;
+                xfer += ret;
                 g_ptr_array_add (*_return, _elem20);
               }
-              thrift_protocol_read_list_end (protocol, error);
+              if ((ret = thrift_protocol_read_list_end (protocol, error)) < 0)
+                return 0;
+              xfer += ret;
             }
           } else {
-            xfer += thrift_protocol_skip (protocol, ftype, error);
+            if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+              return 0;
+            xfer += ret;
           }
           break;
         case -1:
           if (ftype == T_STRUCT) {
-            xfer += thrift_struct_read (THRIFT_STRUCT (e), protocol, error);
+            if ((ret = thrift_struct_read (THRIFT_STRUCT (e), protocol, error)) < 0)
+              return 0;
+            xfer += ret;
           } else {
-            xfer += thrift_protocol_skip (protocol, ftype, error);
+            if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+              return 0;
+            xfer += ret;
           }
           break;
         default:
-          xfer += thrift_protocol_skip (protocol, ftype, error);
+          if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+            return 0;
+          xfer += ret;
           break;
       }
-      xfer += thrift_protocol_read_field_end (protocol, error);
+      if ((ret = thrift_protocol_read_field_end (protocol, error)) < 0)
+        return 0;
+      xfer += ret;
     }
 
-    xfer += thrift_protocol_read_struct_end (protocol, error);
+    if ((ret = thrift_protocol_read_struct_end (protocol, error)) < 0)
+      return 0;
+    xfer += ret;
 
   }
 
+  if (thrift_protocol_read_message_end (protocol, error) < 0)
+    return 0;
+
+  if (!thrift_transport_read_end (protocol->transport, error))
+    return 0;
+
+  return 1;
 }
 
-void thrift_thrudoc_get_list (ThriftThrudocClient * client, GPtrArray ** _return, const GPtrArray * elements, GError ** error)
+gboolean thrift_thrudoc_get_list (ThriftThrudocClient * client, GPtrArray ** _return, const GPtrArray * elements, GError ** error)
 {
-  thrift_thrudoc_send_get_list (client, elements, error);
-  thrift_thrudoc_recv_get_list (client, _return, error);
+  if (!thrift_thrudoc_send_get_list (client, elements, error))
+    return 0;
+  if (!thrift_thrudoc_recv_get_list (client, _return, error))
+    return 0;
+  return 1;
 }
 
-void thrift_thrudoc_send_get_list (ThriftThrudocClient * client, const GPtrArray * elements, GError ** error)
+gboolean thrift_thrudoc_send_get_list (ThriftThrudocClient * client, const GPtrArray * elements, GError ** error)
 {
   gint32 cseqid = 0;
   ThriftProtocol * protocol = THRIFT_CLIENT (client)->protocol;
 
-  thrift_protocol_write_message_begin (protocol, "getList", T_CALL, cseqid, error);
+  if (thrift_protocol_write_message_begin (protocol, "getList", T_CALL, cseqid, error) < 0)
+    return 0;
 
   {
+    gint32 ret;
     gint32 xfer = 0;
     
-    xfer += thrift_protocol_write_struct_begin (protocol, "getList_args", error);
-    xfer += thrift_protocol_write_field_begin (protocol, "elements", T_LIST, 1, error);
+    if ((ret = thrift_protocol_write_struct_begin (protocol, "getList_args", error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_field_begin (protocol, "elements", T_LIST, 1, error)) < 0)
+      return 0;
+    xfer += ret;
     {
-      xfer += thrift_protocol_write_list_begin(protocol, T_STRUCT, (gint32)elements->len, error);
+      if ((ret = thrift_protocol_write_list_begin(protocol, T_STRUCT, (gint32)elements->len, error)) < 0)
+        return 0;
+      xfer += ret;
       int i;
       for (i = 0; i < (gint32)elements->len; i++)
       {
-        xfer += thrift_struct_write (THRIFT_STRUCT (g_ptr_array_index(elements, i)), protocol, error);
+        if ((ret = thrift_struct_write (THRIFT_STRUCT (g_ptr_array_index(elements, i)), protocol, error)) < 0)
+          return 0;
+        xfer += ret;
       }
-      xfer += thrift_protocol_write_list_end(protocol, error);
+      if ((ret = thrift_protocol_write_list_end(protocol, error)) < 0)
+        return 0;
+      xfer += ret;
     }
-    xfer += thrift_protocol_write_field_end (protocol, error);
-    xfer += thrift_protocol_write_field_stop(protocol, error);
-    xfer += thrift_protocol_write_struct_end(protocol, error);
+    if ((ret = thrift_protocol_write_field_end (protocol, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_field_stop(protocol, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_struct_end(protocol, error)) < 0)
+      return 0;
+    xfer += ret;
   }
 
-  thrift_protocol_write_message_end (protocol, error);
+  if (thrift_protocol_write_message_end (protocol, error) < 0)
+    return 0;
 
-  thrift_transport_flush (protocol->transport, error);
-  thrift_transport_write_end (protocol->transport, error);
+  if (!thrift_transport_flush (protocol->transport, error))
+    return 0;
+  if (!thrift_transport_write_end (protocol->transport, error))
+    return 0;
+
+  return 1;
 }
 
-void thrift_thrudoc_recv_get_list (ThriftThrudocClient * client, GPtrArray ** _return, GError ** error)
+gboolean thrift_thrudoc_recv_get_list (ThriftThrudocClient * client, GPtrArray ** _return, GError ** error)
 {
 
   gint32 rseqid;
@@ -857,42 +1252,48 @@ void thrift_thrudoc_recv_get_list (ThriftThrudocClient * client, GPtrArray ** _r
   thrift_protocol_read_message_begin (protocol, &fname, &mtype, &rseqid, error);
 
   if (mtype == T_EXCEPTION) {
-    /* ThriftApplicationException x;
+    /* TODO: ThriftApplicationException x;
     x.read(iprot_); */
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw x; */
-    return;
-  }
-  if (mtype != T_REPLY) {
+    return 0;
+  } else if (mtype != T_REPLY) {
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE); */
-    return;
-  }
-  if (strncmp (fname, "getList", 7) != 0) {
+    return 0;
+  } else if (strncmp (fname, "getList", 7) != 0) {
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
-    return;
+    return 0;
   }
-  g_free (fname);
+  if (fname) g_free (fname);
 
   ThriftThrudocThrudocException * e;
   {
+    gint32 ret;
     gint32 xfer = 0;
     gchar * name;
     ThriftType ftype;
     gint16 fid;
 
-    xfer += thrift_protocol_read_struct_begin (protocol, &name, error);
-    g_free (name);
+    if ((ret = thrift_protocol_read_struct_begin (protocol, &name, error)) < 0)
+      return 0;
+    xfer += ret;
+    if (name) g_free (name);
     
 
     while (1)
     {
-      xfer += thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error);
-      g_free (name);
+      if ((ret = thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error)) < 0)
+        return 0;
+      xfer += ret;
+      if (name) g_free (name);
       if (ftype == T_STOP) {
         break;
       }
@@ -903,80 +1304,131 @@ void thrift_thrudoc_recv_get_list (ThriftThrudocClient * client, GPtrArray ** _r
             {
               guint32 _size22;
               ThriftType _etype25;
-              thrift_protocol_read_list_begin (protocol, &_etype25, &_size22, error);
+              if ((ret = thrift_protocol_read_list_begin (protocol, &_etype25, &_size22, error)) < 0)
+                return 0;
+              xfer += ret;
               *_return = g_ptr_array_new ();
               guint32 _i26;
               for (_i26 = 0; _i26 < _size22; ++_i26)
               {
                 ThriftThrudocListResponse * _elem27;
-                xfer += thrift_struct_read (THRIFT_STRUCT (_elem27), protocol, error);
+                if ((ret = thrift_struct_read (THRIFT_STRUCT (_elem27), protocol, error)) < 0)
+                  return 0;
+                xfer += ret;
                 g_ptr_array_add (*_return, _elem27);
               }
-              thrift_protocol_read_list_end (protocol, error);
+              if ((ret = thrift_protocol_read_list_end (protocol, error)) < 0)
+                return 0;
+              xfer += ret;
             }
           } else {
-            xfer += thrift_protocol_skip (protocol, ftype, error);
+            if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+              return 0;
+            xfer += ret;
           }
           break;
         case -1:
           if (ftype == T_STRUCT) {
-            xfer += thrift_struct_read (THRIFT_STRUCT (e), protocol, error);
+            if ((ret = thrift_struct_read (THRIFT_STRUCT (e), protocol, error)) < 0)
+              return 0;
+            xfer += ret;
           } else {
-            xfer += thrift_protocol_skip (protocol, ftype, error);
+            if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+              return 0;
+            xfer += ret;
           }
           break;
         default:
-          xfer += thrift_protocol_skip (protocol, ftype, error);
+          if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+            return 0;
+          xfer += ret;
           break;
       }
-      xfer += thrift_protocol_read_field_end (protocol, error);
+      if ((ret = thrift_protocol_read_field_end (protocol, error)) < 0)
+        return 0;
+      xfer += ret;
     }
 
-    xfer += thrift_protocol_read_struct_end (protocol, error);
+    if ((ret = thrift_protocol_read_struct_end (protocol, error)) < 0)
+      return 0;
+    xfer += ret;
 
   }
 
+  if (thrift_protocol_read_message_end (protocol, error) < 0)
+    return 0;
+
+  if (!thrift_transport_read_end (protocol->transport, error))
+    return 0;
+
+  return 1;
 }
 
-void thrift_thrudoc_remove_list (ThriftThrudocClient * client, GPtrArray ** _return, const GPtrArray * elements, GError ** error)
+gboolean thrift_thrudoc_remove_list (ThriftThrudocClient * client, GPtrArray ** _return, const GPtrArray * elements, GError ** error)
 {
-  thrift_thrudoc_send_remove_list (client, elements, error);
-  thrift_thrudoc_recv_remove_list (client, _return, error);
+  if (!thrift_thrudoc_send_remove_list (client, elements, error))
+    return 0;
+  if (!thrift_thrudoc_recv_remove_list (client, _return, error))
+    return 0;
+  return 1;
 }
 
-void thrift_thrudoc_send_remove_list (ThriftThrudocClient * client, const GPtrArray * elements, GError ** error)
+gboolean thrift_thrudoc_send_remove_list (ThriftThrudocClient * client, const GPtrArray * elements, GError ** error)
 {
   gint32 cseqid = 0;
   ThriftProtocol * protocol = THRIFT_CLIENT (client)->protocol;
 
-  thrift_protocol_write_message_begin (protocol, "removeList", T_CALL, cseqid, error);
+  if (thrift_protocol_write_message_begin (protocol, "removeList", T_CALL, cseqid, error) < 0)
+    return 0;
 
   {
+    gint32 ret;
     gint32 xfer = 0;
     
-    xfer += thrift_protocol_write_struct_begin (protocol, "removeList_args", error);
-    xfer += thrift_protocol_write_field_begin (protocol, "elements", T_LIST, 1, error);
+    if ((ret = thrift_protocol_write_struct_begin (protocol, "removeList_args", error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_field_begin (protocol, "elements", T_LIST, 1, error)) < 0)
+      return 0;
+    xfer += ret;
     {
-      xfer += thrift_protocol_write_list_begin(protocol, T_STRUCT, (gint32)elements->len, error);
+      if ((ret = thrift_protocol_write_list_begin(protocol, T_STRUCT, (gint32)elements->len, error)) < 0)
+        return 0;
+      xfer += ret;
       int i;
       for (i = 0; i < (gint32)elements->len; i++)
       {
-        xfer += thrift_struct_write (THRIFT_STRUCT (g_ptr_array_index(elements, i)), protocol, error);
+        if ((ret = thrift_struct_write (THRIFT_STRUCT (g_ptr_array_index(elements, i)), protocol, error)) < 0)
+          return 0;
+        xfer += ret;
       }
-      xfer += thrift_protocol_write_list_end(protocol, error);
+      if ((ret = thrift_protocol_write_list_end(protocol, error)) < 0)
+        return 0;
+      xfer += ret;
     }
-    xfer += thrift_protocol_write_field_end (protocol, error);
-    xfer += thrift_protocol_write_field_stop(protocol, error);
-    xfer += thrift_protocol_write_struct_end(protocol, error);
+    if ((ret = thrift_protocol_write_field_end (protocol, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_field_stop(protocol, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_struct_end(protocol, error)) < 0)
+      return 0;
+    xfer += ret;
   }
 
-  thrift_protocol_write_message_end (protocol, error);
+  if (thrift_protocol_write_message_end (protocol, error) < 0)
+    return 0;
 
-  thrift_transport_flush (protocol->transport, error);
-  thrift_transport_write_end (protocol->transport, error);
+  if (!thrift_transport_flush (protocol->transport, error))
+    return 0;
+  if (!thrift_transport_write_end (protocol->transport, error))
+    return 0;
+
+  return 1;
 }
 
-void thrift_thrudoc_recv_remove_list (ThriftThrudocClient * client, GPtrArray ** _return, GError ** error)
+gboolean thrift_thrudoc_recv_remove_list (ThriftThrudocClient * client, GPtrArray ** _return, GError ** error)
 {
 
   gint32 rseqid;
@@ -987,42 +1439,48 @@ void thrift_thrudoc_recv_remove_list (ThriftThrudocClient * client, GPtrArray **
   thrift_protocol_read_message_begin (protocol, &fname, &mtype, &rseqid, error);
 
   if (mtype == T_EXCEPTION) {
-    /* ThriftApplicationException x;
+    /* TODO: ThriftApplicationException x;
     x.read(iprot_); */
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw x; */
-    return;
-  }
-  if (mtype != T_REPLY) {
+    return 0;
+  } else if (mtype != T_REPLY) {
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE); */
-    return;
-  }
-  if (strncmp (fname, "removeList", 10) != 0) {
+    return 0;
+  } else if (strncmp (fname, "removeList", 10) != 0) {
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
-    return;
+    return 0;
   }
-  g_free (fname);
+  if (fname) g_free (fname);
 
   ThriftThrudocThrudocException * e;
   {
+    gint32 ret;
     gint32 xfer = 0;
     gchar * name;
     ThriftType ftype;
     gint16 fid;
 
-    xfer += thrift_protocol_read_struct_begin (protocol, &name, error);
-    g_free (name);
+    if ((ret = thrift_protocol_read_struct_begin (protocol, &name, error)) < 0)
+      return 0;
+    xfer += ret;
+    if (name) g_free (name);
     
 
     while (1)
     {
-      xfer += thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error);
-      g_free (name);
+      if ((ret = thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error)) < 0)
+        return 0;
+      xfer += ret;
+      if (name) g_free (name);
       if (ftype == T_STOP) {
         break;
       }
@@ -1033,80 +1491,131 @@ void thrift_thrudoc_recv_remove_list (ThriftThrudocClient * client, GPtrArray **
             {
               guint32 _size29;
               ThriftType _etype32;
-              thrift_protocol_read_list_begin (protocol, &_etype32, &_size29, error);
+              if ((ret = thrift_protocol_read_list_begin (protocol, &_etype32, &_size29, error)) < 0)
+                return 0;
+              xfer += ret;
               *_return = g_ptr_array_new ();
               guint32 _i33;
               for (_i33 = 0; _i33 < _size29; ++_i33)
               {
                 ThriftThrudocThrudocException * _elem34;
-                xfer += thrift_struct_read (THRIFT_STRUCT (_elem34), protocol, error);
+                if ((ret = thrift_struct_read (THRIFT_STRUCT (_elem34), protocol, error)) < 0)
+                  return 0;
+                xfer += ret;
                 g_ptr_array_add (*_return, _elem34);
               }
-              thrift_protocol_read_list_end (protocol, error);
+              if ((ret = thrift_protocol_read_list_end (protocol, error)) < 0)
+                return 0;
+              xfer += ret;
             }
           } else {
-            xfer += thrift_protocol_skip (protocol, ftype, error);
+            if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+              return 0;
+            xfer += ret;
           }
           break;
         case -1:
           if (ftype == T_STRUCT) {
-            xfer += thrift_struct_read (THRIFT_STRUCT (e), protocol, error);
+            if ((ret = thrift_struct_read (THRIFT_STRUCT (e), protocol, error)) < 0)
+              return 0;
+            xfer += ret;
           } else {
-            xfer += thrift_protocol_skip (protocol, ftype, error);
+            if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+              return 0;
+            xfer += ret;
           }
           break;
         default:
-          xfer += thrift_protocol_skip (protocol, ftype, error);
+          if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+            return 0;
+          xfer += ret;
           break;
       }
-      xfer += thrift_protocol_read_field_end (protocol, error);
+      if ((ret = thrift_protocol_read_field_end (protocol, error)) < 0)
+        return 0;
+      xfer += ret;
     }
 
-    xfer += thrift_protocol_read_struct_end (protocol, error);
+    if ((ret = thrift_protocol_read_struct_end (protocol, error)) < 0)
+      return 0;
+    xfer += ret;
 
   }
 
+  if (thrift_protocol_read_message_end (protocol, error) < 0)
+    return 0;
+
+  if (!thrift_transport_read_end (protocol->transport, error))
+    return 0;
+
+  return 1;
 }
 
-void thrift_thrudoc_put_value_list (ThriftThrudocClient * client, GPtrArray ** _return, const GPtrArray * elements, GError ** error)
+gboolean thrift_thrudoc_put_value_list (ThriftThrudocClient * client, GPtrArray ** _return, const GPtrArray * elements, GError ** error)
 {
-  thrift_thrudoc_send_put_value_list (client, elements, error);
-  thrift_thrudoc_recv_put_value_list (client, _return, error);
+  if (!thrift_thrudoc_send_put_value_list (client, elements, error))
+    return 0;
+  if (!thrift_thrudoc_recv_put_value_list (client, _return, error))
+    return 0;
+  return 1;
 }
 
-void thrift_thrudoc_send_put_value_list (ThriftThrudocClient * client, const GPtrArray * elements, GError ** error)
+gboolean thrift_thrudoc_send_put_value_list (ThriftThrudocClient * client, const GPtrArray * elements, GError ** error)
 {
   gint32 cseqid = 0;
   ThriftProtocol * protocol = THRIFT_CLIENT (client)->protocol;
 
-  thrift_protocol_write_message_begin (protocol, "putValueList", T_CALL, cseqid, error);
+  if (thrift_protocol_write_message_begin (protocol, "putValueList", T_CALL, cseqid, error) < 0)
+    return 0;
 
   {
+    gint32 ret;
     gint32 xfer = 0;
     
-    xfer += thrift_protocol_write_struct_begin (protocol, "putValueList_args", error);
-    xfer += thrift_protocol_write_field_begin (protocol, "elements", T_LIST, 1, error);
+    if ((ret = thrift_protocol_write_struct_begin (protocol, "putValueList_args", error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_field_begin (protocol, "elements", T_LIST, 1, error)) < 0)
+      return 0;
+    xfer += ret;
     {
-      xfer += thrift_protocol_write_list_begin(protocol, T_STRUCT, (gint32)elements->len, error);
+      if ((ret = thrift_protocol_write_list_begin(protocol, T_STRUCT, (gint32)elements->len, error)) < 0)
+        return 0;
+      xfer += ret;
       int i;
       for (i = 0; i < (gint32)elements->len; i++)
       {
-        xfer += thrift_struct_write (THRIFT_STRUCT (g_ptr_array_index(elements, i)), protocol, error);
+        if ((ret = thrift_struct_write (THRIFT_STRUCT (g_ptr_array_index(elements, i)), protocol, error)) < 0)
+          return 0;
+        xfer += ret;
       }
-      xfer += thrift_protocol_write_list_end(protocol, error);
+      if ((ret = thrift_protocol_write_list_end(protocol, error)) < 0)
+        return 0;
+      xfer += ret;
     }
-    xfer += thrift_protocol_write_field_end (protocol, error);
-    xfer += thrift_protocol_write_field_stop(protocol, error);
-    xfer += thrift_protocol_write_struct_end(protocol, error);
+    if ((ret = thrift_protocol_write_field_end (protocol, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_field_stop(protocol, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_struct_end(protocol, error)) < 0)
+      return 0;
+    xfer += ret;
   }
 
-  thrift_protocol_write_message_end (protocol, error);
+  if (thrift_protocol_write_message_end (protocol, error) < 0)
+    return 0;
 
-  thrift_transport_flush (protocol->transport, error);
-  thrift_transport_write_end (protocol->transport, error);
+  if (!thrift_transport_flush (protocol->transport, error))
+    return 0;
+  if (!thrift_transport_write_end (protocol->transport, error))
+    return 0;
+
+  return 1;
 }
 
-void thrift_thrudoc_recv_put_value_list (ThriftThrudocClient * client, GPtrArray ** _return, GError ** error)
+gboolean thrift_thrudoc_recv_put_value_list (ThriftThrudocClient * client, GPtrArray ** _return, GError ** error)
 {
 
   gint32 rseqid;
@@ -1117,42 +1626,48 @@ void thrift_thrudoc_recv_put_value_list (ThriftThrudocClient * client, GPtrArray
   thrift_protocol_read_message_begin (protocol, &fname, &mtype, &rseqid, error);
 
   if (mtype == T_EXCEPTION) {
-    /* ThriftApplicationException x;
+    /* TODO: ThriftApplicationException x;
     x.read(iprot_); */
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw x; */
-    return;
-  }
-  if (mtype != T_REPLY) {
+    return 0;
+  } else if (mtype != T_REPLY) {
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE); */
-    return;
-  }
-  if (strncmp (fname, "putValueList", 12) != 0) {
+    return 0;
+  } else if (strncmp (fname, "putValueList", 12) != 0) {
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
-    return;
+    return 0;
   }
-  g_free (fname);
+  if (fname) g_free (fname);
 
   ThriftThrudocThrudocException * e;
   {
+    gint32 ret;
     gint32 xfer = 0;
     gchar * name;
     ThriftType ftype;
     gint16 fid;
 
-    xfer += thrift_protocol_read_struct_begin (protocol, &name, error);
-    g_free (name);
+    if ((ret = thrift_protocol_read_struct_begin (protocol, &name, error)) < 0)
+      return 0;
+    xfer += ret;
+    if (name) g_free (name);
     
 
     while (1)
     {
-      xfer += thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error);
-      g_free (name);
+      if ((ret = thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error)) < 0)
+        return 0;
+      xfer += ret;
+      if (name) g_free (name);
       if (ftype == T_STOP) {
         break;
       }
@@ -1163,75 +1678,126 @@ void thrift_thrudoc_recv_put_value_list (ThriftThrudocClient * client, GPtrArray
             {
               guint32 _size36;
               ThriftType _etype39;
-              thrift_protocol_read_list_begin (protocol, &_etype39, &_size36, error);
+              if ((ret = thrift_protocol_read_list_begin (protocol, &_etype39, &_size36, error)) < 0)
+                return 0;
+              xfer += ret;
               *_return = g_ptr_array_new ();
               guint32 _i40;
               for (_i40 = 0; _i40 < _size36; ++_i40)
               {
                 ThriftThrudocListResponse * _elem41;
-                xfer += thrift_struct_read (THRIFT_STRUCT (_elem41), protocol, error);
+                if ((ret = thrift_struct_read (THRIFT_STRUCT (_elem41), protocol, error)) < 0)
+                  return 0;
+                xfer += ret;
                 g_ptr_array_add (*_return, _elem41);
               }
-              thrift_protocol_read_list_end (protocol, error);
+              if ((ret = thrift_protocol_read_list_end (protocol, error)) < 0)
+                return 0;
+              xfer += ret;
             }
           } else {
-            xfer += thrift_protocol_skip (protocol, ftype, error);
+            if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+              return 0;
+            xfer += ret;
           }
           break;
         case -1:
           if (ftype == T_STRUCT) {
-            xfer += thrift_struct_read (THRIFT_STRUCT (e), protocol, error);
+            if ((ret = thrift_struct_read (THRIFT_STRUCT (e), protocol, error)) < 0)
+              return 0;
+            xfer += ret;
           } else {
-            xfer += thrift_protocol_skip (protocol, ftype, error);
+            if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+              return 0;
+            xfer += ret;
           }
           break;
         default:
-          xfer += thrift_protocol_skip (protocol, ftype, error);
+          if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+            return 0;
+          xfer += ret;
           break;
       }
-      xfer += thrift_protocol_read_field_end (protocol, error);
+      if ((ret = thrift_protocol_read_field_end (protocol, error)) < 0)
+        return 0;
+      xfer += ret;
     }
 
-    xfer += thrift_protocol_read_struct_end (protocol, error);
+    if ((ret = thrift_protocol_read_struct_end (protocol, error)) < 0)
+      return 0;
+    xfer += ret;
 
   }
 
+  if (thrift_protocol_read_message_end (protocol, error) < 0)
+    return 0;
+
+  if (!thrift_transport_read_end (protocol->transport, error))
+    return 0;
+
+  return 1;
 }
 
-void thrift_thrudoc_admin (ThriftThrudocClient * client, gchar ** _return, const gchar * op, const gchar * data, GError ** error)
+gboolean thrift_thrudoc_admin (ThriftThrudocClient * client, gchar ** _return, const gchar * op, const gchar * data, GError ** error)
 {
-  thrift_thrudoc_send_admin (client, op, data, error);
-  thrift_thrudoc_recv_admin (client, _return, error);
+  if (!thrift_thrudoc_send_admin (client, op, data, error))
+    return 0;
+  if (!thrift_thrudoc_recv_admin (client, _return, error))
+    return 0;
+  return 1;
 }
 
-void thrift_thrudoc_send_admin (ThriftThrudocClient * client, const gchar * op, const gchar * data, GError ** error)
+gboolean thrift_thrudoc_send_admin (ThriftThrudocClient * client, const gchar * op, const gchar * data, GError ** error)
 {
   gint32 cseqid = 0;
   ThriftProtocol * protocol = THRIFT_CLIENT (client)->protocol;
 
-  thrift_protocol_write_message_begin (protocol, "admin", T_CALL, cseqid, error);
+  if (thrift_protocol_write_message_begin (protocol, "admin", T_CALL, cseqid, error) < 0)
+    return 0;
 
   {
+    gint32 ret;
     gint32 xfer = 0;
     
-    xfer += thrift_protocol_write_struct_begin (protocol, "admin_args", error);
-    xfer += thrift_protocol_write_field_begin (protocol, "op", T_STRING, 1, error);
-    xfer += thrift_protocol_write_string(protocol, op, error);
-    xfer += thrift_protocol_write_field_end (protocol, error);
-    xfer += thrift_protocol_write_field_begin (protocol, "data", T_STRING, 2, error);
-    xfer += thrift_protocol_write_string(protocol, data, error);
-    xfer += thrift_protocol_write_field_end (protocol, error);
-    xfer += thrift_protocol_write_field_stop(protocol, error);
-    xfer += thrift_protocol_write_struct_end(protocol, error);
+    if ((ret = thrift_protocol_write_struct_begin (protocol, "admin_args", error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_field_begin (protocol, "op", T_STRING, 1, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_string(protocol, op, error)) < 0)
+      return 0;
+    if ((ret = thrift_protocol_write_field_end (protocol, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_field_begin (protocol, "data", T_STRING, 2, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_string(protocol, data, error)) < 0)
+      return 0;
+    if ((ret = thrift_protocol_write_field_end (protocol, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_field_stop(protocol, error)) < 0)
+      return 0;
+    xfer += ret;
+    if ((ret = thrift_protocol_write_struct_end(protocol, error)) < 0)
+      return 0;
+    xfer += ret;
   }
 
-  thrift_protocol_write_message_end (protocol, error);
+  if (thrift_protocol_write_message_end (protocol, error) < 0)
+    return 0;
 
-  thrift_transport_flush (protocol->transport, error);
-  thrift_transport_write_end (protocol->transport, error);
+  if (!thrift_transport_flush (protocol->transport, error))
+    return 0;
+  if (!thrift_transport_write_end (protocol->transport, error))
+    return 0;
+
+  return 1;
 }
 
-void thrift_thrudoc_recv_admin (ThriftThrudocClient * client, gchar ** _return, GError ** error)
+gboolean thrift_thrudoc_recv_admin (ThriftThrudocClient * client, gchar ** _return, GError ** error)
 {
 
   gint32 rseqid;
@@ -1242,42 +1808,48 @@ void thrift_thrudoc_recv_admin (ThriftThrudocClient * client, gchar ** _return, 
   thrift_protocol_read_message_begin (protocol, &fname, &mtype, &rseqid, error);
 
   if (mtype == T_EXCEPTION) {
-    /* ThriftApplicationException x;
+    /* TODO: ThriftApplicationException x;
     x.read(iprot_); */
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw x; */
-    return;
-  }
-  if (mtype != T_REPLY) {
+    return 0;
+  } else if (mtype != T_REPLY) {
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE); */
-    return;
-  }
-  if (strncmp (fname, "admin", 5) != 0) {
+    return 0;
+  } else if (strncmp (fname, "admin", 5) != 0) {
     thrift_protocol_skip (protocol, T_STRUCT, error);
     thrift_protocol_read_message_end (protocol, error);
+    thrift_transport_read_end (protocol->transport, error);
     /* TODO: error handling throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME); */
-    return;
+    return 0;
   }
-  g_free (fname);
+  if (fname) g_free (fname);
 
   ThriftThrudocThrudocException * e;
   {
+    gint32 ret;
     gint32 xfer = 0;
     gchar * name;
     ThriftType ftype;
     gint16 fid;
 
-    xfer += thrift_protocol_read_struct_begin (protocol, &name, error);
-    g_free (name);
+    if ((ret = thrift_protocol_read_struct_begin (protocol, &name, error)) < 0)
+      return 0;
+    xfer += ret;
+    if (name) g_free (name);
     
 
     while (1)
     {
-      xfer += thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error);
-      g_free (name);
+      if ((ret = thrift_protocol_read_field_begin (protocol, &name, &ftype, &fid, error)) < 0)
+        return 0;
+      xfer += ret;
+      if (name) g_free (name);
       if (ftype == T_STOP) {
         break;
       }
@@ -1285,29 +1857,50 @@ void thrift_thrudoc_recv_admin (ThriftThrudocClient * client, gchar ** _return, 
       {
         case 0:
           if (ftype == T_STRING) {
-            xfer += thrift_protocol_read_string (protocol, &*_return, error);
+            if ((ret = thrift_protocol_read_string (protocol, &*_return, error)) < 0)
+              return 0;
+            xfer += ret;
           } else {
-            xfer += thrift_protocol_skip (protocol, ftype, error);
+            if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+              return 0;
+            xfer += ret;
           }
           break;
         case -1:
           if (ftype == T_STRUCT) {
-            xfer += thrift_struct_read (THRIFT_STRUCT (e), protocol, error);
+            if ((ret = thrift_struct_read (THRIFT_STRUCT (e), protocol, error)) < 0)
+              return 0;
+            xfer += ret;
           } else {
-            xfer += thrift_protocol_skip (protocol, ftype, error);
+            if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+              return 0;
+            xfer += ret;
           }
           break;
         default:
-          xfer += thrift_protocol_skip (protocol, ftype, error);
+          if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)
+            return 0;
+          xfer += ret;
           break;
       }
-      xfer += thrift_protocol_read_field_end (protocol, error);
+      if ((ret = thrift_protocol_read_field_end (protocol, error)) < 0)
+        return 0;
+      xfer += ret;
     }
 
-    xfer += thrift_protocol_read_struct_end (protocol, error);
+    if ((ret = thrift_protocol_read_struct_end (protocol, error)) < 0)
+      return 0;
+    xfer += ret;
 
   }
 
+  if (thrift_protocol_read_message_end (protocol, error) < 0)
+    return 0;
+
+  if (!thrift_transport_read_end (protocol->transport, error))
+    return 0;
+
+  return 1;
 }
 
 GType thrift_thrudoc_client_get_type (void)

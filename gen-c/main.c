@@ -66,21 +66,31 @@ int main (int argc, char **argv)
     {
         unsigned int i;
         GPtrArray * _return;
-        thrift_thrudoc_get_buckets (client, &_return, NULL);
-        fprintf (stderr, "len: %d\n", _return->len);
-        for (i = 0; i < _return->len; i++)
+        GError * error;
+        if (thrift_thrudoc_get_buckets (client, &_return, &error))
         {
-            fprintf (stderr, "bucket(%d): %s\n", i, 
-                     (char *)g_ptr_array_index (_return, i));
-            g_free (g_ptr_array_index (_return, i));
+            fprintf (stderr, "len: %d\n", _return->len);
+            for (i = 0; i < _return->len; i++)
+            {
+                fprintf (stderr, "bucket(%d): %s\n", i, 
+                         (char *)g_ptr_array_index (_return, i));
+                g_free (g_ptr_array_index (_return, i));
+            }
+            g_ptr_array_free (_return, 1);
         }
-        g_ptr_array_free (_return, 1);
+        else
+        {
+            fprintf (stderr, "get_buckets error: %s\n", 
+                     error ? error->message : "unknown");
+
+        }
     }
-    if (0)
+    if (1)
     {
         gchar * _return;
         thrift_thrudoc_admin (client, &_return, "echo", "data", NULL);
         fprintf (stderr, "admin ('echo', 'data')=%s\n", _return);
+        g_free (_return);
     }
     if (1)
     {
