@@ -12,7 +12,7 @@
  */
 
 #include "thrift.h"
-#include "thrift_binary_protocol.h"
+#include "protocol/thrift_binary_protocol.h"
 
 #include <string.h>
 

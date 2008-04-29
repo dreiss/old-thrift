@@ -6,7 +6,7 @@
 #ifndef THRIFT_CLIENT_H
 #define THRIFT_CLIENT_H
 
-#include "thrift_protocol.h"
+#include "protocol/thrift_protocol.h"
 
 #include <glib-object.h>
 

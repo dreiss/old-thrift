@@ -7,9 +7,9 @@
 #define THRUDOC_TYPES_H
 
 /* base includes */
-#include <glib-object.h>
-#include "thrift_protocol.h"
+#include "protocol/thrift_protocol.h"
 #include "thrift_struct.h"
+#include <glib-object.h>
 
 
 /* custom thrift includes */

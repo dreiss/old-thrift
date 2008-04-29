@@ -5,9 +5,9 @@
 #ifndef THRIFT_STRUCT_H
 #define THRIFT_STRUCT_H
 
-/* base includes */
+#include "protocol/thrift_protocol.h"
+
 #include <glib-object.h>
-#include "thrift_protocol.h"
 
 /* struct */
 typedef struct _ThriftStruct ThriftStruct;

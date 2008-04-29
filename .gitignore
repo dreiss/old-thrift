@@ -19,6 +19,14 @@ depcomp
 if/Makefile
 if/Makefile.in
 install-sh
+lib/c/.deps
+lib/c/*.la
+lib/c/.libs
+lib/c/*.lo
+lib/c/Makefile
+lib/c/Makefile.in
+lib/c/*.o
+lib/c/*.pc
 lib/cpp/concurrency_test
 lib/erl/ebin
 lib/cpp/.deps

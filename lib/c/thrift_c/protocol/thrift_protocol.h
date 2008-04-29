@@ -7,7 +7,7 @@
 #ifndef THRIFT_PROTOCOL_H
 #define THRIFT_PROTOCOL_H
 
-#include "thrift_transport.h"
+#include "transport/thrift_transport.h"
 
 #include <glib-object.h>
 

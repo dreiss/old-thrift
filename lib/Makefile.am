@@ -1,4 +1,5 @@
 SUBDIRS = \
+  c \
   cpp
 
 if WITH_MONO

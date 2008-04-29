@@ -206,12 +206,9 @@ static void _thrift_socket_instance_init (ThriftSocket * socket)
     socket->sd = 0;
 }
 
-#include <stdio.h>
-
 static void
 _thrift_socket_finalize (GObject * object)
 {
-    fprintf (stderr, "in fin\n");
     ThriftSocket * socket = THRIFT_SOCKET (object);
 
     if (socket->hostname != NULL)

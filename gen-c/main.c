@@ -6,11 +6,11 @@
 #include <netdb.h>
 #include <string.h>
 
+#include "protocol/thrift_binary_protocol.h"
 #include "thrift.h"
-#include "thrift_socket.h"
-#include "thrift_framed.h"
-#include "thrift_binary_protocol.h"
 #include "thrudoc.h"
+#include "transport/thrift_framed.h"
+#include "transport/thrift_socket.h"
 
 #define HOST "localhost"
 #define PORT 9091

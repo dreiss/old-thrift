@@ -160,6 +160,7 @@ AC_CONFIG_FILES([
   Makefile
   compiler/cpp/Makefile
   lib/Makefile
+  lib/c/Makefile
   lib/cpp/Makefile
   lib/cpp/thrift.pc
   lib/cpp/thrift-nb.pc

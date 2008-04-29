@@ -249,9 +249,9 @@ void t_c_generator::init_generator() {
   // Include base types
   f_types_ <<
     "/* base includes */" << endl <<
-    "#include <glib-object.h>" << endl <<
-    "#include \"thrift_protocol.h\"" << endl <<
+    "#include \"protocol/thrift_protocol.h\"" << endl <<
     "#include \"thrift_struct.h\"" << endl <<
+    "#include <glib-object.h>" << endl <<
     endl;
 
   // Include other Thrift includes

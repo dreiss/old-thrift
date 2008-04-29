@@ -1,0 +1,83 @@
+{
+   <insert a suppression name here>
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   obj:/usr/lib/libgobject-2.0.so.0.1400.1
+   obj:/usr/lib/libgobject-2.0.so.0.1400.1
+   fun:g_type_register_fundamental
+   obj:/usr/lib/libgobject-2.0.so.0.1400.1
+   fun:g_type_init_with_debug_flags
+   fun:main
+}
+{
+   <insert a suppression name here>
+   Memcheck:Leak
+   fun:memalign
+   fun:posix_memalign
+   obj:/usr/lib/libglib-2.0.so.0.1400.1
+   fun:g_slice_alloc
+   fun:g_slice_alloc0
+   fun:g_type_create_instance
+   fun:g_param_spec_internal
+   fun:g_param_spec_string
+   fun:_thrift_socket_class_init
+   fun:g_type_class_ref
+   fun:g_object_new_valist
+   fun:g_object_new
+}
+{
+   <insert a suppression name here>
+   Memcheck:Leak
+   fun:malloc
+   fun:g_malloc
+   fun:g_param_type_register_static
+   obj:/usr/lib/libgobject-2.0.so.0.1400.1
+   fun:g_type_init_with_debug_flags
+   fun:main
+}
+{
+   <insert a suppression name here>
+   Memcheck:Leak
+   fun:realloc
+   fun:g_realloc
+   fun:g_boxed_type_register_static
+   fun:g_value_array_get_type
+   obj:/usr/lib/libgobject-2.0.so.0.1400.1
+   fun:g_type_init_with_debug_flags
+   fun:main
+}
+{
+   <insert a suppression name here>
+   Memcheck:Leak
+   fun:malloc
+   fun:realloc
+   fun:g_realloc
+   fun:g_quark_from_static_string
+   fun:g_type_init_with_debug_flags
+   fun:main
+}
+{
+   <insert a suppression name here>
+   Memcheck:Leak
+   fun:memalign
+   fun:posix_memalign
+   obj:/usr/lib/libglib-2.0.so.0.1400.1
+   fun:g_slice_alloc
+   fun:g_hash_table_new_full
+   fun:g_quark_from_static_string
+   fun:g_type_init_with_debug_flags
+   fun:main
+}
+{
+   <insert a suppression name here>
+   Memcheck:Leak
+   fun:calloc
+   fun:g_malloc0
+   obj:/usr/lib/libglib-2.0.so.0.1400.1
+   fun:g_slice_alloc
+   fun:g_hash_table_new_full
+   fun:g_quark_from_static_string
+   fun:g_type_init_with_debug_flags
+   fun:main
+}
