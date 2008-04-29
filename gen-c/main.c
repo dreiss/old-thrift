@@ -32,12 +32,12 @@ int main (int argc, char **argv)
                                           NULL);
 
     // TODO: figure out why sending it as a property seg-faults
-    ThriftBinaryProtocol * prot = g_object_new (THRIFT_TYPE_BINARY_PROTOCOL, 
-                                                "transport", framed, 
-                                                NULL);
+    ThriftBinaryProtocol * protocol = g_object_new (THRIFT_TYPE_BINARY_PROTOCOL, 
+                                                    "transport", framed, 
+                                                    NULL);
 
     ThriftThrudocClient * client = g_object_new (THRIFT_THRUDOC_TYPE_CLIENT,
-                                                 "protocol", prot, 
+                                                 "protocol", protocol, 
                                                  NULL);
 
     if (0)
@@ -91,36 +91,10 @@ int main (int argc, char **argv)
         g_free (_return);
     }
 
-#if 0
-
-    gchar str[1024];
-    g_sprintf (str, "%s\n", argv[1]);
-    thrift_protocol_write_string (prot, str);
-
-    gchar * in_buf;
-    thrift_protocol_read_string (prot, &in_buf);
-
-    /* spew-out the results and bail out of here! */
-    printf ("ret: %s", in_buf);
-
-
-    ThrudocClient_send_admin (prot, "echo", "hello there");
-
-    GPtrArray * elements = g_ptr_array_new ();
-    ThriftThrudocElement * te = g_object_new (THRIFT_THRUDOC_TYPE_ELEMENT, 
-                                              NULL);
-    te->bucket = "bucket1";
-    te->key = "key1";
-    te->value = "value1";
-    g_ptr_array_add (elements, te);
-    te = g_object_new (THRIFT_THRUDOC_TYPE_ELEMENT, NULL);
-    te->bucket = "bucket2";
-    te->key = "key2";
-    te->value = "value2";
-    g_ptr_array_add (elements, te);
-    ThrudocClient_send_putList (prot, elements);
-    g_ptr_array_free (elements, 1);
-#endif
+    g_object_unref (socket);
+    g_object_unref (framed);
+    g_object_unref (protocol);
+    g_object_unref (client);
 
     return 0;
 }

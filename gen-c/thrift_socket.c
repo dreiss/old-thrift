@@ -200,15 +200,30 @@ void _thrift_socket_get_property (GObject * object, guint property_id,
     }
 }
 
+/* TODO: this might should be a constrctor... */
 static void _thrift_socket_instance_init (ThriftSocket * socket)
 {
     socket->sd = 0;
-    socket->buf_size = 256;
-    socket->buf = g_new (guint8, socket->buf_size);
 }
 
-// TODO: destroy, free hostname memory, close socket, etc.
+#include <stdio.h>
 
+static void
+_thrift_socket_finalize (GObject * object)
+{
+    fprintf (stderr, "in fin\n");
+    ThriftSocket * socket = THRIFT_SOCKET (object);
+
+    if (socket->hostname != NULL)
+        g_free (socket->hostname);
+    socket->hostname = NULL;
+
+    if (socket->sd != 0)
+        close (socket->sd);
+    socket->sd = 0;
+
+    /* TODO: do we need to chain up here? */
+}
 
 static void _thrift_socket_class_init (ThriftSocketClass * klass)
 {
@@ -238,6 +253,7 @@ static void _thrift_socket_class_init (ThriftSocketClass * klass)
     ThriftTransportClass * thrift_transport_class = 
         THRIFT_TRANSPORT_CLASS(klass);
 
+    gobject_class->finalize = _thrift_socket_finalize;
     thrift_transport_class->is_open = _thrift_socket_is_open;
     thrift_transport_class->open = _thrift_socket_open;
     thrift_transport_class->close = _thrift_socket_close;
