@@ -9,9 +9,8 @@ lib_LTLIBRARIES = libthrift_c.la
 GLIB_CFLAGS=`pkg-config --cflags gobject-2.0`
 GLIB_LDFLAGS=`pkg-config --libs gobject-2.0`
 
-
-common_cflags = -Wall -W -Ithrift_c $(GLIB_CFLAGS)
-common_ldflags = -Wall -W $(GLIB_LDFLAGS)
+common_cflags = -g -Wall -W -Ithrift_c $(GLIB_CFLAGS)
+common_ldflags = -g -Wall -W $(GLIB_LDFLAGS)
 
 # Define the source files for the module
 

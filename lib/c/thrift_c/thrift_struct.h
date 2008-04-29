@@ -16,9 +16,6 @@ struct _ThriftStruct
     GObject parent; 
 
     /* private */
-    gchar * bucket;
-    gchar * key;
-    gchar * value;
 }; 
 typedef struct _ThriftStructClass ThriftStructClass;
 struct _ThriftStructClass
@@ -38,8 +35,10 @@ void thrift_struct_instance_init (GTypeInstance *instance, gpointer g_class);
 #define THRIFT_IS_STRUCT_CLASS(c) (G_TYPE_CHECK_CLASS_TYPE ((c), THRIFT_TYPE_STRUCT))
 #define THRIFT_STRUCT_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), THRIFT_TYPE_STRUCT, ThriftStructClass))
 
-gint32 thrift_struct_read (ThriftStruct * object, ThriftProtocol * thift_protocol, GError ** error);
-gint32 thrift_struct_write (ThriftStruct * object, ThriftProtocol * thift_protocol, GError ** error);
+gint32 thrift_struct_read (ThriftStruct * object, ThriftProtocol * protocol, 
+                           GError ** error);
+gint32 thrift_struct_write (ThriftStruct * object, ThriftProtocol * protocol, 
+                            GError ** error);
 
 #endif /* THRIFT_STRUCT_H */
 

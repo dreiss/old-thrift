@@ -226,7 +226,7 @@ gint32 _thrift_binary_protocol_write_string (ThriftProtocol * protocol,
 {
     g_assert (THRIFT_IS_BINARY_PROTOCOL (protocol));
 
-    guint32 len = strlen (str);
+    guint32 len = str != NULL ? strlen (str) : 0;
     /* TODO: we need to utf8 encode... */
     return thrift_protocol_write_binary (protocol, str, len, error);
 }
@@ -515,16 +515,22 @@ gint32 _thrift_binary_protocol_read_binary (ThriftProtocol * protocol,
 
     gint32 result = thrift_protocol_read_i32 (protocol, (gint32*)len, error);
 
-    *buf= g_new (gchar, *len + 1);
-    /* TODO: make sure we got the mem */
-    gint ret = thrift_transport_read (protocol->transport, *buf, *len,
-                                      error);
-    if (ret < 0 || (guint)ret != *len)
+    if (*len > 0)
     {
+      *buf= g_new (gchar, *len + 1);
+      gint ret = thrift_transport_read (protocol->transport, *buf, *len,
+                                        error);
+      if (ret < 0 || (guint)ret != *len)
+      {
         /* TODO: error handling */
         return -1;
+      }
+      (*buf)[*len] = '\0';
     }
-    (*buf)[*len] = '\0';
+    else
+    {
+      *buf = NULL;
+    }
 
     return result + *len;
 }

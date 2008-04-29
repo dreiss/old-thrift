@@ -25,27 +25,15 @@ enum _ThriftThrudocExceptionType {
 /* constants */
 
 /* exception */
-typedef struct _ThriftThrudocThrudocException ThriftThrudocThrudocException;
-struct _ThriftThrudocThrudocException
-{ 
-    ThriftStruct parent; 
+typedef enum
+{
+    THRIFT_THRUDOC_THRUDOC_EXCEPTION_ERROR_CODE,
+} ThriftThrudocThrudocExceptionError;
 
-    /* private */
-    gchar * what;
-    ThriftThrudocExceptionType type;
-}; 
-typedef struct _ThriftThrudocThrudocExceptionClass ThriftThrudocThrudocExceptionClass;
-struct _ThriftThrudocThrudocExceptionClass
-{ 
-    ThriftStructClass parent; 
-}; 
-GType thrift_thrudoc_thrudoc_exception_get_type (void);
-#define THRIFT_THRUDOC_TYPE_THRUDOC_EXCEPTION (thrift_thrudoc_thrudoc_exception_get_type ())
-#define THRIFT_THRUDOC_THRUDOC_EXCEPTION(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), THRIFT_THRUDOC_TYPE_THRUDOC_EXCEPTION, ThriftThrudocThrudocException))
-#define THRIFT_THRUDOC_THRUDOC_EXCEPTION_CLASS(c) (G_TYPE_CHECK_CLASS_CAST ((c), THRIFT_THRUDOC_TYPE_THRUDOC_EXCEPTION, ThriftThrudocThrudocExceptionClass))
-#define THRIFT_THRUDOC_IS_THRUDOC_EXCEPTION(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), THRIFT_THRUDOC_TYPE_THRUDOC_EXCEPTION))
-#define THRIFT_THRUDOC_IS_THRUDOC_EXCEPTION_CLASS(c) (G_TYPE_CHECK_CLASS_TYPE ((c), THRIFT_THRUDOC_TYPE_THRUDOC_EXCEPTION))
-#define THRIFT_THRUDOC_THRUDOC_EXCEPTION_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), THRIFT_THRUDOC_TYPE_THRUDOC_EXCEPTION, ThriftThrudocThrudocExceptionClass))
+GQuark thrift_thrudoc_thrudoc_exception_error_quark (void);
+#define THRIFT_THRUDOC_THRUDOC_EXCEPTION_ERROR (thrift_thrudoc_thrudoc_exception_error_quark ())
+
+gint32 thrift_thrudoc_thrudoc_exception_read (GError ** ex, ThriftProtocol * protocol, GError ** error);
 
 /* struct */
 typedef struct _ThriftThrudocElement ThriftThrudocElement;
@@ -102,7 +90,7 @@ struct _ThriftThrudocListResponse
 
     /* private */
     ThriftThrudocElement * element;
-    ThriftThrudocThrudocException * ex;
+    GError * ex;
 }; 
 typedef struct _ThriftThrudocListResponseClass ThriftThrudocListResponseClass;
 struct _ThriftThrudocListResponseClass

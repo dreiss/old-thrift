@@ -40,21 +40,6 @@ int main (int argc, char **argv)
                                                  "protocol", protocol, 
                                                  NULL);
 
-    if (0)
-    {
-        GValue host_value;
-        g_value_init (&host_value, G_TYPE_STRING);
-        g_object_get_property (G_OBJECT (socket), "hostname", &host_value);
-
-        GValue port_value;
-        g_value_init (&port_value, G_TYPE_STRING);
-        g_object_get_property (G_OBJECT (socket), "port", &port_value);
-
-        fprintf (stderr, "socket: hostname=%s, port=%d\n", 
-                 g_value_get_string (&host_value),
-                 g_value_get_uint (&port_value));
-    }
-
     GError * err = NULL;
     if (!thrift_transport_open (THRIFT_TRANSPORT (socket), &err))
     {
@@ -62,7 +47,7 @@ int main (int argc, char **argv)
         exit (-1);
     }
 
-    if (1)
+    if (0)
     {
         unsigned int i;
         GPtrArray * _return;
@@ -85,20 +70,72 @@ int main (int argc, char **argv)
 
         }
     }
-    if (1)
+    if (0)
     {
         gchar * _return;
         thrift_thrudoc_admin (client, &_return, "echo", "data", NULL);
         fprintf (stderr, "admin ('echo', 'data')=%s\n", _return);
         g_free (_return);
     }
-    if (1)
+    if (0)
     {
         gchar * _return;
         thrift_thrudoc_put (client, "bucket", "key", "value", NULL);
         thrift_thrudoc_get (client, &_return, "bucket", "key", NULL);
         fprintf (stderr, "put/get ('bucket', 'key', 'value)=%s\n", _return);
         g_free (_return);
+    }
+    if (1)
+    {
+        guint i;
+        GPtrArray * _return;
+        GError * error = NULL;
+        GPtrArray * elements = g_ptr_array_new ();
+        ThriftThrudocElement * element = 
+          g_object_new (THRIFT_THRUDOC_TYPE_ELEMENT, NULL);
+        element->bucket = "bucket";
+        element->key = "key1";
+        element->value = "value1";
+        g_ptr_array_add (elements, element);
+        element = g_object_new (THRIFT_THRUDOC_TYPE_ELEMENT, NULL);
+        element->bucket = "bucket";
+        element->key = "key2";
+        element->value = "value2";
+        g_ptr_array_add (elements, element);
+        if (!thrift_thrudoc_put_list (client, &_return, elements, &error))
+        {
+          fprintf (stderr, "put_list error: %s", 
+                   error ? error->message : "unknown");
+        }
+        for (i = 0; i < _return->len; i++)
+        {
+            GError * ex = g_ptr_array_index (_return, i);
+            fprintf (stderr, "put_list(%d) ex: %s\n", i, 
+                     ex ? ex->message : "none");
+            if (ex != NULL) g_error_free (ex);
+        }
+        g_ptr_array_free (_return, 1);
+
+        if (!thrift_thrudoc_get_list (client, &_return, elements, &error))
+        {
+          fprintf (stderr, "put_list error: %s", 
+                   error ? error->message : "unknown");
+        }
+        for (i = 0; i < _return->len; i++)
+        {
+            ThriftThrudocListResponse * resp = g_ptr_array_index (_return, i);
+            fprintf (stderr, "get_list(%d) element: (%s, %s, %s), ex: %s\n", i, 
+                     resp->element->bucket, resp->element->key, 
+                     resp->element->value, 
+                     resp->ex ? resp->ex->message : "none");
+            if (resp != NULL) g_object_unref (resp);
+        }
+        g_ptr_array_free (_return, 1);
+//        fprintf (stderr, "put/get ('bucket', 'key', 'value)=%s\n", _return);
+
+        for (i = 0; i < elements->len; i++)
+            g_object_unref (g_ptr_array_index (elements, i));
+        g_ptr_array_free (elements, 1);
     }
 
     g_object_unref (socket);
