@@ -57,6 +57,18 @@ class TBufferBase : public TVirtualTransport<TBufferBase> {
   }
 
   /**
+   * Shortcutted version of readAll.
+   */
+  uint32_t readAll(uint8_t* buf, uint32_t len) {
+    if (TDB_LIKELY(static_cast<ptrdiff_t>(len) <= rBound_ - rBase_)) {
+      memcpy(buf, rBase_, len);
+      rBase_ += len;
+      return len;
+    }
+    return facebook::thrift::transport::readAll(*this, buf, len);
+  }
+
+  /**
    * Fast-path write.
    *
    * When we have enough empty space in our buffer to accomodate the write, we
