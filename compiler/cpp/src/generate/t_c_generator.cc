@@ -175,10 +175,10 @@ class t_c_generator : public t_oop_generator {
                                  string prefix, int error_ret);
   void generate_serialize_container(ofstream& out, t_type* ttype,
                                     string prefix, int error_ret);
-  void generate_serialize_map_element(ofstream& out, t_map* tmap, string iter,
-                                      int error_ret);
-  void generate_serialize_set_element(ofstream& out, t_set* tmap, string iter,
-                                      int error_ret);
+  void generate_serialize_map_element(ofstream& out, t_map* tmap, string key,
+                                      string value, int error_ret);
+  void generate_serialize_set_element(ofstream& out, t_set* tmap, 
+                                      string element, int error_ret);
   void generate_serialize_list_element(ofstream& out, t_list* tlist,
                                        string list, string index, 
                                        int error_ret);
@@ -922,55 +922,65 @@ void t_c_generator::generate_serialize_container(ofstream& out, t_type* ttype,
   scope_up(out);
 
   if (ttype->is_map()) {
+    string length = "g_hash_table_size ((GHashTable *)" + prefix + ")";
     out <<
       indent() << "if ((ret = thrift_protocol_write_map_begin(protocol, " <<
       type_to_enum(((t_map*)ttype)->get_key_type()) << ", " <<
-      type_to_enum(((t_map*)ttype)->get_val_type()) << ", g_hash_table_size(" <<
-      prefix << "), error)) < 0)" << endl <<
+      type_to_enum(((t_map*)ttype)->get_val_type()) << ", (gint32)" << length <<
+      ", error)) < 0)" << endl <<
       indent() << "  return " << error_ret << ";" << endl <<
-      indent() << "xfer += ret;" << endl;
-  } else if (ttype->is_set()) {
-    out <<
-      indent() << "if ((ret = thrift_protocol_write_set_begin(protocol, " <<
-      type_to_enum(((t_set*)ttype)->get_elem_type()) << ", g_hash_table_size(" <<
-      prefix << "), error)) < 0)" << endl <<
-      indent() << "  return " << error_ret << ";" << endl <<
-      indent() << "xfer += ret;" << endl;
-  } else if (ttype->is_list()) {
-    out <<
-      indent() << "if ((ret = thrift_protocol_write_list_begin(protocol, " <<
-      type_to_enum(((t_list*)ttype)->get_elem_type()) << ", (gint32)" <<
-      prefix << "->len, error)) < 0)" << endl <<
-      indent() << "  return " << error_ret << ";" << endl <<
-      indent() << "xfer += ret;" << endl;
-  }
+      indent() << "xfer += ret;" << endl <<
+      indent() << "GHashTableIter iter;" << endl <<
+      indent() << "gpointer key, value;" << endl <<
+      indent() << "g_hash_table_iter_init (&iter, (GHashTable *)" << prefix << ");" << endl <<
+      indent() << "while (g_hash_table_iter_next (&iter, &key, &value))" << endl;
 
-  string iter = tmp("_iter");
-  out <<
-    indent() << "int i;" << endl <<
-    indent() << "for (i = 0; i < (gint32)" << prefix << "->len; i++)" << endl;
-  scope_up(out);
-    if (ttype->is_map()) {
-      generate_serialize_map_element(out, (t_map*)ttype, iter, error_ret);
-    } else if (ttype->is_set()) {
-      generate_serialize_set_element(out, (t_set*)ttype, iter, error_ret);
-    } else if (ttype->is_list()) {
-      generate_serialize_list_element(out, (t_list*)ttype, prefix, "i", 
-                                      error_ret);
-    }
-  scope_down(out);
+    scope_up(out);
+    generate_serialize_map_element(out, (t_map*)ttype, "key", "value", error_ret);
+    scope_down(out);
 
-  if (ttype->is_map()) {
     out <<
       indent() << "if ((ret = thrift_protocol_write_map_end(protocol, error)) < 0)" << endl <<
       indent() << "  return " << error_ret << ";" << endl <<
       indent() << "xfer += ret;" << endl;
+
   } else if (ttype->is_set()) {
+    string length = "g_hash_table_size ((GHashTable *)" + prefix + ")";
+    out <<
+      indent() << "if ((ret = thrift_protocol_write_set_begin(protocol, " <<
+      type_to_enum(((t_set*)ttype)->get_elem_type()) << ", (gint32)" << length <<
+      ", error)) < 0)" << endl <<
+      indent() << "  return " << error_ret << ";" << endl <<
+      indent() << "xfer += ret;" << endl <<
+      indent() << "GHashTableIter iter;" << endl <<
+      indent() << "gpointer key, value;" << endl <<
+      indent() << "g_hash_table_iter_init (&iter, (GHashTable *)" << prefix << ");" << endl <<
+      indent() << "while (g_hash_table_iter_next (&iter, &key, &value))" << endl;
+
+    scope_up(out);
+    generate_serialize_set_element(out, (t_set*)ttype, "key", error_ret);
+    scope_down(out);
+
     out <<
       indent() << "if ((ret = thrift_protocol_write_set_end(protocol, error)) < 0)" << endl <<
       indent() << "  return " << error_ret << ";" << endl <<
       indent() << "xfer += ret;" << endl;
+
   } else if (ttype->is_list()) {
+    string length = prefix + "->len";
+    out <<
+      indent() << "if ((ret = thrift_protocol_write_list_begin(protocol, " <<
+      type_to_enum(((t_list*)ttype)->get_elem_type()) << ", (gint32)" <<
+      length << ", error)) < 0)" << endl <<
+      indent() << "  return " << error_ret << ";" << endl <<
+      indent() << "xfer += ret;" << endl <<
+      indent() << "guint i;" << endl <<
+      indent() << "for (i = 0; i < " << length << "; i++)" << endl;
+
+    scope_up(out);
+    generate_serialize_list_element(out, (t_list*)ttype, prefix, "i", error_ret);
+    scope_down(out);
+
     out <<
       indent() << "if ((ret = thrift_protocol_write_list_end(protocol, error)) < 0)" << endl <<
       indent() << "  return " << error_ret << ";" << endl <<
@@ -985,13 +995,14 @@ void t_c_generator::generate_serialize_container(ofstream& out, t_type* ttype,
  *
  */
 void t_c_generator::generate_serialize_map_element(ofstream& out,
-                                                     t_map* tmap,
-                                                     string iter,
-                                                     int error_ret) {
-  t_field kfield(tmap->get_key_type(), iter + "->first");
+                                                   t_map* tmap,
+                                                   string key,
+                                                   string value,
+                                                   int error_ret) {
+  t_field kfield(tmap->get_key_type(), key);
   generate_serialize_field(out, &kfield, "", "", error_ret);
 
-  t_field vfield(tmap->get_val_type(), iter + "->second");
+  t_field vfield(tmap->get_val_type(), value);
   generate_serialize_field(out, &vfield, "", "", error_ret);
 }
 
@@ -1000,9 +1011,9 @@ void t_c_generator::generate_serialize_map_element(ofstream& out,
  */
 void t_c_generator::generate_serialize_set_element(ofstream& out,
                                                      t_set* tset,
-                                                     string iter,
+                                                     string element,
                                                      int error_ret) {
-  t_field efield(tset->get_elem_type(), "(*" + iter + ")");
+  t_field efield(tset->get_elem_type(), element);
   generate_serialize_field(out, &efield, "", "", error_ret);
 }
 
@@ -1015,7 +1026,7 @@ void t_c_generator::generate_serialize_list_element(ofstream& out,
                                                     string index, 
                                                     int error_ret) {
   t_field efield(tlist->get_elem_type(), 
-                 "g_ptr_array_index(" + list + ", " + index + ")");
+                 "g_ptr_array_index((GPtrArray *)" + list + ", " + index + ")");
   generate_serialize_field(out, &efield, "", "", error_ret);
 }
 
@@ -1125,74 +1136,72 @@ void t_c_generator::generate_deserialize_xception(ofstream& out,
 void t_c_generator::generate_deserialize_container(ofstream& out, t_type* ttype,
                                                    string prefix, 
                                                    int error_ret) {
+  /* TODO: treating everything as pointers is not going to work as a long term
+   * solution here */
+
   scope_up(out);
-
-  string size = tmp("_size");
-  string ktype = tmp("_ktype");
-  string vtype = tmp("_vtype");
-  string etype = tmp("_etype");
-
-  out <<
-    indent() << "guint32 " << size << ";" << endl;
 
   // Declare variables, read header
   if (ttype->is_map()) {
     out <<
-      indent() << "ThriftType " << ktype << ";" << endl <<
-      indent() << "ThriftType " << vtype << ";" << endl <<
-      indent() << "if ((ret = thrift_protocol_read_map_begin (protocol, &" << ktype << ", &" << vtype << ", &" << size << ", error)) < 0)" << endl <<
+      indent() << "guint32 size;" << endl <<
+      indent() << "ThriftType key_type;" << endl <<
+      indent() << "ThriftType value_type;" << endl <<
+      indent() << "if ((ret = thrift_protocol_read_map_begin (protocol, &key_type, &value_type, &size, error)) < 0)" << endl <<
       indent() << "  return " << error_ret << ";" << endl <<
-      indent() << "xfer += ret;" << endl;
-  } else if (ttype->is_set()) {
-    out <<
-      indent() << "ThriftType " << etype << ";" << endl <<
-      indent() << "if ((ret = thrift_protocol_read_set_begin (protocol, &" << etype << ", &" << size << ", error)) < 0)" << endl <<
-      indent() << "  return " << error_ret << ";" << endl <<
-      indent() << "xfer += ret;" << endl;
-  } else if (ttype->is_list()) {
-    out <<
-      indent() << "ThriftType " << etype << ";" << endl <<
-      indent() << "if ((ret = thrift_protocol_read_list_begin (protocol, &" << etype << ", &" << size << ", error)) < 0)" << endl << 
-      indent() << "  return " << error_ret << ";" << endl <<
-      indent() << "xfer += ret;" << endl;
-  }
-
-
-  // For loop iterates over elements
-  string i = tmp("_i");
-  out <<
-    indent() << "guint32 " << i << ";" << endl <<
-    indent() << "for (" << i << " = 0; " << i << " < " << size << "; ++" << i << ")" << endl;
+      indent() << "xfer += ret;" << endl <<
+      indent() << "guint32 i;" << endl <<
+      indent() << "*_return = g_hash_table_new (NULL, NULL);" << endl <<
+      indent() << "for (i = 0; i < size; ++i)" << endl;
 
     scope_up(out);
-
-    if (ttype->is_map()) {
-      generate_deserialize_map_element(out, (t_map*)ttype, prefix, error_ret);
-    } else if (ttype->is_set()) {
-      generate_deserialize_set_element(out, (t_set*)ttype, prefix, error_ret);
-    } else if (ttype->is_list()) {
-      generate_deserialize_list_element(out, (t_list*)ttype, prefix, i, 
-                                        error_ret);
-    }
-
+    generate_deserialize_map_element(out, (t_map*)ttype, prefix, error_ret);
     scope_down(out);
 
-  // Read container end
-  if (ttype->is_map()) {
     out << 
       indent() << "if ((ret = thrift_protocol_read_map_end (protocol, error)) < 0)" << endl <<
       indent() << "  return " << error_ret << ";" << endl <<
       indent() << "xfer += ret;" << endl;
+
   } else if (ttype->is_set()) {
+    out <<
+      indent() << "guint32 size;" << endl <<
+      indent() << "ThriftType element_type;" << endl <<
+      indent() << "if ((ret = thrift_protocol_read_set_begin (protocol, &element_type, &size, error)) < 0)" << endl <<
+      indent() << "  return " << error_ret << ";" << endl <<
+      indent() << "xfer += ret;" << endl <<
+      indent() << "guint32 i;" << endl <<
+      indent() << "for (i = 0; i < size; ++i)" << endl;
+
+    scope_up(out);
+    generate_deserialize_set_element(out, (t_set*)ttype, prefix, error_ret);
+    scope_down(out);
+
     out << 
-      indent() << "if ((ret = thrift_protocol_read_set_end (protocol, error)) < 0)" << endl << 
+      indent() << "if ((ret = thrift_protocol_read_set_end (protocol, error)) < 0)" << endl <<
       indent() << "  return " << error_ret << ";" << endl <<
       indent() << "xfer += ret;" << endl;
+
   } else if (ttype->is_list()) {
+    out <<
+      indent() << "guint32 size;" << endl <<
+      indent() << "ThriftType element_type;" << endl <<
+      indent() << "if ((ret = thrift_protocol_read_list_begin (protocol, &element_type, &size, error)) < 0)" << endl << 
+      indent() << "  return " << error_ret << ";" << endl <<
+      indent() << "xfer += ret;" << endl <<
+      indent() << "guint32 i;" << endl <<
+      indent() << "for (i = 0; i < size; ++i)" << endl;
+
+    scope_up(out);
+    generate_deserialize_list_element(out, (t_list*)ttype, prefix, "i", 
+                                      error_ret);
+    scope_down(out);
+
     out << 
       indent() << "if ((ret = thrift_protocol_read_list_end (protocol, error)) < 0)" << endl <<
       indent() << "  return " << error_ret << ";" << endl <<
       indent() << "xfer += ret;" << endl;
+
   }
 
   scope_down(out);
@@ -1206,28 +1215,25 @@ void t_c_generator::generate_deserialize_map_element(ofstream& out,
                                                        t_map* tmap,
                                                        string prefix,
                                                        int error_ret) {
-  string key = tmp("_key");
-  string val = tmp("_val");
-  t_field fkey(tmap->get_key_type(), key);
-  t_field fval(tmap->get_val_type(), val);
+  t_field fkey(tmap->get_key_type(), "key");
+  t_field fval(tmap->get_val_type(), "val");
 
   out <<
-    indent() << declare_field(&fkey, true) << endl;
+    indent() << declare_field(&fkey, true) << endl <<
+    indent() << declare_field(&fval, true) << endl;
 
   generate_deserialize_field(out, &fkey, "", "", error_ret);
-  indent(out) <<
-    declare_field(&fval, false, false, false, true) << " = " <<
-    prefix << "[" << key << "];" << endl;
-
   generate_deserialize_field(out, &fval, "", "", error_ret);
+
+  indent(out) << 
+    "g_hash_table_insert ((GHashTable *)" << prefix << ", (gpointer)key, (gpointer)val);" << endl;
 }
 
 void t_c_generator::generate_deserialize_set_element(ofstream& out,
                                                        t_set* tset,
                                                        string prefix,
                                                        int error_ret) {
-  string elem = tmp("_elem");
-  t_field felem(tset->get_elem_type(), elem);
+  t_field felem(tset->get_elem_type(), "elem");
 
   indent(out) <<
     declare_field(&felem, true) << endl;
@@ -1235,7 +1241,7 @@ void t_c_generator::generate_deserialize_set_element(ofstream& out,
   generate_deserialize_field(out, &felem, "", "", error_ret);
 
   indent(out) <<
-    prefix << ".insert(" << elem << ");" << endl;
+    "g_hash_table_insert((GHashTable *)" << prefix << ", (gpointer)elem, NULL);" << endl;
 }
 
 void t_c_generator::generate_deserialize_list_element(ofstream& out,
@@ -1383,7 +1389,7 @@ void t_c_generator::generate_service_client(t_service* tservice) {
   vector<t_function*>::const_iterator f_iter;
   for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
     string funname = initial_caps_to_underscores((*f_iter)->get_name());
-    t_function send_function(g_type_bool,
+    t_function send_function(g_type_void,
                              string("send_") + funname,
                              (*f_iter)->get_arglist());
     indent(f_header_) << function_signature(*f_iter) << ";" << endl;
@@ -1424,26 +1430,18 @@ void t_c_generator::generate_service_client(t_service* tservice) {
       indent() << "  return 0;" << endl;
 
     if (!(*f_iter)->is_async()) {
-      if (!(*f_iter)->get_returntype()->is_void()) {
-        if (is_complex_type((*f_iter)->get_returntype())) {
-          f_service_ << 
-            indent() << "if (!" << this->nspace_u << "recv_" << funname << " (client, _return, error))" << endl <<
-            indent() << "  return 0;" << endl;
-        } else {
-          f_service_ <<
-            indent() << "return " << this->nspace_u << "recv_" << funname << " (client, error);" << endl;
-        }
-      } else {
-        f_service_ <<
-          indent() << this->nspace_u << "recv_" << funname << " (client, error);" << endl;
-      }
+      string ret = (*f_iter)->get_returntype()->is_void() ? "" : ", _return";
+      f_service_ << 
+        indent() << "if (!" << this->nspace_u << "recv_" << funname << " (client" << ret << ", error))" << endl <<
+        indent() << "  return 0;" << endl;
     }
     indent(f_service_) << "return 1;" << endl;
     scope_down(f_service_);
     f_service_ << endl;
 
     // Function for sending
-    t_function send_function(g_type_bool, string("send_") + funname,
+    t_function send_function(g_type_void,
+                             string("send_") + funname,
                              (*f_iter)->get_arglist());
 
     // Open the send function
@@ -1520,13 +1518,6 @@ void t_c_generator::generate_service_client(t_service* tservice) {
         indent() << "if (fname) g_free (fname);" << endl << 
         endl;
 
-      if (!(*f_iter)->get_returntype()->is_void() &&
-          !is_complex_type((*f_iter)->get_returntype())) {
-        t_field returnfield((*f_iter)->get_returntype(), "_return");
-        f_service_ <<
-          indent() << declare_field(&returnfield) << endl;
-      }
-
       {
         t_struct result(program_, tservice->get_name() + "_" + 
                         (*f_iter)->get_name() + "_result");
@@ -1592,23 +1583,18 @@ void t_c_generator::generate_service_client(t_service* tservice) {
  * @return String of rendered function definition
  */
 string t_c_generator::function_signature(t_function* tfunction) {
+
   t_type* ttype = tfunction->get_returntype();
   t_struct* arglist = tfunction->get_arglist();
-
   string fname = initial_caps_to_underscores(tfunction->get_name());
 
-  bool empty = arglist->get_members().size() == 0;
-  if (is_complex_type(ttype)) {
-    return
-      "gboolean " + this->nspace_u + fname + " (Thrift" + service_name_ +
-      "Client * client, " + type_name(ttype) + "* _return" +
-      (empty ? "" : (", " + argument_list(arglist))) + ", GError ** error)";
-  } else {
-    return
-      "gboolean " + this->nspace_u + fname +
-      " (Thrift" + service_name_ + "Client * client" + 
-      (empty ? "" : ", " + argument_list(arglist)) + ", GError ** error)";
-  }
+  bool has_return = !ttype->is_void();
+  bool has_args = arglist->get_members().size() == 0;
+  return
+    "gboolean " + this->nspace_u + fname + " (Thrift" + service_name_ +
+    "Client * client" + 
+    (has_return ? ", " + type_name(ttype) + "* _return" : "") +
+    (has_args ? "" : (", " + argument_list(arglist))) + ", GError ** error)";
 }
 
 /**

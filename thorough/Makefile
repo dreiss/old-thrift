@@ -15,7 +15,7 @@ thorough_FILES = gen-c/thorough_types.c gen-c/thorough.c
 thorough_CFLAGS = `pkg-config --cflags gobject-2.0` -I$(SANDBOX)/include/thrift_c -g -Wall -W
 thorough_LDFLAGS = `pkg-config --libs gobject-2.0` -L$(SANDBOX)/lib -lthrift_c
 
-thorough: $(thorough_FILES)
+thorough: $(thorough_FILES) main.c
 	gcc -o $@ $(thorough_CFLAGS) $(thorough_LDFLAGS) $+
 
 $(thorough_FILES) : thorough.thrift
