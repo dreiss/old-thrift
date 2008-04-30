@@ -131,7 +131,6 @@ int main (int argc, char **argv)
             if (resp != NULL) g_object_unref (resp);
         }
         g_ptr_array_free (_return, 1);
-//        fprintf (stderr, "put/get ('bucket', 'key', 'value)=%s\n", _return);
 
         for (i = 0; i < elements->len; i++)
             g_object_unref (g_ptr_array_index (elements, i));

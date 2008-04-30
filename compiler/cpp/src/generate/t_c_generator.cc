@@ -63,6 +63,7 @@ string to_upper_case(string name)
   strncpy (tmp, name.c_str(), name.length ());
   for (unsigned int i = 0; i < strlen(tmp); i++)
     tmp[i] = toupper(tmp[i]);
+  tmp[name.length()] = '\0';
   return tmp;
 }
 
@@ -331,11 +332,15 @@ void t_c_generator::generate_typedef(t_typedef* ttypedef) {
  * @param tenum The enumeration
  */
 void t_c_generator::generate_enum(t_enum* tenum) {
+
+  string name = tenum->get_name();
+  string name_uc = to_upper_case(initial_caps_to_underscores(name));
+
   // TODO: look in to using glib's enum facilities
   f_types_ <<
-    indent() << "typedef enum _" << this->nspace << tenum->get_name() << 
-    " " << this->nspace << tenum->get_name() << ";" << endl <<
-    indent() << "enum _" << this->nspace << tenum->get_name() << " {" << endl;
+    indent() << "typedef enum _" << this->nspace << name << 
+    " " << this->nspace << name << ";" << endl <<
+    indent() << "enum _" << this->nspace << name << " {" << endl;
     
   indent_up();
 
@@ -349,7 +354,7 @@ void t_c_generator::generate_enum(t_enum* tenum) {
       f_types_ << "," << endl;
     }
     f_types_ <<
-      indent() << (*c_iter)->get_name();
+      indent() << this->nspace_uc << name_uc << "_" << (*c_iter)->get_name();
     if ((*c_iter)->has_value()) {
       f_types_ <<
         " = " << (*c_iter)->get_value();
@@ -1377,15 +1382,16 @@ void t_c_generator::generate_service_client(t_service* tservice) {
   vector<t_function*> functions = tservice->get_functions();
   vector<t_function*>::const_iterator f_iter;
   for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
+    string funname = initial_caps_to_underscores((*f_iter)->get_name());
     t_function send_function(g_type_bool,
-                             string("send_") + (*f_iter)->get_name(),
+                             string("send_") + funname,
                              (*f_iter)->get_arglist());
     indent(f_header_) << function_signature(*f_iter) << ";" << endl;
     indent(f_header_) << function_signature(&send_function) << ";" << endl;
     if (!(*f_iter)->is_async()) {
       t_struct noargs(program_);
       t_function recv_function((*f_iter)->get_returntype(),
-                               string("recv_") + (*f_iter)->get_name(),
+                               string("recv_") + funname,
                                &noargs);
       indent(f_header_) << function_signature(&recv_function) << ";" << endl;
     }
@@ -1437,7 +1443,7 @@ void t_c_generator::generate_service_client(t_service* tservice) {
     f_service_ << endl;
 
     // Function for sending
-    t_function send_function(g_type_bool, string("send_") + name,
+    t_function send_function(g_type_bool, string("send_") + funname,
                              (*f_iter)->get_arglist());
 
     // Open the send function
@@ -1474,7 +1480,7 @@ void t_c_generator::generate_service_client(t_service* tservice) {
     if (!(*f_iter)->is_async()) {
       t_struct noargs(program_);
       t_function recv_function((*f_iter)->get_returntype(),
-                               string("recv_") + name, &noargs);
+                               string("recv_") + funname, &noargs);
       // Open function
       indent(f_service_) <<
         function_signature(&recv_function) << endl;
@@ -1851,7 +1857,7 @@ string t_c_generator::constant_value(t_type * type, t_const_value * value) {
       render << "\"" + value->get_string() + "\"";
       break;
     case t_base_type::TYPE_BOOL:
-      render << ((value->get_integer() != 0) ? "true" : "false");
+      render << ((value->get_integer() != 0) ? 1 : 0);
       break;
     case t_base_type::TYPE_BYTE:
     case t_base_type::TYPE_I16:
