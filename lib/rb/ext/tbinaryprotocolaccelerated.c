@@ -360,7 +360,15 @@ static void write_container(VALUE buf, VALUE value, field_spec* spec) {
     }
 
     case T_SET: {
-      VALUE items = rb_funcall(value, keys_id, 0);
+      VALUE items;
+      
+      if (TYPE(value) == T_ARRAY) {
+        items = value;
+      } else {
+        Check_Type(value, T_HASH);
+        items = rb_funcall(value, keys_id, 0);
+      }
+
       sz = RARRAY(items)->len;
       
       write_set_begin(buf, spec->data.element->type, sz);

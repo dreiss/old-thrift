@@ -117,6 +117,11 @@ class TBinaryProtocolAcceleratedTest < Test::Unit::TestCase
     obj = Fixtures::Structs::OneSet.new(:set => {"a" => true, "b" => true, "c" => true})
     assert_encodes_struct obj
     assert_decodes_struct obj
+    
+    # We also support arrays as compatability bug from TBinaryProtocol....
+    obj = Fixtures::Structs::OneSet.new(:set => ["a", "b", "c"])
+    assert_encodes_struct obj
+    assert_decodes_struct obj, Fixtures::Structs::OneSet.new(:set => {"a" => true, "b" => true, "c" => true})
   end
   
   def test_encodes_maps_of_maps
