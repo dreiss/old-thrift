@@ -41,6 +41,7 @@ libthrift_la_SOURCES = src/Thrift.cpp \
                        src/transport/TServerSocket.cpp \
                        src/transport/TTransportUtils.cpp \
                        src/transport/TBufferTransports.cpp \
+                       src/transport/TMemoryBuffer.cpp \
                        src/server/TServer.cpp \
                        src/server/TSimpleServer.cpp \
                        src/server/TThreadPoolServer.cpp \
