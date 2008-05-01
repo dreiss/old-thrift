@@ -10,6 +10,10 @@
 #include <string.h>
 #include <unistd.h>
 
+/** TODO:
+ * - support for read timeouts
+ */
+
 gboolean _thrift_socket_is_open (ThriftTransport * transport)
 {
     ThriftSocket * socket = THRIFT_SOCKET (transport);

@@ -1114,7 +1114,10 @@ void t_c_generator::generate_deserialize_field(ofstream& out, t_field* tfield,
 void t_c_generator::generate_deserialize_struct(ofstream& out, 
                                                 t_struct* tstruct,
                                                 string prefix, int error_ret) {
+  string name_uc = to_upper_case 
+    (initial_caps_to_underscores (tstruct->get_name()));
   out <<
+    indent() << prefix << " = g_object_new (" << this->nspace_uc << "TYPE_" << name_uc << ", NULL);" << endl <<
     indent() << "if ((ret = thrift_struct_read (THRIFT_STRUCT (" << prefix << "), protocol, error)) < 0)" << endl <<
     indent() << "  return " << error_ret << ";" << endl << 
     indent() << "xfer += ret;" << endl;
@@ -1171,6 +1174,7 @@ void t_c_generator::generate_deserialize_container(ofstream& out, t_type* ttype,
       indent() << "  return " << error_ret << ";" << endl <<
       indent() << "xfer += ret;" << endl <<
       indent() << "guint32 i;" << endl <<
+      indent() << "*_return = g_hash_table_new (NULL, NULL);" << endl <<
       indent() << "for (i = 0; i < size; ++i)" << endl;
 
     scope_up(out);
@@ -1190,6 +1194,7 @@ void t_c_generator::generate_deserialize_container(ofstream& out, t_type* ttype,
       indent() << "  return " << error_ret << ";" << endl <<
       indent() << "xfer += ret;" << endl <<
       indent() << "guint32 i;" << endl <<
+      indent() << "*_return = g_ptr_array_new ();" << endl <<
       indent() << "for (i = 0; i < size; ++i)" << endl;
 
     scope_up(out);
@@ -1663,7 +1668,7 @@ string t_c_generator::declare_field(t_field* tfield, bool init, bool pointer, bo
         result += " = 0";
         break;
       case t_base_type::TYPE_DOUBLE:
-        result += " = (double)0";
+        result += " = (gdouble)0";
         break;
       default:
         throw "compiler error: no C initializer for base type " + t_base_type::t_base_name(tbase);
@@ -1783,7 +1788,7 @@ string t_c_generator::base_type_name(t_base_type::t_base tbase) {
   case t_base_type::TYPE_I64:
     return "gint64";
   case t_base_type::TYPE_DOUBLE:
-    return "double";
+    return "gdouble";
   default:
     throw "compiler error: no C base type name for base type " + t_base_type::t_base_name(tbase);
   }

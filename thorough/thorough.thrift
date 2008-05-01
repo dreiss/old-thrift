@@ -32,6 +32,7 @@ const string CONST_STRING = "hello world"
 
 # enums 
 
+/*
 enum Auto
 {
      CAT,
@@ -41,6 +42,7 @@ enum Auto
      ELEPHANT,
      HUMAN
 }
+*/
 
 enum Complete
 {
@@ -51,6 +53,8 @@ enum Complete
      ELEPHANT = 5,
      HUMAN = 6
 }
+
+/* thrift cpp doesn't support enums with identical values
 
 enum Partial
 {
@@ -81,6 +85,7 @@ enum All
      ELEPHANT = 42,
      HUMAN
 }
+ */
 
 # exceptions (complex below)
 
@@ -121,10 +126,12 @@ struct SimpleDouble
     1: double value 
 }
 
+/* seems to break thrift cpp, undef operator
 struct SimpleString
 {
     1: string value 
 }
+ */
 
 struct SimpleTypedef
 {
@@ -279,11 +286,15 @@ service Thorough
 #    String td_String_String(String param),
 
     # enums
+    /* see enum comment above
     Auto Auto_Auto(Auto param),
+    */
     Complete Complete_Complete(Complete param),
+    /* see enum comment above
     Partial Partial_Partial(Partial param),
     Skip Skip_Skip(Skip param),
     All All_All(All param),
+     */
 
     # structs
     SimpleBool SimpleBool_SimpleBool(SimpleBool param),
@@ -292,23 +303,12 @@ service Thorough
     SimpleI32 SimpleI32_SimpleI32(SimpleI32 param),
     SimpleI64 SimpleI64_SimpleI64(SimpleI64 param),
     SimpleDouble SimpleDouble_SimpleDouble(SimpleDouble param),
+    /* see SimpleString comment above
     SimpleString SimpleString_SimpleString(SimpleString param),
+     */
     SimpleTypedef SimpleTypedef_SimpleTypedef(SimpleTypedef param),
     SimpleEnum SimpleEnum_SimpleEnum(SimpleEnum param),
     SimpleAll SimpleAll_SimpleAll(SimpleAll param),
-
-    InitsBool InitsBool_InitsBool(InitsBool param),
-    InitsByte InitsByte_InitsByte(InitsByte param),
-    InitsI16 InitsI16_InitsI16(InitsI16 param),
-    InitsI32 InitsI32_InitsI32(InitsI32 param),
-    InitsI64 InitsI64_InitsI64(InitsI64 param),
-    InitsDouble InitsDouble_InitsDouble(InitsDouble param),
-    InitsString InitsString_InitsString(InitsString param),
-    InitsTypedef InitsTypedef_InitsTypedef(InitsTypedef param),
-    InitsEnum InitsEnum_InitsEnum(InitsEnum param),
-    InitsAll InitsAll_InitsAll(InitsAll param),
-
-    TypedefsAll TypedefsAll_TypedefsAll(TypedefsAll param),
 
     NumberingAll NumberingAll_NumberingAll(NumberingAll param),
 
@@ -316,15 +316,11 @@ service Thorough
 
     # collections
     list<i32> list_i32_list_i32(list<i32> param)
-    list<string> list_simple_list_simple(list<string> param)
+    list<string> list_string_list_string(list<string> param)
     set<i32> set_i32_set_i32(set<i32> param)
-    set<string> set_simple_set_simple(set<string> param)
+    set<string> set_string_set_string(set<string> param)
     map<i32, i32> map_i32_map_i32(map<i32, i32> param)
-    map<string, string> map_simple_map_simple(map<string, string> param)
-
-    list<SimpleString> list_SimpleString_list_SimpleString(list<SimpleString> param)
-    set<SimpleString> set_SimpleString_set_SimpleString(set<SimpleString> param)
-    map<SimpleString, SimpleString> map_SimpleString_map_SimpleString(map<SimpleString, SimpleString> param)
+    map<string, string> map_string_map_string(map<string, string> param)
 
     # exceptions
     void throws_simple() throws (Simple s),
