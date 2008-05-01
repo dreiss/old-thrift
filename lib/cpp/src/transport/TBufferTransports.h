@@ -34,7 +34,9 @@ namespace facebook { namespace thrift { namespace transport {
  *
  * @author David Reiss <dreiss@facebook.com>
  */
-class TBufferBase : public TVirtualTransport<TBufferBase> {
+template <typename CollectStats_ = boost::false_type>
+class TBufferBaseT : public TVirtualTransport<TBufferBaseT<CollectStats_>,
+                                              CollectStats_> {
 
  public:
 
@@ -135,7 +137,7 @@ class TBufferBase : public TVirtualTransport<TBufferBase> {
    * performance-sensitive operation, so it is okay to just leave it to
    * the concrete class to set up pointers correctly.
    */
-  TBufferBase()
+  TBufferBaseT()
     : rBase_(NULL)
     , rBound_(NULL)
     , wBase_(NULL)
@@ -154,7 +156,7 @@ class TBufferBase : public TVirtualTransport<TBufferBase> {
     wBound_ = buf+len;
   }
 
-  virtual ~TBufferBase() {}
+  virtual ~TBufferBaseT() {}
 
   /// Reads begin here.
   uint8_t* rBase_;
@@ -166,6 +168,9 @@ class TBufferBase : public TVirtualTransport<TBufferBase> {
   /// Writes may extend to just before here.
   uint8_t* wBound_;
 };
+
+// Use the "TBufferBase" name as the non-stats version.
+typedef TBufferBaseT<> TBufferBase;
 
 
 /**
@@ -414,7 +419,8 @@ class TFramedTransportFactory : public TTransportFactory {
  * @author Mark Slee <mcslee@facebook.com>
  * @author David Reiss <dreiss@facebook.com>
  */
-class TMemoryBuffer : public TBufferBase {
+template <typename CollectStats_ = boost::false_type>
+class TMemoryBufferT : public TBufferBaseT<CollectStats_> {
  private:
 
   // Common initialization done by all constructors.
@@ -475,7 +481,7 @@ class TMemoryBuffer : public TBufferBase {
    * Construct a TMemoryBuffer with a default-sized buffer,
    * owned by the TMemoryBuffer object.
    */
-  TMemoryBuffer() {
+  TMemoryBufferT() {
     initCommon(NULL, defaultSize, true, 0);
   }
 
@@ -485,7 +491,7 @@ class TMemoryBuffer : public TBufferBase {
    *
    * @param sz  The initial size of the buffer.
    */
-  TMemoryBuffer(uint32_t sz) {
+  TMemoryBufferT(uint32_t sz) {
     initCommon(NULL, sz, true, 0);
   }
 
@@ -499,7 +505,7 @@ class TMemoryBuffer : public TBufferBase {
    * @param sz     The size of @c buf.
    * @param policy See @link MemoryPolicy @endlink .
    */
-  TMemoryBuffer(uint8_t* buf, uint32_t sz, MemoryPolicy policy = OBSERVE) {
+  TMemoryBufferT(uint8_t* buf, uint32_t sz, MemoryPolicy policy = OBSERVE) {
     if (buf == NULL && sz != 0) {
       throw TTransportException(TTransportException::BAD_ARGS,
                                 "TMemoryBuffer given null buffer with non-zero size.");
@@ -520,7 +526,7 @@ class TMemoryBuffer : public TBufferBase {
     }
   }
 
-  ~TMemoryBuffer() {
+  ~TMemoryBufferT() {
     if (owner_) {
       std::free(buffer_);
     }
@@ -590,7 +596,7 @@ class TMemoryBuffer : public TBufferBase {
     // bite the performance bullet to make the method this simple.
 
     // Construct the new buffer.
-    TMemoryBuffer new_buffer(buf, sz, policy);
+    TMemoryBufferT<CollectStats_> new_buffer(buf, sz, policy);
     // Move it into ourself.
     this->swap(new_buffer);
     // Our old self gets destroyed.
@@ -634,7 +640,7 @@ class TMemoryBuffer : public TBufferBase {
   void wroteBytes(uint32_t len);
 
  protected:
-  void swap(TMemoryBuffer& that) {
+  void swap(TMemoryBufferT<CollectStats_>& that) {
     using std::swap;
     swap(buffer_,     that.buffer_);
     swap(bufferSize_, that.bufferSize_);
@@ -672,6 +678,13 @@ class TMemoryBuffer : public TBufferBase {
   // you add new members.
 };
 
+// Use the "TMemoryBuffer" name as the non-stats version.
+typedef TMemoryBufferT<> TMemoryBuffer;
+
 }}} // facebook::thrift::transport
+
+
+// Include the template implementation of TMemoryBufferT.
+#include <transport/TMemoryBuffer.tcc>
 
 #endif // #ifndef _THRIFT_TRANSPORT_TDOUBLEBUFFERS_H_

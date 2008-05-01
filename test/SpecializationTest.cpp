@@ -10,10 +10,8 @@ using namespace thrift::test::debug;
 using namespace facebook::thrift::transport;
 using namespace facebook::thrift::protocol;
 
-typedef TBinaryProtocolT<TMemoryBuffer> MyProtocol;
-//typedef TBinaryProtocolT<TTransport> MyProtocol;
-
-int main() {
+template <class Transport_, class Protocol_, bool Expected_>
+void runTest() {
 
   OneOfEach ooe;
   ooe.im_true   = true;
@@ -80,8 +78,8 @@ int main() {
   stage2.back().message = "nevermore";
   hm.bonks["poe"] = stage2;
 
-  boost::shared_ptr<TMemoryBuffer> buffer(new TMemoryBuffer());
-  boost::shared_ptr<TProtocol> proto(new MyProtocol(buffer));
+  boost::shared_ptr<Transport_> buffer(new Transport_());
+  boost::shared_ptr<TProtocol> proto(new Protocol_(buffer));
 
   cout << "Testing ooe" << endl;
 
@@ -90,7 +88,6 @@ int main() {
   ooe2.read(proto.get());
 
   assert(ooe == ooe2);
-
 
   cout << "Testing hm" << endl;
 
@@ -104,6 +101,30 @@ int main() {
 
   assert(hm != hm2);
 
+  assert(buffer->getStats().isAllClear() == Expected_);
+}
+
+
+int main() {
+
+  // Validate that the stats collection reports no virtual calls when
+  // protocol is specialized on specific transport class
+  runTest<TMemoryBufferT<boost::true_type>,
+          TBinaryProtocolT<TMemoryBufferT<boost::true_type> >,
+          true>();
+
+  // Validate that the stats collection reports some virtual calls when
+  // protocol is specialized on base transport class
+  runTest<TMemoryBufferT<boost::true_type>,
+          TBinaryProtocolT<TTransport>,
+          false>();
+
+  // Validate that the stats collection can be turned off properly
+  runTest<TMemoryBufferT<boost::false_type>,
+         TBinaryProtocolT<TMemoryBufferT<boost::false_type> >,
+         false>();
+
   return 0;
 }
+
 

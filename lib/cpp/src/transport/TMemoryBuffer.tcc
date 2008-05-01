@@ -11,7 +11,10 @@
 namespace facebook { namespace thrift { namespace transport {
 
 
-void TMemoryBuffer::computeRead(uint32_t len, uint8_t** out_start, uint32_t* out_give) {
+template <typename CollectStats_>
+void TMemoryBufferT<CollectStats_>::computeRead(uint32_t len,
+                                                uint8_t** out_start,
+                                                uint32_t* out_give) {
   // Correct rBound_ so we can use the fast path in the future.
   rBound_ = wBase_;
 
@@ -25,7 +28,8 @@ void TMemoryBuffer::computeRead(uint32_t len, uint8_t** out_start, uint32_t* out
   rBase_ += give;
 }
 
-uint32_t TMemoryBuffer::readSlow(uint8_t* buf, uint32_t len) {
+template <typename CollectStats_>
+uint32_t TMemoryBufferT<CollectStats_>::readSlow(uint8_t* buf, uint32_t len) {
   uint8_t* start;
   uint32_t give;
   computeRead(len, &start, &give);
@@ -36,7 +40,9 @@ uint32_t TMemoryBuffer::readSlow(uint8_t* buf, uint32_t len) {
   return give;
 }
 
-uint32_t TMemoryBuffer::readAppendToString(std::string& str, uint32_t len) {
+template <typename CollectStats_>
+uint32_t TMemoryBufferT<CollectStats_>::readAppendToString(std::string& str,
+                                                           uint32_t len) {
   // Don't get some stupid assertion failure.
   if (buffer_ == NULL) {
     return 0;
@@ -52,7 +58,8 @@ uint32_t TMemoryBuffer::readAppendToString(std::string& str, uint32_t len) {
   return give;
 }
 
-void TMemoryBuffer::ensureCanWrite(uint32_t len) {
+template <typename CollectStats_>
+void TMemoryBufferT<CollectStats_>::ensureCanWrite(uint32_t len) {
   // Check available space
   uint32_t avail = available_write();
   if (len <= avail) {
@@ -84,7 +91,8 @@ void TMemoryBuffer::ensureCanWrite(uint32_t len) {
   wBound_ += offset;
 }
 
-void TMemoryBuffer::writeSlow(const uint8_t* buf, uint32_t len) {
+template <typename CollectStats_>
+void TMemoryBufferT<CollectStats_>::writeSlow(const uint8_t* buf, uint32_t len) {
   ensureCanWrite(len);
 
   // Copy into the buffer and increment wBase_.
@@ -92,7 +100,8 @@ void TMemoryBuffer::writeSlow(const uint8_t* buf, uint32_t len) {
   wBase_ += len;
 }
 
-void TMemoryBuffer::wroteBytes(uint32_t len) {
+template <typename CollectStats_>
+void TMemoryBufferT<CollectStats_>::wroteBytes(uint32_t len) {
   uint32_t avail = available_write();
   if (len > avail) {
     throw TTransportException("Client wrote more bytes than size of buffer.");
@@ -100,7 +109,8 @@ void TMemoryBuffer::wroteBytes(uint32_t len) {
   wBase_ += len;
 }
 
-const uint8_t* TMemoryBuffer::borrowSlow(uint8_t* buf, uint32_t* len) {
+template <typename CollectStats_>
+const uint8_t* TMemoryBufferT<CollectStats_>::borrowSlow(uint8_t* buf, uint32_t* len) {
   rBound_ = wBase_;
   if (available_read() >= *len) {
     *len = available_read();
