@@ -174,9 +174,6 @@ class TPipedTransport : virtual public TTransport {
   virtual uint32_t read_virt(uint8_t* buf, uint32_t len) {
     return read(buf, len);
   }
-  virtual uint32_t readAll_virt(uint8_t* buf, uint32_t len) {
-    return readAll(buf, len);
-  }
   virtual void readEnd_virt() {
     return readEnd();
   }
@@ -188,12 +185,6 @@ class TPipedTransport : virtual public TTransport {
   }
   virtual void flush_virt() {
     flush();
-  }
-  virtual const uint8_t* borrow_virt(uint8_t* buf, uint32_t* len) {
-    return borrow(buf, len);
-  }
-  virtual void consume(uint32_t len) {
-    consume(len);
   }
 
  protected:
