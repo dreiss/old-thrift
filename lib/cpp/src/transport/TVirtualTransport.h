@@ -67,7 +67,7 @@ class TVirtualTransport : public TTransport {
     return static_cast<Transport_*>(this)->borrow(buf, len);
   }
 
-  virtual void consume(uint32_t len) {
+  virtual void consume_virt(uint32_t len) {
     static_cast<Transport_*>(this)->consume(len);
   }
 

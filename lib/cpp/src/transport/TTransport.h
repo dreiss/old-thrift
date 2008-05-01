@@ -132,11 +132,11 @@ class TTransport {
    *
    */
   void readEnd() {
-    // default behaviour is to do nothing
-    return;
+    readEnd_virt();
   }
   virtual void readEnd_virt() {
-    readEnd_virt();
+    // default behaviour is to do nothing
+    return;
   }
 
   /**
@@ -218,7 +218,7 @@ class TTransport {
    * @throws TTransportException If an error occurs
    */
   void consume(uint32_t len) {
-    consume(len);
+    consume_virt(len);
   }
   virtual void consume_virt(uint32_t /* len */) {
     throw TTransportException(TTransportException::NOT_OPEN, "Base TTransport cannot consume.");
