@@ -71,8 +71,35 @@ class TVirtualTransport : public TTransport {
     static_cast<Transport_*>(this)->consume(len);
   }
 
- protected:
+  bool isOpen() {
+    return false;
+  }
+  bool peek() {
+    return isOpen_virt();
+  }
+  void open() {
+    throw TTransportException(TTransportException::NOT_OPEN, "Cannot open base TTransport.");
+  }
+  void close() {
+    throw TTransportException(TTransportException::NOT_OPEN, "Cannot close base TTransport.");
+  }
+  uint32_t read(uint8_t* buf, uint32_t len) {
+    throw TTransportException(TTransportException::NOT_OPEN, "Base TTransport cannot read.");
+  }
+  void write(const uint8_t* buf, uint32_t len) {
+    throw TTransportException(TTransportException::NOT_OPEN, "Base TTransport cannot write.");
+  }
+  void readEnd() {}
+  void writeEnd() {}
+  virtual void flush() {}
+  const uint8_t* borrow(uint8_t* buf, uint32_t* len) {
+    return NULL;
+  }
+  void consume(uint32_t len) {
+    throw TTransportException(TTransportException::NOT_OPEN, "Base TTransport cannot consume.");
+  }
 
+ protected:
   TVirtualTransport() {}
 };
 

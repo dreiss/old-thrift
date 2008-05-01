@@ -38,6 +38,10 @@ static uint32_t readAll(Transport_ &trans, uint8_t* buf, uint32_t len) {
  * Generic interface for a method of transporting data. A TTransport may be
  * capable of either reading or writing, but not necessarily both.
  *
+ * TODO(dreiss): Make all of the virtual methods pure virtual to eliminate
+ * duplication with TVirtualTransport.  This might require getting everything
+ * onto TVirtualTransport.
+ *
  * @author Mark Slee <mcslee@facebook.com>
  */
 class TTransport {
