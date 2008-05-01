@@ -8,7 +8,6 @@
 #define _THRIFT_TRANSPORT_TFILETRANSPORT_H_ 1
 
 #include "TTransport.h"
-#include "TVirtualTransport.h"
 #include "Thrift.h"
 #include "TProcessor.h"
 
@@ -16,6 +15,8 @@
 #include <stdio.h>
 
 #include <boost/shared_ptr.hpp>
+
+// TODO(dreiss): Make sure this works with the new nonvirtual stuff.
 
 namespace facebook { namespace thrift { namespace transport {
 

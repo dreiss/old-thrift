@@ -10,6 +10,7 @@
 #include <cstdlib>
 
 #include <transport/TTransport.h>
+#include <transport/TVirtualTransport.h>
 
 namespace facebook { namespace thrift { namespace transport { namespace test {
 
@@ -20,7 +21,7 @@ namespace facebook { namespace thrift { namespace transport { namespace test {
  *
  * @author David Reiss <dreiss@facebook.com>
  */
-class TShortReadTransport : public TTransport {
+class TShortReadTransport : public TVirtualTransport<TShortReadTransport> {
  public:
   TShortReadTransport(boost::shared_ptr<TTransport> transport, double full_prob)
     : transport_(transport)

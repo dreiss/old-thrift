@@ -11,7 +11,7 @@
 #include <sys/time.h>
 
 #include "TTransport.h"
-#include "TServerSocket.h"
+#include "TVirtualTransport.h"
 
 namespace facebook { namespace thrift { namespace transport {
 
@@ -20,7 +20,7 @@ namespace facebook { namespace thrift { namespace transport {
  *
  * @author David Reiss <dreiss@facebook.com>
  */
-class TFDTransport : public TTransport {
+class TFDTransport : public TVirtualTransport<TFDTransport> {
  public:
   enum ClosePolicy {
     NO_CLOSE_ON_DESTROY = 0,

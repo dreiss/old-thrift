@@ -6,7 +6,7 @@
 
 using std::cout;
 using std::endl;
-using namespace thrift::test;
+using namespace thrift::test::debug;
 using namespace facebook::thrift::transport;
 using namespace facebook::thrift::protocol;
 
