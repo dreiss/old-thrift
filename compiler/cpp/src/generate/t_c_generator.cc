@@ -1246,7 +1246,7 @@ void t_c_generator::generate_deserialize_set_element(ofstream& out,
   generate_deserialize_field(out, &felem, "", "", error_ret);
 
   indent(out) <<
-    "g_hash_table_insert((GHashTable *)" << prefix << ", (gpointer)elem, NULL);" << endl;
+    "g_hash_table_insert((GHashTable *)" << prefix << ", (gpointer)elem, 1);" << endl;
 }
 
 void t_c_generator::generate_deserialize_list_element(ofstream& out,
