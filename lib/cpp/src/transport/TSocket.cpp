@@ -6,7 +6,7 @@
 
 #include <config.h>
 #include <sys/socket.h>
-#include <sys/select.h>
+#include <sys/poll.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -15,6 +15,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <sstream>
 
 #include "concurrency/Monitor.h"
 #include "TSocket.h"
@@ -94,7 +95,7 @@ bool TSocket::peek() {
   int r = recv(socket_, &buf, 1, MSG_PEEK);
   if (r == -1) {
     int errno_copy = errno;
-    string errStr = "TSocket::peek() " + getSocketInfo();
+    string errStr = "TSocket::peek() recv() " + getSocketInfo() + TOutput::strerror_s(errno_copy);
     GlobalOutput(errStr.c_str());
     throw TTransportException(TTransportException::UNKNOWN, "recv()", errno_copy);
   }
@@ -109,7 +110,7 @@ void TSocket::openConnection(struct addrinfo *res) {
   socket_ = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
   if (socket_ == -1) {
     int errno_copy = errno;
-    string errStr = "TSocket::open() socket " + getSocketInfo();
+    string errStr = "TSocket::open() socket() " + getSocketInfo() + TOutput::strerror_s(errno_copy);
     GlobalOutput(errStr.c_str());
     throw TTransportException(TTransportException::NOT_OPEN, "socket()", errno_copy);
   }
@@ -134,66 +135,72 @@ void TSocket::openConnection(struct addrinfo *res) {
   int flags = fcntl(socket_, F_GETFL, 0);
   if (connTimeout_ > 0) {
     if (-1 == fcntl(socket_, F_SETFL, flags | O_NONBLOCK)) {
-      throw TTransportException(TTransportException::NOT_OPEN, "fcntl() failed");
+      int errno_copy = errno;
+      string errStr = "TSocket::open() fcntl() " + getSocketInfo() + TOutput::strerror_s(errno_copy);
+      GlobalOutput(errStr.c_str());
+      throw TTransportException(TTransportException::NOT_OPEN, "fcntl() failed", errno_copy);
     }
   } else {
     if (-1 == fcntl(socket_, F_SETFL, flags & ~O_NONBLOCK)) {
-      throw TTransportException(TTransportException::NOT_OPEN, "fcntl() failed");
+      int errno_copy = errno;
+      string errStr = "TSocket::open() fcntl " + getSocketInfo() + TOutput::strerror_s(errno_copy);
+      GlobalOutput(errStr.c_str());
+      throw TTransportException(TTransportException::NOT_OPEN, "fcntl() failed", errno_copy);
     }
   }
-
-  // Conn timeout
-  struct timeval c = {(int)(connTimeout_/1000),
-                      (int)((connTimeout_%1000)*1000)};
 
   // Connect the socket
   int ret = connect(socket_, res->ai_addr, res->ai_addrlen);
 
+  // success case
   if (ret == 0) {
     goto done;
   }
 
   if (errno != EINPROGRESS) {
     int errno_copy = errno;
-    string errStr = "TSocket::open() connect " + getSocketInfo();
+    string errStr = "TSocket::open() connect() " + getSocketInfo() + TOutput::strerror_s(errno_copy);
     GlobalOutput(errStr.c_str());
-    throw TTransportException(TTransportException::NOT_OPEN, "connect()", errno_copy);
+    throw TTransportException(TTransportException::NOT_OPEN, "connect() failed", errno_copy);
   }
 
-  fd_set fds;
-  FD_ZERO(&fds);
-  FD_SET(socket_, &fds);
-  ret = select(socket_+1, NULL, &fds, NULL, &c);
+
+  struct pollfd fds[1];
+  memset(fds, 0 , sizeof(fds));
+  fds[0].fd = socket_;
+  fds[0].events = POLLOUT;
+  ret = poll(fds, 1, connTimeout_);
 
   if (ret > 0) {
-    // Ensure connected
+    // Ensure the socket is connected and that there are no errors set
     int val;
     socklen_t lon;
     lon = sizeof(int);
     int ret2 = getsockopt(socket_, SOL_SOCKET, SO_ERROR, (void *)&val, &lon);
     if (ret2 == -1) {
       int errno_copy = errno;
-      string errStr = "TSocket::open() getsockopt SO_ERROR " + getSocketInfo();
+      string errStr = "TSocket::open() getsockopt() " + getSocketInfo() + TOutput::strerror_s(errno_copy);
       GlobalOutput(errStr.c_str());
-      throw TTransportException(TTransportException::NOT_OPEN, "open()", errno_copy);
+      throw TTransportException(TTransportException::NOT_OPEN, "getsockopt()", errno_copy);
     }
+    // no errors on socket, go to town
     if (val == 0) {
       goto done;
     }
-    int errno_copy = errno;
-    string errStr = "TSocket::open() SO_ERROR was set " + getSocketInfo();
+    string errStr = "TSocket::open() error on socket (after poll) " + getSocketInfo() + TOutput::strerror_s(val);
     GlobalOutput(errStr.c_str());
-    throw TTransportException(TTransportException::NOT_OPEN, "open()", errno_copy);
+    throw TTransportException(TTransportException::NOT_OPEN, "socket open() error", val);
   } else if (ret == 0) {
-    int errno_copy = errno;
+    // socket timed out
     string errStr = "TSocket::open() timed out " + getSocketInfo();
     GlobalOutput(errStr.c_str());
-    throw TTransportException(TTransportException::NOT_OPEN, "open()", errno_copy);
+    throw TTransportException(TTransportException::NOT_OPEN, "open() timed out");
   } else {
+    // error on poll()
     int errno_copy = errno;
-    string errStr = "TSocket::open() select error " + getSocketInfo();
+    string errStr = "TSocket::open() poll() " + getSocketInfo() + TOutput::strerror_s(errno_copy);
     GlobalOutput(errStr.c_str());
-    throw TTransportException(TTransportException::NOT_OPEN, "open()", errno_copy);
+    throw TTransportException(TTransportException::NOT_OPEN, "poll() failed", errno_copy);
   }
 
  done:
@@ -212,8 +219,10 @@ void TSocket::open() {
   }
 
   struct addrinfo hints, *res, *res0;
+  res = NULL;
+  res0 = NULL;
   int error;
-  char port[sizeof("65536") + 1];
+  char port[sizeof("65536")];
   memset(&hints, 0, sizeof(hints));
   hints.ai_family = PF_UNSPEC;
   hints.ai_socktype = SOCK_STREAM;
@@ -223,7 +232,8 @@ void TSocket::open() {
   error = getaddrinfo(host_.c_str(), port, &hints, &res0);
 
   if (error) {
-    fprintf(stderr, "getaddrinfo %d: %s\n", error, gai_strerror(error));
+    string errStr = "TSocket::open() getaddrinfo() " + getSocketInfo() + string(gai_strerror(error));
+    GlobalOutput(errStr.c_str());
     close();
     throw TTransportException(TTransportException::NOT_OPEN, "Could not resolve host for client socket.");
   }
@@ -312,7 +322,7 @@ uint32_t TSocket::read(uint8_t* buf, uint32_t len) {
     }
 
     // Now it's not a try again case, but a real probblez
-    string errStr = "TSocket::read() " + getSocketInfo();
+    string errStr = "TSocket::read() recv() " + getSocketInfo() + TOutput::strerror_s(errno);
     GlobalOutput(errStr.c_str());
 
     // If we disconnect with no linger time
@@ -331,9 +341,7 @@ uint32_t TSocket::read(uint8_t* buf, uint32_t len) {
     }
 
     // Some other error, whatevz
-    char buff[1024];
-    sprintf(buff, "ERROR errno: %d", errno);
-    throw TTransportException(TTransportException::UNKNOWN, buff);
+    throw TTransportException(TTransportException::UNKNOWN, "Unknown", errno);
   }
 
   // The remote host has closed the socket
@@ -367,16 +375,16 @@ void TSocket::write(const uint8_t* buf, uint32_t len) {
 
     // Fail on a send error
     if (b < 0) {
+      int errno_copy = errno;
+      string errStr = "TSocket::write() send() " + getSocketInfo() + TOutput::strerror_s(errno_copy);
+      GlobalOutput(errStr.c_str());
+
       if (errno == EPIPE || errno == ECONNRESET || errno == ENOTCONN) {
-        int errno_copy = errno;
         close();
-        throw TTransportException(TTransportException::NOT_OPEN, "send()", errno_copy);
+        throw TTransportException(TTransportException::NOT_OPEN, "write() send()", errno_copy);
       }
 
-      int errno_copy = errno;
-      string errStr = "TSocket::write() send < 0 " + getSocketInfo();
-      GlobalOutput(errStr.c_str());
-      throw TTransportException(TTransportException::UNKNOWN, "send", errno_copy);
+      throw TTransportException(TTransportException::UNKNOWN, "write() send()", errno_copy);
     }
 
     // Fail on blocked send
@@ -413,7 +421,8 @@ void TSocket::setLinger(bool on, int linger) {
   struct linger l = {(lingerOn_ ? 1 : 0), lingerVal_};
   int ret = setsockopt(socket_, SOL_SOCKET, SO_LINGER, &l, sizeof(l));
   if (ret == -1) {
-    string errStr = "TSocket::setLinger() " + getSocketInfo();
+    int errno_copy = errno;
+    string errStr = "TSocket::setLinger() setsockopt() " + getSocketInfo() + TOutput::strerror_s(errno_copy);
     GlobalOutput(errStr.c_str());
   }
 }
@@ -428,7 +437,8 @@ void TSocket::setNoDelay(bool noDelay) {
   int v = noDelay_ ? 1 : 0;
   int ret = setsockopt(socket_, IPPROTO_TCP, TCP_NODELAY, &v, sizeof(v));
   if (ret == -1) {
-    string errStr = "TSocket::setNoDelay() " + getSocketInfo();
+    int errno_copy = errno;
+    string errStr = "TSocket::setNoDelay() setsockopt() " + getSocketInfo() + TOutput::strerror_s(errno_copy);
     GlobalOutput(errStr.c_str());
   }
 }
@@ -453,11 +463,12 @@ void TSocket::setRecvTimeout(int ms) {
   recvTimeval_.tv_sec = (int)(recvTimeout_/1000);
   recvTimeval_.tv_usec = (int)((recvTimeout_%1000)*1000);
 
-  // Copy because select may modify
+  // Copy because poll may modify
   struct timeval r = recvTimeval_;
   int ret = setsockopt(socket_, SOL_SOCKET, SO_RCVTIMEO, &r, sizeof(r));
   if (ret == -1) {
-    string errStr = "TSocket::setRecvTimeout() " + getSocketInfo();
+    int errno_copy = errno;
+    string errStr = "TSocket::setRecvTimeout() setsockopt() " + getSocketInfo() + TOutput::strerror_s(errno_copy);
     GlobalOutput(errStr.c_str());
   }
 }
@@ -479,7 +490,8 @@ void TSocket::setSendTimeout(int ms) {
                       (int)((sendTimeout_%1000)*1000)};
   int ret = setsockopt(socket_, SOL_SOCKET, SO_SNDTIMEO, &s, sizeof(s));
   if (ret == -1) {
-    string errStr = "TSocket::setSendTimeout() " + getSocketInfo();
+    int errno_copy = errno;
+    string errStr = "TSocket::setSendTimeout() setsockopt() " + getSocketInfo() + TOutput::strerror_s(errno_copy);
     GlobalOutput(errStr.c_str());
   }
 }

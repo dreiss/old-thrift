@@ -24,6 +24,7 @@
 #include <strings.h>
 #endif
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <sys/stat.h>
 
@@ -101,8 +102,10 @@ void TFileTransport::resetOutputFile(int fd, string filename, int64_t offset) {
     flush();
     fprintf(stderr, "error, current file (%s) not closed\n", filename_.c_str());
     if (-1 == ::close(fd_)) {
-      GlobalOutput("TFileTransport: error in file close");
-      throw TTransportException("TFileTransport: error in file close");
+      int errno_copy = errno;
+      string errStr = "TFileTransport: resetOutputFile() ::close() " + TOutput::strerror_s(errno_copy);
+      GlobalOutput(errStr.c_str());
+      throw TTransportException(TTransportException::UNKNOWN, "TFileTransport: error in file close", errno_copy);
     }
   }
 
@@ -147,7 +150,7 @@ TFileTransport::~TFileTransport() {
   }
 
   if (readBuff_) {
-    delete readBuff_;
+    delete[] readBuff_;
     readBuff_ = NULL;
   }
 
@@ -159,7 +162,9 @@ TFileTransport::~TFileTransport() {
   // close logfile
   if (fd_ > 0) {
     if(-1 == ::close(fd_)) {
-      GlobalOutput("TFileTransport: error in file close");
+      int errno_copy = errno;
+      string errStr = "TFileTransport: ~TFileTransport() ::close() " + TOutput::strerror_s(errno_copy);
+      GlobalOutput(errStr.c_str());
     }
   }
 }
@@ -315,8 +320,10 @@ void TFileTransport::writerThread() {
       // empty out both the buffers
       if (enqueueBuffer_->isEmpty() && dequeueBuffer_->isEmpty()) {
         if (-1 == ::close(fd_)) {
-          GlobalOutput("TFileTransport: error in close");
-          throw TTransportException("TFileTransport: error in file close");
+          int errno_copy = errno;
+          string errStr = "TFileTransport: writerThread() ::close() " + TOutput::strerror_s(errno_copy);
+          GlobalOutput(errStr.c_str());
+          throw TTransportException(TTransportException::UNKNOWN, "TFileTransport: error in file close", errno_copy);
         }
         // just be safe and sync to disk
         fsync(fd_);
@@ -362,8 +369,10 @@ void TFileTransport::writerThread() {
             uint8_t zeros[padding];
             bzero(zeros, padding);
             if (-1 == ::write(fd_, zeros, padding)) {
-              GlobalOutput("TFileTransport: error while padding zeros");
-              throw TTransportException("TFileTransport: error while padding zeros");
+              int errno_copy = errno;
+              string errStr = "TFileTransport: writerThread() error while padding zeros " + TOutput::strerror_s(errno_copy);
+              GlobalOutput(errStr.c_str());
+              throw TTransportException(TTransportException::UNKNOWN, "TFileTransport: error while padding zeros", errno_copy);
             }
             unflushed += padding;
             offset_ += padding;
@@ -373,8 +382,10 @@ void TFileTransport::writerThread() {
         // write the dequeued event to the file
         if (outEvent->eventSize_ > 0) {
           if (-1 == ::write(fd_, outEvent->eventBuff_, outEvent->eventSize_)) {
-            GlobalOutput("TFileTransport: error while writing event");
-            throw TTransportException("TFileTransport: error while writing event");
+            int errno_copy = errno;
+            string errStr = "TFileTransport: error while writing event " + TOutput::strerror_s(errno_copy);
+            GlobalOutput(errStr.c_str());
+            throw TTransportException(TTransportException::UNKNOWN, "TFileTransport: error while writing event", errno_copy);
           }
 
           unflushed += outEvent->eventSize_;
@@ -723,8 +734,17 @@ uint32_t TFileTransport::getNumChunks() {
   if (fd_ <= 0) {
     return 0;
   }
+
   struct stat f_info;
-  fstat(fd_, &f_info);
+  int rv = fstat(fd_, &f_info);
+
+  if (rv < 0) {
+    int errno_copy = errno;
+    throw TTransportException(TTransportException::UNKNOWN,
+                              "TFileTransport::getNumChunks() (fstat)",
+                              errno_copy);
+  }
+
   if (f_info.st_size > 0) {
     return ((f_info.st_size)/chunkSize_) + 1;
   }
@@ -746,10 +766,10 @@ void TFileTransport::openLogFile() {
 
   // make sure open call was successful
   if(fd_ == -1) {
-    char errorMsg[1024];
-    sprintf(errorMsg, "TFileTransport: Could not open file: %s", filename_.c_str());
-    GlobalOutput(errorMsg);
-    throw TTransportException(errorMsg);
+    int errno_copy = errno;
+    string errStr = "TFileTransport: openLogFile() ::open() file: " + filename_ + TOutput::strerror_s(errno_copy);
+    GlobalOutput(errStr.c_str());
+    throw TTransportException(TTransportException::NOT_OPEN, errStr, errno_copy);
   }
 
 }

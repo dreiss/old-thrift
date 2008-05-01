@@ -290,6 +290,7 @@ void t_csharp_generator::print_const_constructor(std::ofstream& out, std::vector
 
 //it seems like all that methods that call this are using in_static to be the opposite of what it would imply
 bool t_csharp_generator::print_const_value(std::ofstream& out, string name, t_type* type, t_const_value* value, bool in_static, bool defval, bool needtype) {
+  type = get_true_type(type);
   indent(out);
   bool need_static_construction = !in_static;
   if (!defval || needtype) {
@@ -310,6 +311,8 @@ bool t_csharp_generator::print_const_value(std::ofstream& out, string name, t_ty
     out << name << " = new " << type_name(type, true, true) << "();" << endl;
   } else if (type->is_list() || type->is_set()) {
     out << name << " = new " << type_name(type) << "();" << endl;
+  } else {
+    throw "compiler error: no const of type " + type->get_name();
   }
 
   if (defval && !type->is_base_type() && !type->is_enum()) {
@@ -781,17 +784,18 @@ void t_csharp_generator::generate_service_client(t_service* tservice) {
   f_service_ << endl;
 
   indent(f_service_) <<
-    "public Client(TProtocol iprot, TProtocol oprot)" << endl;
+    "public Client(TProtocol iprot, TProtocol oprot)";
+  if (!extends.empty()) {
+    f_service_ << " : base(iprot, oprot)";
+  }
+  f_service_ << endl;
+
   scope_up(f_service_);
   if (extends.empty()) {
     f_service_ <<
       indent() << "iprot_ = iprot;" << endl <<
       indent() << "oprot_ = oprot;" << endl;
-  } else {
-    f_service_ <<
-      indent() << "base(iprot, oprot);" << endl;
   }
-
   scope_down(f_service_);
 
   f_service_ << endl;
@@ -957,18 +961,18 @@ void t_csharp_generator::generate_service_server(t_service* tservice) {
   indent_up();
 
   indent(f_service_) <<
-    "public Processor(Iface iface)" << endl;
-  scope_up(f_service_);
+    "public Processor(Iface iface)" ;
   if (!extends.empty()) {
-    f_service_ <<
-      indent() << "base(iface);" << endl;
+    f_service_ << " : base(iface)";
   }
+  f_service_ << endl;
+  scope_up(f_service_);
   f_service_ <<
     indent() << "iface_ = iface;" << endl;
 
   for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
     f_service_ <<
-      indent() << "processMap_[\"" << (*f_iter)->get_name() << "\"] = new " << (*f_iter)->get_name() << "();" << endl;
+      indent() << "processMap_[\"" << (*f_iter)->get_name() << "\"] = " << (*f_iter)->get_name() << "_Process;" << endl;
   }
 
   scope_down(f_service_);
@@ -976,9 +980,7 @@ void t_csharp_generator::generate_service_server(t_service* tservice) {
 
   if (extends.empty()) {
     f_service_ <<
-      indent() << "protected interface ProcessFunction {" << endl <<
-      indent() << "  void Process(int seqid, Iface iface, TProtocol iprot, TProtocol oprot);" << endl <<
-      indent() << "}" << endl << endl;
+      indent() << "protected delegate void ProcessFunction(int seqid, TProtocol iprot, TProtocol oprot);" << endl;
   }
 
   f_service_ <<
@@ -991,8 +993,15 @@ void t_csharp_generator::generate_service_server(t_service* tservice) {
 
   f_service_ << endl;
 
-  indent(f_service_) <<
-    "public bool Process(TProtocol iprot, TProtocol oprot)" << endl;
+  if (extends.empty()) {
+    indent(f_service_) <<
+      "public bool Process(TProtocol iprot, TProtocol oprot)" << endl;
+  }
+  else
+  {
+    indent(f_service_) <<
+      "public new bool Process(TProtocol iprot, TProtocol oprot)" << endl;
+  }
   scope_up(f_service_);
 
   f_service_ <<
@@ -1010,7 +1019,7 @@ void t_csharp_generator::generate_service_server(t_service* tservice) {
     indent() << "  oprot.Transport.Flush();" << endl <<
     indent() << "  return true;" << endl <<
     indent() << "}" << endl <<
-    indent() << "fn.Process(msg.SeqID, iface_, iprot, oprot);" << endl;
+    indent() << "fn(msg.SeqID, iprot, oprot);" << endl;
 
   f_service_ <<
     indent() << "return true;" << endl;
@@ -1051,11 +1060,7 @@ void t_csharp_generator::generate_function_helpers(t_function* tfunction) {
 
 void t_csharp_generator::generate_process_function(t_service* tservice, t_function* tfunction) {
   indent(f_service_) <<
-    "private class " << tfunction->get_name() << " : ProcessFunction {" << endl;
-  indent_up();
-
-  indent(f_service_) <<
-    "public void Process(int seqid, Iface iface, TProtocol iprot, TProtocol oprot)" << endl;
+    "public void " << tfunction->get_name() << "_Process(int seqid, TProtocol iprot, TProtocol oprot)" << endl;
   scope_up(f_service_);
 
   string argsname = tfunction->get_name() + "_args";
@@ -1090,7 +1095,7 @@ void t_csharp_generator::generate_process_function(t_service* tservice, t_functi
     f_service_ << "result.success = ";
   }
   f_service_ <<
-    "iface." << tfunction->get_name() << "(";
+    "iface_." << tfunction->get_name() << "(";
   bool first = true;
   for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
     if (first) {
@@ -1131,9 +1136,6 @@ void t_csharp_generator::generate_process_function(t_service* tservice, t_functi
       indent() << "return;" << endl;
     scope_down(f_service_);
 
-    indent_down();
-    f_service_ <<
-      indent() << "}" << endl << endl;
     return;
   }
 
@@ -1146,11 +1148,6 @@ void t_csharp_generator::generate_process_function(t_service* tservice, t_functi
   scope_down(f_service_);
 
   f_service_ << endl;
-
-  indent_down();
-
-  f_service_ <<
-    indent() << "}" << endl << endl;
 }
 
 void t_csharp_generator::generate_deserialize_field(ofstream& out, t_field* tfield, string prefix) {

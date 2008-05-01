@@ -21,7 +21,7 @@ g++ -Wall -g -I../lib/cpp/src -I/usr/local/include/boost-1_33_1 \
 #include "gen-cpp/DebugProtoTest_types.h"
 #include "gen-cpp/OptionalRequiredTest_types.h"
 #include <protocol/TDenseProtocol.h>
-#include <transport/TTransportUtils.h>
+#include <transport/TBufferTransports.h>
 
 
 // Can't use memcmp here.  GCC is too smart.
@@ -40,7 +40,7 @@ int main() {
   using std::cout;
   using std::endl;
   using boost::shared_ptr;
-  using namespace thrift::test;
+  using namespace thrift::test::debug;
   using namespace facebook::thrift::transport;
   using namespace facebook::thrift::protocol;
 

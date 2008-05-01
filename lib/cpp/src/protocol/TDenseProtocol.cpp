@@ -268,7 +268,7 @@ uint32_t TDenseProtocol::writeMessageEnd() {
   return 0;
 }
 
-uint32_t TDenseProtocol::writeStructBegin(const string& name) {
+uint32_t TDenseProtocol::writeStructBegin(const char* name) {
   uint32_t xfer = 0;
 
   // The TypeSpec stack should be empty if this is the top-level read/write.
@@ -299,7 +299,7 @@ uint32_t TDenseProtocol::writeStructEnd() {
   return 0;
 }
 
-uint32_t TDenseProtocol::writeFieldBegin(const string& name,
+uint32_t TDenseProtocol::writeFieldBegin(const char* name,
                                          const TType fieldType,
                                          const int16_t fieldId) {
   uint32_t xfer = 0;

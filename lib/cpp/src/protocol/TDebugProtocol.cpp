@@ -135,19 +135,27 @@ uint32_t TDebugProtocol::writeItem(const std::string& str) {
 uint32_t TDebugProtocol::writeMessageBegin(const std::string& name,
                                            const TMessageType messageType,
                                            const int32_t seqid) {
-  throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
-      "TDebugProtocol does not support messages (yet).");
+  string mtype;
+  switch (messageType) {
+    case T_CALL      : mtype = "call"  ; break;
+    case T_REPLY     : mtype = "reply" ; break;
+    case T_EXCEPTION : mtype = "exn"   ; break;
+  }
+
+  uint32_t size = writeIndented("(" + mtype + ") " + name + "(");
+  indentUp();
+  return size;
 }
 
 uint32_t TDebugProtocol::writeMessageEnd() {
-  throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
-      "TDebugProtocol does not support messages (yet).");
+  indentDown();
+  return writeIndented(")\n");
 }
 
-uint32_t TDebugProtocol::writeStructBegin(const string& name) {
+uint32_t TDebugProtocol::writeStructBegin(const char* name) {
   uint32_t size = 0;
   size += startItem();
-  size += writePlain(name + " {\n");
+  size += writePlain(string(name) + " {\n");
   indentUp();
   write_state_.push_back(STRUCT);
   return size;
@@ -162,7 +170,7 @@ uint32_t TDebugProtocol::writeStructEnd() {
   return size;
 }
 
-uint32_t TDebugProtocol::writeFieldBegin(const string& name,
+uint32_t TDebugProtocol::writeFieldBegin(const char* name,
                                          const TType fieldType,
                                          const int16_t fieldId) {
   // sprintf(id_str, "%02d", fieldId);
@@ -282,18 +290,23 @@ uint32_t TDebugProtocol::writeDouble(const double dub) {
 uint32_t TDebugProtocol::writeString(const string& str) {
   // XXX Raw/UTF-8?
 
+  string to_show = str;
+  if (to_show.length() > (string::size_type)string_limit_) {
+    to_show = str.substr(0, string_prefix_size_);
+    to_show += "[...](" + boost::lexical_cast<string>(str.length()) + ")";
+  }
+
   string output = "\"";
 
-  for (string::const_iterator it = str.begin(); it != str.end(); ++it) {
+  for (string::const_iterator it = to_show.begin(); it != to_show.end(); ++it) {
     if (*it == '\\') {
-      output += "\\";
+      output += "\\\\";
     } else if (*it == '"') {
       output += "\\\"";
     } else if (std::isprint(*it)) {
       output += *it;
     } else {
       switch (*it) {
-        case '\"': output += "\\\""; break;
         case '\a': output += "\\a"; break;
         case '\b': output += "\\b"; break;
         case '\f': output += "\\f"; break;
@@ -313,6 +326,7 @@ uint32_t TDebugProtocol::writeString(const string& str) {
 }
 
 uint32_t TDebugProtocol::writeBinary(const string& str) {
+  // XXX Hex?
   return TDebugProtocol::writeString(str);
 }
 

@@ -33,12 +33,14 @@ libthrift_la_SOURCES = src/Thrift.cpp \
                        src/protocol/TJSONProtocol.cpp \
                        src/protocol/TBase64Utils.cpp \
                        src/transport/TTransportException.cpp \
+                       src/transport/TFDTransport.cpp \
                        src/transport/TFileTransport.cpp \
                        src/transport/THttpClient.cpp \
                        src/transport/TSocket.cpp \
                        src/transport/TSocketPool.cpp \
                        src/transport/TServerSocket.cpp \
                        src/transport/TTransportUtils.cpp \
+                       src/transport/TBufferTransports.cpp \
                        src/server/TServer.cpp \
                        src/server/TSimpleServer.cpp \
                        src/server/TThreadPoolServer.cpp \
@@ -87,11 +89,15 @@ include_protocol_HEADERS = \
                          src/protocol/TDenseProtocol.h \
                          src/protocol/TDebugProtocol.h \
                          src/protocol/TOneWayProtocol.h \
+                         src/protocol/TBase64Utils.h \
+                         src/protocol/TJSONProtocol.h \
+                         src/protocol/TProtocolTap.h \
                          src/protocol/TProtocolException.h \
                          src/protocol/TProtocol.h
 
 include_transportdir = $(include_thriftdir)/transport
 include_transport_HEADERS = \
+                         src/transport/TFDTransport.h \
                          src/transport/TFileTransport.h \
                          src/transport/TServerSocket.h \
                          src/transport/TServerTransport.h \
@@ -101,6 +107,7 @@ include_transport_HEADERS = \
                          src/transport/TTransport.h \
                          src/transport/TTransportException.h \
                          src/transport/TTransportUtils.h \
+                         src/transport/TBufferTransports.h \
                          src/transport/TZlibTransport.h
 
 include_serverdir = $(include_thriftdir)/server

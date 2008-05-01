@@ -7,7 +7,6 @@
 #ifndef _THRIFT_TRANSPORT_TTRANSPORTEXCEPTION_H_
 #define _THRIFT_TRANSPORT_TTRANSPORTEXCEPTION_H_ 1
 
-#include <boost/lexical_cast.hpp>
 #include <string>
 #include <Thrift.h>
 
@@ -58,7 +57,7 @@ class TTransportException : public facebook::thrift::TException {
   TTransportException(TTransportExceptionType type,
                       const std::string& message,
                       int errno_copy) :
-    facebook::thrift::TException(message + ": " + strerror_s(errno_copy)),
+    facebook::thrift::TException(message + ": " + TOutput::strerror_s(errno_copy)),
     type_(type) {}
 
   virtual ~TTransportException() throw() {}

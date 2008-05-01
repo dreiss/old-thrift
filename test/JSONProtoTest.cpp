@@ -1,13 +1,13 @@
 #include <iostream>
 #include <cmath>
-#include <transport/TTransportUtils.h>
+#include <transport/TBufferTransports.h>
 #include <protocol/TJSONProtocol.h>
 #include "gen-cpp/DebugProtoTest_types.h"
 
 int main() {
   using std::cout;
   using std::endl;
-  using namespace thrift::test;
+  using namespace thrift::test::debug;
   using facebook::thrift::transport::TMemoryBuffer;
   using facebook::thrift::protocol::TJSONProtocol;
 

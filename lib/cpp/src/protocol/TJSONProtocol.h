@@ -8,7 +8,6 @@
 #define _THRIFT_PROTOCOL_TJSONPROTOCOL_H_ 1
 
 #include "TProtocol.h"
-#include <transport/TTransportUtils.h>
 
 #include <stack>
 
@@ -150,11 +149,11 @@ class TJSONProtocol : public TProtocol {
 
   uint32_t writeMessageEnd();
 
-  uint32_t writeStructBegin(const std::string& name);
+  uint32_t writeStructBegin(const char* name);
 
   uint32_t writeStructEnd();
 
-  uint32_t writeFieldBegin(const std::string& name,
+  uint32_t writeFieldBegin(const char* name,
                            const TType fieldType,
                            const int16_t fieldId);
 
@@ -304,6 +303,9 @@ class TJSONProtocolFactory {
 
 }}} // facebook::thrift::protocol
 
+
+// TODO(dreiss): Move part of ThriftJSONString into a .cpp file and remove this.
+#include <transport/TBufferTransports.h>
 
 namespace facebook { namespace thrift {
 

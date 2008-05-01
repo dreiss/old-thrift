@@ -80,7 +80,7 @@ uint32_t TBinaryProtocolT<Transport_>::writeMessageEnd() {
 }
 
 template <class Transport_>
-uint32_t TBinaryProtocolT<Transport_>::writeStructBegin(const std::string& name) {
+uint32_t TBinaryProtocolT<Transport_>::writeStructBegin(const char* name) {
   return 0;
 }
 
@@ -90,7 +90,7 @@ uint32_t TBinaryProtocolT<Transport_>::writeStructEnd() {
 }
 
 template <class Transport_>
-uint32_t TBinaryProtocolT<Transport_>::writeFieldBegin(const std::string& name,
+uint32_t TBinaryProtocolT<Transport_>::writeFieldBegin(const char* name,
                                                        const TType fieldType,
                                                        const int16_t fieldId) {
   uint32_t wsize = 0;
@@ -450,11 +450,11 @@ uint32_t TBinaryProtocolT<Transport_>::readStringBody(std::string& str, int32_t 
 
   // Use the heap here to prevent stack overflow for v. large strings
   if (size > string_buf_size_ || string_buf_ == NULL) {
-    string_buf_ = (uint8_t*)std::realloc(string_buf_, (uint32_t)size);
-    if (string_buf_ == NULL) {
-      string_buf_size_ = 0;
+    void* new_string_buf = std::realloc(string_buf_, (uint32_t)size);
+    if (new_string_buf == NULL) {
       throw TProtocolException(TProtocolException::UNKNOWN, "Out of memory in TBinaryProtocol::readString");
     }
+    string_buf_ = (uint8_t*)new_string_buf;
     string_buf_size_ = size;
   }
   this->trans_->readAll(string_buf_, size);

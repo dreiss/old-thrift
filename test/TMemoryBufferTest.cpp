@@ -1,21 +1,14 @@
-/*
-thrift -cpp ThriftTest.thrift
-g++ -Wall -g -I../lib/cpp/src -I/usr/local/include/boost-1_33_1 \
-  TMemoryBufferTest.cpp gen-cpp/ThriftTest_types.cpp \
-  ../lib/cpp/.libs/libthrift.a -o TMemoryBufferTest
-./TMemoryBufferTest
-*/
-
+#include <boost/test/unit_test.hpp>
 #include <iostream>
 #include <climits>
 #include <cassert>
-#include <transport/TTransportUtils.h>
+#include <transport/TBufferTransports.h>
 #include <protocol/TBinaryProtocol.h>
 #include "gen-cpp/ThriftTest_types.h"
 
+BOOST_AUTO_TEST_SUITE( TMemoryBufferTest )
 
-int main(int argc, char** argv) {
-  {
+BOOST_AUTO_TEST_CASE( test_roundtrip ) {
     using facebook::thrift::transport::TMemoryBuffer;
     using facebook::thrift::protocol::TBinaryProtocol;
     using boost::shared_ptr;
@@ -41,6 +34,7 @@ int main(int argc, char** argv) {
     assert(a == a2);
   }
 
+BOOST_AUTO_TEST_CASE( test_copy )
   {
     using facebook::thrift::transport::TMemoryBuffer;
     using std::string;
@@ -66,6 +60,7 @@ int main(int argc, char** argv) {
     assert(str4 == "67891234");
   }
 
+BOOST_AUTO_TEST_CASE( test_exceptions )
   {
     using facebook::thrift::transport::TTransportException;
     using facebook::thrift::transport::TMemoryBuffer;
@@ -90,5 +85,4 @@ int main(int argc, char** argv) {
     }
   }
 
-
-}
+BOOST_AUTO_TEST_SUITE_END()

@@ -5,6 +5,7 @@
 // http://developers.facebook.com/thrift/
 
 #include <cstdlib>
+#include <sstream>
 
 #include "THttpClient.h"
 #include "TSocket.h"
@@ -70,7 +71,7 @@ THttpClient::~THttpClient() {
 }
 
 uint32_t THttpClient::read(uint8_t* buf, uint32_t len) {
-  if (readBuffer_.available() == 0) {
+  if (readBuffer_.available_read() == 0) {
     readBuffer_.resetBuffer();
     uint32_t got = readMoreData();
     if (got == 0) {

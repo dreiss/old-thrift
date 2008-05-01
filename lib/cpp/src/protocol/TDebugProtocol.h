@@ -12,8 +12,6 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include <transport/TTransportUtils.h>
-
 namespace facebook { namespace thrift { namespace protocol {
 
 /*
@@ -50,8 +48,21 @@ class TDebugProtocol : public TWriteOnlyProtocol {
  public:
   TDebugProtocol(boost::shared_ptr<TTransport> trans)
     : TWriteOnlyProtocol(trans, "TDebugProtocol")
+    , string_limit_(DEFAULT_STRING_LIMIT)
+    , string_prefix_size_(DEFAULT_STRING_PREFIX_SIZE)
   {
     write_state_.push_back(UNINIT);
+  }
+
+  static const int32_t DEFAULT_STRING_LIMIT = 256;
+  static const int32_t DEFAULT_STRING_PREFIX_SIZE = 16;
+
+  void setStringSizeLimit(int32_t string_limit) {
+    string_limit_ = string_limit;
+  }
+
+  void setStringPrefixSize(int32_t string_prefix_size) {
+    string_prefix_size_ = string_prefix_size;
   }
 
 
@@ -62,11 +73,11 @@ class TDebugProtocol : public TWriteOnlyProtocol {
   virtual uint32_t writeMessageEnd();
 
 
-  uint32_t writeStructBegin(const std::string& name);
+  uint32_t writeStructBegin(const char* name);
 
   uint32_t writeStructEnd();
 
-  uint32_t writeFieldBegin(const std::string& name,
+  uint32_t writeFieldBegin(const char* name,
                            const TType fieldType,
                            const int16_t fieldId);
 
@@ -118,6 +129,9 @@ class TDebugProtocol : public TWriteOnlyProtocol {
 
   static std::string fieldTypeName(TType type);
 
+  int32_t string_limit_;
+  int32_t string_prefix_size_;
+
   std::string indent_str_;
   static const int indent_inc = 2;
 
@@ -141,6 +155,9 @@ class TDebugProtocolFactory : public TProtocolFactory {
 
 }}} // facebook::thrift::protocol
 
+
+// TODO(dreiss): Move (part of) ThriftDebugString into a .cpp file and remove this.
+#include <transport/TBufferTransports.h>
 
 namespace facebook { namespace thrift {
 

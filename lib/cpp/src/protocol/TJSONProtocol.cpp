@@ -7,6 +7,7 @@
 #include "TJSONProtocol.h"
 
 #include <math.h>
+#include <boost/lexical_cast.hpp>
 #include "TBase64Utils.h"
 #include <transport/TTransportException.h>
 
@@ -546,7 +547,7 @@ uint32_t TJSONProtocol::writeMessageEnd() {
   return writeJSONArrayEnd();
 }
 
-uint32_t TJSONProtocol::writeStructBegin(const std::string& name) {
+uint32_t TJSONProtocol::writeStructBegin(const char* name) {
   return writeJSONObjectStart();
 }
 
@@ -554,7 +555,7 @@ uint32_t TJSONProtocol::writeStructEnd() {
   return writeJSONObjectEnd();
 }
 
-uint32_t TJSONProtocol::writeFieldBegin(const std::string& name,
+uint32_t TJSONProtocol::writeFieldBegin(const char* name,
                                         const TType fieldType,
                                         const int16_t fieldId) {
   uint32_t result = writeJSONInteger(fieldId);

@@ -350,6 +350,7 @@ void t_java_generator::generate_consts(std::vector<t_const*> consts) {
  * validate_types method in main.cc
  */
 void t_java_generator::print_const_value(std::ofstream& out, string name, t_type* type, t_const_value* value, bool in_static, bool defval) {
+  type = get_true_type(type);
 
   indent(out);
   if (!defval) {
@@ -434,10 +435,13 @@ void t_java_generator::print_const_value(std::ofstream& out, string name, t_type
       indent(out) << "}" << endl;
     }
     out << endl;
+  } else {
+    throw "compiler error: no const of type " + type->get_name();
   }
 }
 
 string t_java_generator::render_const_value(ofstream& out, string name, t_type* type, t_const_value* value) {
+  type = get_true_type(type);
   std::ostringstream render;
 
   if (type->is_base_type()) {
@@ -1143,12 +1147,7 @@ void t_java_generator::generate_java_struct_tostring(ofstream& out,
     } else {
       indent(out) << "sb.append(\"," << (*f_iter)->get_name() << ":\");" << endl;
     }
-    t_type* ttype = (*f_iter)->get_type();
-    if (ttype->is_xception() || ttype->is_struct()) {
-      indent(out) << "sb.append(this." << (*f_iter)->get_name() << ".toString());" << endl;
-    } else {
-      indent(out) << "sb.append(this." << (*f_iter)->get_name() << ");" << endl;
-    }
+    indent(out) << "sb.append(this." << (*f_iter)->get_name() << ");" << endl;
   }
   out <<
     indent() << "sb.append(\")\");" << endl <<
