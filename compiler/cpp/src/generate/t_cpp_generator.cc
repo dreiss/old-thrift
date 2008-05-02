@@ -44,6 +44,9 @@ class t_cpp_generator : public t_oop_generator {
     iter = parsed_options.find("reflection_limited");
     gen_reflection_limited_ = (iter != parsed_options.end());
 
+    iter = parsed_options.find("templates");
+    gen_templates_ = (iter != parsed_options.end());
+
     out_dir_base_ = "gen-cpp";
   }
 
@@ -206,6 +209,11 @@ class t_cpp_generator : public t_oop_generator {
   bool gen_dense_;
 
   /**
+   * True iff we should generate templatized reader/writer methods.
+   */
+  bool gen_templates_;
+
+  /**
    * True iff we should use a path prefix in our #include statements for other
    * thrift-generated header files.
    */
@@ -225,6 +233,7 @@ class t_cpp_generator : public t_oop_generator {
 
   std::ofstream f_types_;
   std::ofstream f_types_impl_;
+  std::ofstream f_types_tcc_;
   std::ofstream f_header_;
   std::ofstream f_service_;
 
@@ -252,16 +261,29 @@ void t_cpp_generator::init_generator() {
   string f_types_impl_name = get_out_dir()+program_name_+"_types.cpp";
   f_types_impl_.open(f_types_impl_name.c_str());
 
+  if (gen_templates_) {
+    // If we don't open the stream, it appears to just discard data,
+    // which is fine.
+    string f_types_tcc_name = get_out_dir()+program_name_+"_types.tcc";
+    f_types_tcc_.open(f_types_tcc_name.c_str());
+  }
+
   // Print header
   f_types_ <<
     autogen_comment();
   f_types_impl_ <<
+    autogen_comment();
+  f_types_tcc_ <<
     autogen_comment();
 
   // Start ifndef
   f_types_ <<
     "#ifndef " << program_name_ << "_TYPES_H" << endl <<
     "#define " << program_name_ << "_TYPES_H" << endl <<
+    endl;
+  f_types_tcc_ <<
+    "#ifndef " << program_name_ << "_TYPES_TCC" << endl <<
+    "#define " << program_name_ << "_TYPES_TCC" << endl <<
     endl;
 
   // Include base types
@@ -279,6 +301,9 @@ void t_cpp_generator::init_generator() {
     f_types_ <<
       "#include \"" << get_include_prefix(*(includes[i])) <<
       includes[i]->get_name() << "_types.h\"" << endl;
+    f_types_tcc_ <<
+      "#include \"" << get_include_prefix(*(includes[i])) <<
+      includes[i]->get_name() << "_types.tcc\"" << endl;
   }
   f_types_ << endl;
 
@@ -298,6 +323,10 @@ void t_cpp_generator::init_generator() {
 
   // Include the types file
   f_types_impl_ <<
+    "#include \"" << get_include_prefix(*get_program()) << program_name_ <<
+    "_types.h\"" << endl <<
+    endl;
+  f_types_tcc_ <<
     "#include \"" << get_include_prefix(*get_program()) << program_name_ <<
     "_types.h\"" << endl <<
     endl;
@@ -321,6 +350,10 @@ void t_cpp_generator::init_generator() {
   f_types_impl_ <<
     ns_open_ << endl <<
     endl;
+
+  f_types_tcc_ <<
+    ns_open_ << endl <<
+    endl;
 }
 
 /**
@@ -333,14 +366,28 @@ void t_cpp_generator::close_generator() {
     endl;
   f_types_impl_ <<
     ns_close_ << endl;
+  f_types_tcc_ <<
+    ns_close_ << endl <<
+    endl;
+
+  // TODO(dreiss): Make this a separate option.
+  if (gen_templates_) {
+    f_types_ <<
+      "#include \"" << get_include_prefix(*get_program()) << program_name_ <<
+      "_types.tcc\"" << endl <<
+      endl;
+  }
 
   // Close ifndef
   f_types_ <<
+    "#endif" << endl;
+  f_types_tcc_ <<
     "#endif" << endl;
 
   // Close output file
   f_types_.close();
   f_types_impl_.close();
+  f_types_tcc_.close();
 }
 
 /**
@@ -600,8 +647,12 @@ void t_cpp_generator::generate_cpp_struct(t_struct* tstruct, bool is_exception) 
   generate_local_reflection(f_types_, tstruct, false);
   generate_local_reflection(f_types_impl_, tstruct, true);
   generate_local_reflection_pointer(f_types_impl_, tstruct);
-  generate_struct_reader(f_types_impl_, tstruct);
-  generate_struct_writer(f_types_impl_, tstruct);
+
+  std::ofstream& readers_writers = (gen_templates_
+                                    ? f_types_tcc_
+                                    : f_types_impl_);
+  generate_struct_reader(readers_writers, tstruct);
+  generate_struct_writer(readers_writers, tstruct);
 }
 
 /**
@@ -782,13 +833,26 @@ void t_cpp_generator::generate_struct_definition(ofstream& out,
       indent() << "bool operator < (const "
                << tstruct->get_name() << " & ) const;" << endl << endl;
   }
+
   if (read) {
-    out <<
-      indent() << "uint32_t read(facebook::thrift::protocol::TProtocol* iprot);" << endl;
+    if (gen_templates_) {
+      out <<
+        indent() << "template <class Protocol_>" << endl <<
+        indent() << "uint32_t read(Protocol_* iprot);" << endl;
+    } else {
+      out <<
+        indent() << "uint32_t read(facebook::thrift::protocol::TProtocol* iprot);" << endl;
+    }
   }
   if (write) {
-    out <<
-      indent() << "uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;" << endl;
+    if (gen_templates_) {
+      out <<
+        indent() << "template <class Protocol_>" << endl <<
+        indent() << "uint32_t write(Protocol_* oprot) const;" << endl;
+    } else {
+      out <<
+        indent() << "uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;" << endl;
+    }
   }
   out << endl;
 
@@ -975,8 +1039,14 @@ void t_cpp_generator::generate_local_reflection_pointer(std::ofstream& out,
 void t_cpp_generator::generate_struct_reader(ofstream& out,
                                              t_struct* tstruct,
                                              bool pointers) {
-  indent(out) <<
-    "uint32_t " << tstruct->get_name() << "::read(facebook::thrift::protocol::TProtocol* iprot) {" << endl;
+  if (gen_templates_) {
+    out <<
+      indent() << "template <class Protocol_>" << endl <<
+      indent() << "uint32_t " << tstruct->get_name() << "::read(Protocol_* iprot) {" << endl;
+  } else {
+    indent(out) <<
+      "uint32_t " << tstruct->get_name() << "::read(facebook::thrift::protocol::TProtocol* iprot) {" << endl;
+  }
   indent_up();
 
   const vector<t_field*>& fields = tstruct->get_members();
@@ -1114,8 +1184,14 @@ void t_cpp_generator::generate_struct_writer(ofstream& out,
   const vector<t_field*>& fields = tstruct->get_members();
   vector<t_field*>::const_iterator f_iter;
 
-  indent(out) <<
-    "uint32_t " << tstruct->get_name() << "::write(facebook::thrift::protocol::TProtocol* oprot) const {" << endl;
+  if (gen_templates_) {
+    out <<
+      indent() << "template <class Protocol_>" << endl <<
+      indent() << "uint32_t " << tstruct->get_name() << "::write(Protocol_* oprot) const {" << endl;
+  } else {
+    indent(out) <<
+      "uint32_t " << tstruct->get_name() << "::write(facebook::thrift::protocol::TProtocol* oprot) const {" << endl;
+  }
   indent_up();
 
   out <<

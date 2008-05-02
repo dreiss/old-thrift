@@ -112,7 +112,7 @@ SpecializationTest_LDADD = libtestgencpp.la
 THRIFT = $(top_srcdir)/compiler/cpp/thrift
 
 gen-cpp/DebugProtoTest_types.cpp gen-cpp/PartiallyReflectable.cpp: DebugProtoTest.thrift
-	$(THRIFT) --gen cpp:dense,reflection_limited $<
+	$(THRIFT) --gen cpp:dense,reflection_limited,templates $<
 
 gen-cpp/OptionalRequiredTest_types.cpp: OptionalRequiredTest.thrift
 	$(THRIFT) --gen cpp:dense $<
