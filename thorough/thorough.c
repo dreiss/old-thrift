@@ -230,6 +230,41 @@ int main (int argc, char * argv[])
     /* leakin memory like a siev */
 #define TEST_LIST(func, value, test) \
     { \
+        GArray * ret = NULL; \
+        if (!func (client, &ret, value, &error)) \
+        { \
+            fprintf (stderr, "%s failed: %s\n", #func, \
+                     error ? error->message : "(unknown)"); \
+            exit (-1); \
+        } \
+        else if (!(test)) \
+        { \
+            fprintf (stderr, "%s failed\n", #test); \
+            exit (-1); \
+        } \
+        g_array_free (ret, 1); \
+    }
+
+    {
+        GArray * val = g_array_new (0, 1, sizeof (gint32));
+        gint32 v = 1;
+        g_array_append_val (val, v);
+        v = 42;
+        g_array_append_val (val, v);
+        v = 44;
+        g_array_append_val (val, v);
+        TEST_LIST (thrift_thorough_list_i32_list_i32, val, 
+                   (
+                    (g_array_index (val, gint32, 0) == g_array_index (ret, gint32, 0)) &&
+                    (g_array_index (val, gint32, 1) == g_array_index (ret, gint32, 1)) &&
+                    (g_array_index (val, gint32, 2) == g_array_index (ret, gint32, 2))
+                   )
+                  );
+        g_array_free (val, 1);
+    }
+
+#define TEST_PLIST(func, value, test) \
+    { \
         GPtrArray * ret = NULL; \
         if (!func (client, &ret, value, &error)) \
         { \
@@ -247,31 +282,16 @@ int main (int argc, char * argv[])
 
     {
         GPtrArray * val = g_ptr_array_new ();
-        g_ptr_array_add (val, 1);
-        g_ptr_array_add (val, 42);
-        g_ptr_array_add (val, 44);
-        TEST_LIST (thrift_thorough_list_i32_list_i32, val, 
-                   (
-                    (g_ptr_array_index (val, 0) == g_ptr_array_index (ret, 0)) &&
-                    (g_ptr_array_index (val, 1) == g_ptr_array_index (ret, 1)) &&
-                    (g_ptr_array_index (val, 2) == g_ptr_array_index (ret, 2))
-                   )
-                  );
-        g_ptr_array_free (val, 1);
-    }
-
-    {
-        GPtrArray * val = g_ptr_array_new ();
         g_ptr_array_add (val, "hello");
         g_ptr_array_add (val, "world");
         g_ptr_array_add (val, "hrm");
-        TEST_LIST (thrift_thorough_list_string_list_string, val, 
-                   (
-                    (strcmp (g_ptr_array_index (val, 0), g_ptr_array_index (ret, 0)) == 0) &&
-                    (strcmp (g_ptr_array_index (val, 1), g_ptr_array_index (ret, 1)) == 0) &&
-                    (strcmp (g_ptr_array_index (val, 2), g_ptr_array_index (ret, 2)) == 0)
-                   )
-                  );
+        TEST_PLIST (thrift_thorough_list_string_list_string, val, 
+                    (
+                     (strcmp (g_ptr_array_index (val, 0), g_ptr_array_index (ret, 0)) == 0) &&
+                     (strcmp (g_ptr_array_index (val, 1), g_ptr_array_index (ret, 1)) == 0) &&
+                     (strcmp (g_ptr_array_index (val, 2), g_ptr_array_index (ret, 2)) == 0)
+                    )
+                   );
         g_ptr_array_free (val, 1);
     }
 
@@ -295,33 +315,64 @@ int main (int argc, char * argv[])
 
     {
         GHashTable * val = g_hash_table_new (NULL, NULL);
-        g_hash_table_insert (val, 1, NULL);
-        g_hash_table_insert (val, 42, NULL);
-        g_hash_table_insert (val, 44, NULL);
+        g_hash_table_insert (val, (gpointer)1, NULL);
+        g_hash_table_insert (val, (gpointer)42, NULL);
+        g_hash_table_insert (val, (gpointer)44, NULL);
         TEST_HASH (thrift_thorough_set_i32_set_i32, val, 
                    (
-                    g_hash_table_lookup (ret, 1) &&
-                    g_hash_table_lookup (ret, 42) &&
-                    g_hash_table_lookup (ret, 44)
+                    g_hash_table_lookup (ret, (gpointer)1) &&
+                    g_hash_table_lookup (ret, (gpointer)42) &&
+                    g_hash_table_lookup (ret, (gpointer)44)
                    )
                   );
         g_hash_table_destroy (val);
     }
 
     {
-        GPtrArray * val = g_ptr_array_new ();
-        g_ptr_array_add (val, "hello");
-        g_ptr_array_add (val, "world");
-        g_ptr_array_add (val, "hrm");
-        TEST_LIST (thrift_thorough_list_string_list_string, val, 
+        GHashTable * val = g_hash_table_new (NULL, NULL);
+        g_hash_table_insert (val, "hello", NULL);
+        g_hash_table_insert (val, "world", NULL);
+        g_hash_table_insert (val, "huh", NULL);
+        TEST_HASH (thrift_thorough_set_string_set_string, val, 
                    (
-                    (strcmp (g_ptr_array_index (val, 0), g_ptr_array_index (ret, 0)) == 0) &&
-                    (strcmp (g_ptr_array_index (val, 1), g_ptr_array_index (ret, 1)) == 0) &&
-                    (strcmp (g_ptr_array_index (val, 2), g_ptr_array_index (ret, 2)) == 0)
+                    g_hash_table_lookup (ret, "hello") &&
+                    g_hash_table_lookup (ret, "world") &&
+                    g_hash_table_lookup (ret, "huh")
                    )
                   );
-        g_ptr_array_free (val, 1);
+        g_hash_table_destroy (val);
     }
+
+    {
+        GHashTable * val = g_hash_table_new (NULL, NULL);
+        g_hash_table_insert (val, (gpointer)1, (gpointer)2);
+        g_hash_table_insert (val, (gpointer)42, (gpointer)43);
+        g_hash_table_insert (val, (gpointer)44, (gpointer)45);
+        TEST_HASH (thrift_thorough_map_i32_map_i32, val, 
+                   (
+                    (g_hash_table_lookup (ret, (gpointer)1) == (gpointer)2) &&
+                    (g_hash_table_lookup (ret, (gpointer)42) == (gpointer)43) &&
+                    (g_hash_table_lookup (ret, (gpointer)44) == (gpointer)45)
+                   )
+                  );
+        g_hash_table_destroy (val);
+    }
+
+    {
+        GHashTable * val = g_hash_table_new (g_str_hash, g_str_equal);
+        g_hash_table_insert (val, "hello", "world");
+        g_hash_table_insert (val, "world", "huh");
+        g_hash_table_insert (val, "huh", "bye");
+        TEST_HASH (thrift_thorough_map_string_map_string, val, 
+                   (
+                    (strcmp (g_hash_table_lookup (ret, "hello"), "world") == 0) &&
+                    (strcmp (g_hash_table_lookup (ret, "world"), "huh") == 0) &&
+                    (strcmp (g_hash_table_lookup (ret, "huh"), "bye") == 0)
+                   )
+                  );
+        g_hash_table_destroy (val);
+    }
+
 
 #if 0
     gboolean thrift_thorough_number_none (ThriftThoroughClient * client, const gint32 one, const gint32 two, GError ** error);
