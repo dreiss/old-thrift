@@ -200,10 +200,16 @@ class ThoroughHandler : virtual public ThoroughIf {
   }
 
   void set_i32_set_i32(std::set<int32_t> & _return, const std::set<int32_t> & param) {
+    std::set<int32_t, int32_t>::iterator i;
+    for (i = param.begin(); i != param.end(); i++)
+      fprintf (stderr, "s: %d\n", (*i));
     _return = param;
   }
 
   void set_string_set_string(std::set<std::string> & _return, const std::set<std::string> & param) {
+    std::set<std::string, std::string>::iterator i;
+    for (i = param.begin(); i != param.end(); i++)
+      fprintf (stderr, "s: %s\n", (*i).c_str());
     _return = param;
   }
 

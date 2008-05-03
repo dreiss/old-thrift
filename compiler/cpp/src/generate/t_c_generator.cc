@@ -259,8 +259,8 @@ void t_c_generator::init_generator() {
   // Include base types
   f_types_ <<
     "/* base includes */" << endl <<
-    "#include \"protocol/thrift_protocol.h\"" << endl <<
-    "#include \"thrift_struct.h\"" << endl <<
+    "#include <protocol/thrift_protocol.h>" << endl <<
+    "#include <thrift_struct.h>" << endl <<
     "#include <glib-object.h>" << endl <<
     endl;
 
@@ -292,7 +292,7 @@ void t_c_generator::init_generator() {
   f_types_impl_ <<
     endl <<
     "#include \"" << program_name_u << "_types.h\"" << endl <<
-    "#include \"thrift.h\"" << endl <<
+    "#include <thrift.h>" << endl <<
     endl;
 
   f_types_ << 
@@ -927,18 +927,22 @@ void t_c_generator::generate_serialize_container(ofstream& out, t_type* ttype,
     string length = "g_hash_table_size ((GHashTable *)" + prefix + ")";
     t_type * tkey = ((t_map*)ttype)->get_key_type();
     t_type * tval = ((t_map*)ttype)->get_val_type();
+    string tkey_name = type_name (tkey);
+    string tval_name = type_name (tval);
+    string tkey_ptr = tkey->is_string() || !tkey->is_base_type() ? "" : "*";
+    string tval_ptr = tval->is_string() || !tval->is_base_type() ? "" : "*";
     out <<
       indent() << "if ((ret = thrift_protocol_write_map_begin(protocol, " << type_to_enum(tkey) << ", " << type_to_enum(tval) << ", (gint32)" << length << ", error)) < 0)" << endl <<
       indent() << "  return " << error_ret << ";" << endl <<
       indent() << "xfer += ret;" << endl <<
       indent() << "GHashTableIter iter;" << endl <<
-      indent() << "gpointer key;" << endl <<
-      indent() << "gpointer value;" << endl <<
+      indent() << tkey_name << tkey_ptr << " key;" << endl <<
+      indent() << tval_name << tval_ptr << " value;" << endl <<
       indent() << "g_hash_table_iter_init (&iter, (GHashTable *)" << prefix << ");" << endl <<
-      indent() << "while (g_hash_table_iter_next (&iter, &key, &value))" << endl;
+      indent() << "while (g_hash_table_iter_next (&iter, (gpointer)&key, (gpointer)&value))" << endl;
 
     scope_up(out);
-    generate_serialize_map_element(out, (t_map*)ttype, "(" + type_name(tkey) + ")key", "(" + type_name(tval) + ")value", error_ret);
+    generate_serialize_map_element(out, (t_map*)ttype, tkey_ptr + "key", tval_ptr + "value", error_ret);
     scope_down(out);
 
     out <<
@@ -949,18 +953,20 @@ void t_c_generator::generate_serialize_container(ofstream& out, t_type* ttype,
   } else if (ttype->is_set()) {
     string length = "g_hash_table_size ((GHashTable *)" + prefix + ")";
     t_type * telem = ((t_set*)ttype)->get_elem_type();
+    string telem_name = type_name (telem);
+    string telem_ptr = telem->is_string() || !telem->is_base_type() ? "" : "*";
     out <<
       indent() << "if ((ret = thrift_protocol_write_set_begin(protocol, " << type_to_enum(telem) << ", (gint32)" << length << ", error)) < 0)" << endl <<
       indent() << "  return " << error_ret << ";" << endl <<
       indent() << "xfer += ret;" << endl <<
       indent() << "GHashTableIter iter;" << endl <<
-      indent() << "gpointer key;" << endl << 
+      indent() << telem_name << telem_ptr << " elem;" << endl <<
       indent() << "gpointer value;" << endl <<
       indent() << "g_hash_table_iter_init (&iter, (GHashTable *)" << prefix << ");" << endl <<
-      indent() << "while (g_hash_table_iter_next (&iter, &key, &value))" << endl;
+      indent() << "while (g_hash_table_iter_next (&iter, (gpointer)&elem, &value))" << endl;
 
     scope_up(out);
-    generate_serialize_set_element(out, (t_set*)ttype, "(" + type_name(telem) + ")key", error_ret);
+    generate_serialize_set_element(out, (t_set*)ttype, telem_ptr + "elem", error_ret);
     scope_down(out);
 
     out <<
@@ -1175,8 +1181,6 @@ void t_c_generator::generate_deserialize_xception(ofstream& out,
     indent() << "xfer += ret;" << endl;
 }
 
-#include <stdio.h>
-
 string t_c_generator::generate_new_hash_from_type(t_type * ttype)
 {
   if (ttype->is_base_type()) {
@@ -1188,14 +1192,18 @@ string t_c_generator::generate_new_hash_from_type(t_type * ttype)
           break;
         case t_base_type::TYPE_STRING:
           return "g_hash_table_new (g_str_hash, g_str_equal);";
-          /* TODO: need better handling for some of these types */
         case t_base_type::TYPE_BOOL:
+          return "g_hash_table_new (thrift_gboolean_hash, thrift_gboolean_equal);";
         case t_base_type::TYPE_BYTE:
+          return "g_hash_table_new (thrift_gint8_hash, thrift_gint8_equal);";
         case t_base_type::TYPE_I16:
+          return "g_hash_table_new (thrift_gint16_hash, thrift_gint16_equal);";
         case t_base_type::TYPE_I32:
+          return "g_hash_table_new (thrift_gint32_hash, thrift_gint32_equal);";
         case t_base_type::TYPE_I64:
+          return "g_hash_table_new (thrift_gint64_hash, thrift_gint64_equal);";
         case t_base_type::TYPE_DOUBLE:
-          return "g_hash_table_new (NULL, NULL);";
+          return "g_hash_table_new (thrift_gdouble_hash, thrift_gdouble_equal);";
         default:
           throw "compiler error: no hash table info for type";
     }
@@ -1322,14 +1330,20 @@ void t_c_generator::generate_deserialize_map_element(ofstream& out,
                                                        t_map* tmap,
                                                        string prefix,
                                                        int error_ret) {
-  t_field fkey(tmap->get_key_type(), "key");
-  t_field fval(tmap->get_val_type(), "val");
+  t_type * tkey = tmap->get_key_type();
+  t_type * tval = tmap->get_val_type();
+  string tkey_name = type_name(tkey);
+  string tval_name = type_name(tval);
+  string tkey_ptr = tkey->is_string() || !tkey->is_base_type() ? "" : "*";
+  string tval_ptr = tval->is_string() || !tval->is_base_type() ? "" : "*";
 
   out <<
-    indent() << declare_field(&fkey, true) << endl <<
-    indent() << declare_field(&fval, true) << endl;
+    indent() << tkey_name << tkey_ptr << " key" << (tkey_ptr != "" ? " = g_new (" + tkey_name + ", 1)" : "") << ";" << endl <<
+    indent() << tval_name << tval_ptr << " val" << (tval_ptr != "" ? " = g_new (" + tval_name + ", 1)" : "") << ";" << endl;
 
+  t_field fkey(tkey, tkey_ptr + "key");
   generate_deserialize_field(out, &fkey, "", "", error_ret);
+  t_field fval(tval, tval_ptr + "val");
   generate_deserialize_field(out, &fval, "", "", error_ret);
 
   indent(out) << 
@@ -1340,11 +1354,14 @@ void t_c_generator::generate_deserialize_set_element(ofstream& out,
                                                        t_set* tset,
                                                        string prefix,
                                                        int error_ret) {
-  t_field felem(tset->get_elem_type(), "elem");
+  t_type * telem = tset->get_elem_type();
+  string telem_name = type_name(telem);
+  string telem_ptr = telem->is_string() || !telem->is_base_type() ? "" : "*";
 
-  indent(out) <<
-    declare_field(&felem, true) << endl;
+  out <<
+    indent() << telem_name << telem_ptr << " elem" << (telem_ptr != "" ? " = g_new (" + telem_name + ", 1)" : "") << ";" << endl;
 
+  t_field felem(telem, telem_ptr + "elem");
   generate_deserialize_field(out, &felem, "", "", error_ret);
 
   indent(out) <<
@@ -1434,7 +1451,7 @@ void t_c_generator::generate_service(t_service* tservice) {
     "#ifndef " << svcname << "_H" << endl <<
     "#define " << svcname << "_H" << endl <<
     endl <<
-    "#include \"thrift_client.h\"" << endl <<
+    "#include <thrift_client.h>" << endl <<
     "#include \"" << program_name_u << "_types.h\"" << endl;
 
   t_service* extends_service = tservice->get_extends();
@@ -1453,7 +1470,8 @@ void t_c_generator::generate_service(t_service* tservice) {
     autogen_comment();
   f_service_ <<
     "#include \"" << svcname << ".h\"" << endl << 
-    "#include \"thrift_client.h\"" << endl <<
+    "#include <thrift_client.h>" << endl <<
+    "#include <thrift_hash.h>" << endl <<
     "#include <string.h>" << endl <<
     endl;
 

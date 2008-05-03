@@ -6,6 +6,7 @@
 #include "gen-c/thorough_types.h"
 
 #include <thrift.h>
+#include <thrift_hash.h>
 #include <transport/thrift_framed.h>
 #include <transport/thrift_socket.h>
 #include <protocol/thrift_binary_protocol.h>
@@ -33,7 +34,6 @@ int main (int argc, char * argv[])
                                           "transport", socket,
                                           NULL);
 
-    // TODO: figure out why sending it as a property seg-faults
     ThriftBinaryProtocol * protocol = g_object_new (THRIFT_TYPE_BINARY_PROTOCOL, 
                                                     "transport", framed, 
                                                     NULL);
@@ -78,8 +78,8 @@ int main (int argc, char * argv[])
     TEST_BASE (gint8, thrift_thorough_byte_byte, 2, ret == 2);
     TEST_BASE (gint16, thrift_thorough_i16_i16, 3, ret == 3);
     TEST_BASE (gint32, thrift_thorough_i32_i32, 4, ret == 4);
-    //TEST_BASE (gint64, thrift_thorough_i64_i64, 5, ret == 5);
-    //TEST_BASE (gdouble, thrift_thorough_double_double, 6, ret == 6);
+    TEST_BASE (gint64, thrift_thorough_i64_i64, 5, ret == 5);
+    TEST_BASE (gdouble, thrift_thorough_double_double, 6.6, ret == 6.6);
     TEST_BASE (gchar *, thrift_thorough_string_string, "hey", strcmp (ret, "hey") == 0);
 
     TEST_BASE (ThriftThoroughComplete, thrift_thorough_complete__complete,
@@ -131,7 +131,6 @@ int main (int argc, char * argv[])
                  simple_i32, ret->value == simple_i32->value);
     g_object_unref (simple_i32);
 
-    /*
     ThriftThoroughSimpleI64 * simple_i64 = g_object_new (THRIFT_THOROUGH_TYPE_SIMPLE_I64, NULL);
     simple_i64->value = 4;
     TEST_STRUCT (ThriftThoroughSimpleI64 *, 
@@ -145,7 +144,6 @@ int main (int argc, char * argv[])
                  thrift_thorough_simple_double__simple_double,
                  simple_double, ret->value == simple_double->value);
     g_object_unref (simple_double);
-     */
 
     /* TODO: thrift cpp boken with SimpleString...
     ThriftThoroughSimpleString * simple_string = g_object_new (THRIFT_THOROUGH_TYPE_SIMPLE_STRING, NULL);
@@ -314,45 +312,65 @@ int main (int argc, char * argv[])
     }
 
     {
-        GHashTable * val = g_hash_table_new (NULL, NULL);
-        g_hash_table_insert (val, (gpointer)1, NULL);
-        g_hash_table_insert (val, (gpointer)42, NULL);
-        g_hash_table_insert (val, (gpointer)44, NULL);
+        GHashTable * val = g_hash_table_new (thrift_gint32_hash, 
+                                             thrift_gint32_equal);
+        gint32 * e1 = g_new (gint32, 1);
+        *e1 = 1;
+        g_hash_table_insert (val, (gpointer)e1, (gpointer)1);
+        gint32 * e2 = g_new (gint32, 1);
+        *e2 = 42;
+        g_hash_table_insert (val, (gpointer)e2, (gpointer)1);
+        gint32 * e3 = g_new (gint32, 1);
+        *e3 = 44;
+        g_hash_table_insert (val, (gpointer)e3, (gpointer)1);
         TEST_HASH (thrift_thorough_set_i32_set_i32, val, 
                    (
-                    g_hash_table_lookup (ret, (gpointer)1) &&
-                    g_hash_table_lookup (ret, (gpointer)42) &&
-                    g_hash_table_lookup (ret, (gpointer)44)
+                    g_hash_table_lookup (ret, (gpointer)e1) != NULL &&
+                    g_hash_table_lookup (ret, (gpointer)e2) != NULL &&
+                    g_hash_table_lookup (ret, (gpointer)e3) != NULL
                    )
                   );
         g_hash_table_destroy (val);
     }
 
     {
-        GHashTable * val = g_hash_table_new (NULL, NULL);
-        g_hash_table_insert (val, "hello", NULL);
-        g_hash_table_insert (val, "world", NULL);
-        g_hash_table_insert (val, "huh", NULL);
+        GHashTable * val = g_hash_table_new (g_str_hash, g_str_equal);
+        g_hash_table_insert (val, "hello", (gpointer)1);
+        g_hash_table_insert (val, "world", (gpointer)1);
+        g_hash_table_insert (val, "huh", (gpointer)1);
         TEST_HASH (thrift_thorough_set_string_set_string, val, 
                    (
-                    g_hash_table_lookup (ret, "hello") &&
-                    g_hash_table_lookup (ret, "world") &&
-                    g_hash_table_lookup (ret, "huh")
+                    g_hash_table_lookup (ret, "hello") != NULL &&
+                    g_hash_table_lookup (ret, "world") != NULL &&
+                    g_hash_table_lookup (ret, "huh") != NULL
                    )
                   );
         g_hash_table_destroy (val);
     }
 
     {
-        GHashTable * val = g_hash_table_new (NULL, NULL);
-        g_hash_table_insert (val, (gpointer)1, (gpointer)2);
-        g_hash_table_insert (val, (gpointer)42, (gpointer)43);
-        g_hash_table_insert (val, (gpointer)44, (gpointer)45);
+        GHashTable * val = g_hash_table_new (thrift_gint32_hash, 
+                                             thrift_gint32_equal);
+        gint32 * k1 = g_new (gint32, 1);
+        gint32 * v1 = g_new (gint32, 1);
+        *k1 = 1;
+        *v1 = 2;
+        g_hash_table_insert (val, (gpointer)k1, (gpointer)v1);
+        gint32 * k2 = g_new (gint32, 1);
+        gint32 * v2 = g_new (gint32, 1);
+        *k2 = 42;
+        *v2 = 43;
+        g_hash_table_insert (val, (gpointer)k2, (gpointer)v2);
+        gint32 * k3 = g_new (gint32, 1);
+        gint32 * v3 = g_new (gint32, 1);
+        *k3 = 44;
+        *v3 = 45;
+        g_hash_table_insert (val, (gpointer)k3, (gpointer)v3);
         TEST_HASH (thrift_thorough_map_i32_map_i32, val, 
                    (
-                    (g_hash_table_lookup (ret, (gpointer)1) == (gpointer)2) &&
-                    (g_hash_table_lookup (ret, (gpointer)42) == (gpointer)43) &&
-                    (g_hash_table_lookup (ret, (gpointer)44) == (gpointer)45)
+                    (*((gint32*)g_hash_table_lookup (ret, (gpointer)k1)) == *v1) &&
+                    (*((gint32*)g_hash_table_lookup (ret, (gpointer)k2)) == *v2) &&
+                    (*((gint32*)g_hash_table_lookup (ret, (gpointer)k3)) == *v3)
                    )
                   );
         g_hash_table_destroy (val);
@@ -373,7 +391,6 @@ int main (int argc, char * argv[])
         g_hash_table_destroy (val);
     }
 
-
 #if 0
     gboolean thrift_thorough_number_none (ThriftThoroughClient * client, const gint32 one, const gint32 two, GError ** error);
     gboolean thrift_thorough_number_complete (ThriftThoroughClient * client, const gint32 one, const gint32 two, GError ** error);
@@ -381,10 +398,6 @@ int main (int argc, char * argv[])
     gboolean thrift_thorough_number_partial (ThriftThoroughClient * client, const gint32 one, const gint32 two, GError ** error);
     gboolean thrift_thorough_number_all (ThriftThoroughClient * client, const gint32 one, const gint32 two, GError ** error);
 
-    gboolean thrift_thorough_set_i32_set_i32 (ThriftThoroughClient * client, GHashTable ** _return, const GHashTable * param, GError ** error);
-    gboolean thrift_thorough_set_simple_set_simple (ThriftThoroughClient * client, GHashTable ** _return, const GHashTable * param, GError ** error);
-    gboolean thrift_thorough_map_i32_map_i32 (ThriftThoroughClient * client, GHashTable ** _return, const GHashTable * param, GError ** error);
-    gboolean thrift_thorough_map_simple_map_simple (ThriftThoroughClient * client, GHashTable ** _return, const GHashTable * param, GError ** error);
     gboolean thrift_thorough_throws_simple (ThriftThoroughClient * client, GError ** error);
     gboolean thrift_thorough_throws_complex (ThriftThoroughClient * client, GError ** error);
     gboolean thrift_thorough_throws_multiple_simple (ThriftThoroughClient * client, GError ** error);

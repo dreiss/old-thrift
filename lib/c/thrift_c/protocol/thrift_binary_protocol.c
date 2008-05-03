@@ -4,8 +4,6 @@
  */
 
 /** TODO:
- * - this is really binary protocol, it needs to be moved...
- * - look at using glib's byte order stuffs
  * - look at utf8 support ???
  * - error handling, gerror or whatever
  * - do we need strict_(write|read) support
@@ -202,23 +200,24 @@ gint32 _thrift_binary_protocol_write_i64 (ThriftProtocol * protocol,
                                           const gint64 i64, GError ** error)
 {
     g_assert (THRIFT_IS_BINARY_PROTOCOL (protocol));
-    g_assert_not_reached ();
 
-    /* TODO: 64-bit htonll??? */
-    gint64 net = (gint64)g_htonl (i64);
+    /* g_htonll hasn't been added yet, patch submitted, just macro anyway */
+    gint64 net = GUINT64_TO_BE (i64);
     thrift_transport_write (protocol->transport, (const gpointer)&net, 8,
                             error);
     return 8;
 }
 
 gint32 _thrift_binary_protocol_write_double (ThriftProtocol * protocol,
-                                             const double dub, GError ** error)
+                                             const gdouble dub, GError ** error)
 {
     g_assert (THRIFT_IS_BINARY_PROTOCOL (protocol));
-    g_assert_not_reached ();
+    g_assert (sizeof (gdouble) == sizeof (guint64));
 
-    /* TODO: is the "cast" enough? */
-    return thrift_protocol_write_i64 (protocol, dub, error);
+    guint64 bits = GUINT64_FROM_BE (*(unsigned long long *)&dub);
+    thrift_transport_write (protocol->transport, (gconstpointer)&bits, 8, 
+                            error);
+    return 8;
 }
 
 gint32 _thrift_binary_protocol_write_string (ThriftProtocol * protocol,
@@ -480,20 +479,22 @@ gint32 _thrift_binary_protocol_read_i64 (ThriftProtocol * protocol,
     gpointer b[8];
     thrift_transport_read (protocol->transport, b, 8, error);
     *i64 = *(gint64*)b;
-    /* TODO: 64-bit htonll??? */
-    *i64 = g_ntohl (*i64);
+    *i64 = GUINT64_FROM_BE (*i64);
     return 8;
 }
 
 gint32 _thrift_binary_protocol_read_double (ThriftProtocol * protocol,
-                                            double * dub, GError ** error)
+                                            gdouble * dub, GError ** error)
 {
     g_assert (THRIFT_IS_BINARY_PROTOCOL (protocol));
+    g_assert (sizeof (gdouble) == sizeof (guint64));
 
-    /* TODO: is the cast enough? */
-    gint32 result = thrift_protocol_read_i64 (protocol, (gint64*)dub,
-                                              error);
-    return result;
+    gpointer b[8];
+    thrift_transport_read (protocol->transport, b, 8, error);
+    guint64 bits = *(guint64*)b;
+    bits = GUINT64_FROM_BE (bits);
+    *dub = *(gdouble*)&bits;
+    return 8;
 }
 
 gint32 _thrift_binary_protocol_read_string (ThriftProtocol * protocol,

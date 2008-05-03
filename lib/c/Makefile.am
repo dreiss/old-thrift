@@ -18,6 +18,7 @@ libthrift_c_la_SOURCES = \
 		       thrift_c/protocol/thrift_binary_protocol.c \
 		       thrift_c/protocol/thrift_protocol.c \
 		       thrift_c/thrift_client.c \
+		       thrift_c/thrift_hash.c \
 		       thrift_c/thrift_struct.c \
 		       thrift_c/transport/thrift_framed.c \
 		       thrift_c/transport/thrift_socket.c \
@@ -31,6 +32,7 @@ include_thriftdir = $(includedir)/thrift_c
 include_thrift_HEADERS = \
 			 thrift_c/thrift.h \
 			 thrift_c/thrift_client.h \
+			 thrift_c/thrift_hash.h \
 			 thrift_c/thrift_struct.h
 
 include_protocoldir = $(include_thriftdir)/protocol
