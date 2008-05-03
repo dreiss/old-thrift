@@ -5,7 +5,6 @@
 
 /** TODO:
  * - look at utf8 support ???
- * - error handling, gerror or whatever
  * - do we need strict_(write|read) support
  */
 
@@ -294,9 +293,13 @@ gint32 _thrift_binary_protocol_read_message_begin (ThriftProtocol * protocol,
     {
         /* Check for correct version number */
         guint32 version = sz & VERSION_MASK;
-        /* TODO: error handling */
         if (version != VERSION_1)
+        {
+            g_set_error (error, THRIFT_BINARY_PROTOCOL_ERROR,
+                         THRIFT_BINARY_PROTOCOL_ERROR_WRONG_VERSION,
+                         "expected %d, got %d", VERSION_1, version);
             return -1;
+        }
         /* TODO: shouldn't this be xor with VERSION_MASK or something */
         *message_type = (ThriftMessageType)(sz & 0x000000ff);
         if ((ret = thrift_protocol_read_string (protocol, name, error)) < 0)
@@ -395,7 +398,9 @@ gint32 _thrift_binary_protocol_read_map_begin (ThriftProtocol * protocol,
     xfer += ret;
     if (sizei < 0)
     {
-        /* TODO: error handling */
+        g_set_error (error, THRIFT_BINARY_PROTOCOL_ERROR, 
+                     THRIFT_BINARY_PROTOCOL_ERROR_NEGATIVE_SIZE,
+                     "size of %d", sizei);
         return -1;
     }
 #if 0
@@ -438,7 +443,9 @@ gint32 _thrift_binary_protocol_read_list_begin (ThriftProtocol * protocol,
     xfer += ret;
     if (sizei < 0)
     {
-        /* TODO: error handling */
+        g_set_error (error, THRIFT_BINARY_PROTOCOL_ERROR, 
+                     THRIFT_BINARY_PROTOCOL_ERROR_NEGATIVE_SIZE,
+                     "size of %d", sizei);
         return -1;
     }
 #if 0

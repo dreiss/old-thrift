@@ -11,6 +11,7 @@
 #include <transport/thrift_socket.h>
 #include <protocol/thrift_binary_protocol.h>
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -79,7 +80,7 @@ int main (int argc, char * argv[])
     TEST_BASE (gint16, thrift_thorough_i16_i16, 3, ret == 3);
     TEST_BASE (gint32, thrift_thorough_i32_i32, 4, ret == 4);
     TEST_BASE (gint64, thrift_thorough_i64_i64, 5, ret == 5);
-    TEST_BASE (gdouble, thrift_thorough_double_double, 6.6, ret == 6.6);
+    TEST_BASE (gdouble, thrift_thorough_double_double, 6.6, fabs (ret - 6.6) < 0.001);
     TEST_BASE (gchar *, thrift_thorough_string_string, "hey", strcmp (ret, "hey") == 0);
 
     TEST_BASE (ThriftThoroughComplete, thrift_thorough_complete__complete,
@@ -142,17 +143,15 @@ int main (int argc, char * argv[])
     simple_double->value = 5.5;
     TEST_STRUCT (ThriftThoroughSimpleDouble *, 
                  thrift_thorough_simple_double__simple_double,
-                 simple_double, ret->value == simple_double->value);
+                 simple_double, fabs (ret->value - simple_double->value) < 0.001);
     g_object_unref (simple_double);
 
-    /* TODO: thrift cpp boken with SimpleString...
     ThriftThoroughSimpleString * simple_string = g_object_new (THRIFT_THOROUGH_TYPE_SIMPLE_STRING, NULL);
     simple_string->value = "hello world";
     TEST_STRUCT (ThriftThoroughSimpleString *, 
                  thrift_thorough_simple_string__simple_string,
-                 simple_string, ret->value == simple_string->value);
+                 simple_string, strcmp (ret->value, simple_string->value) == 0);
     g_object_unref (simple_string);
-     */
 
     ThriftThoroughSimpleTypedef * simple_typedef = g_object_new (THRIFT_THOROUGH_TYPE_SIMPLE_TYPEDEF, NULL);
     simple_typedef->value = "hello world";
@@ -168,7 +167,6 @@ int main (int argc, char * argv[])
                  simple_enum, ret->value == simple_enum->value);
     g_object_unref (simple_enum);
 
-    /* TODO: i64 and double support 
     ThriftThoroughSimpleAll * simple_all = g_object_new (THRIFT_THOROUGH_TYPE_SIMPLE_ALL, NULL);
     simple_all->value_bool = 1;
     simple_all->value_byte = 2;
@@ -177,19 +175,19 @@ int main (int argc, char * argv[])
     simple_all->value_i64 = 5;
     simple_all->value_double = 6.6;
     simple_all->value_string = "what";
-    simple_all->value_typedef = "are you looking at";
-    simple_all->value_exception->value->message = "rut-rho";
+    simple_all->value_typedef = 7.7;
     TEST_STRUCT (ThriftThoroughSimpleAll *, 
                  thrift_thorough_simple_all__simple_all, simple_all, 
-                 ((ret->value_bool == simple_all->value_bool) &&
+                 (
+                  (ret->value_bool == simple_all->value_bool) &&
                   (ret->value_byte == simple_all->value_byte) &&
                   (ret->value_i16 == simple_all->value_i16) &&
                   (ret->value_i32 == simple_all->value_i32) &&
                   (ret->value_i64 == simple_all->value_i64) &&
-                  (ret->value_double == simple_all->value_double) &&
-                  (ret->value_string == simple_all->value_string) &&
-                  (ret->value_typedef == simple_all->value_typedef) &&
-                  (ret->value_value_exception == simple_all->value_value_exception))
+                  (fabs (ret->value_double - simple_all->value_double) < 0.001) &&
+                  (strcmp (ret->value_string, simple_all->value_string) == 0) &&
+                  (ret->value_typedef == simple_all->value_typedef)
+                 )
                 );
     g_object_unref (simple_all);
 
@@ -201,22 +199,21 @@ int main (int argc, char * argv[])
     numbering_all->value_i64 = 5;
     numbering_all->value_double = 6.6;
     numbering_all->value_string = "what";
-    numbering_all->value_typedef = "are you looking at";
-    numbering_all->value_exception->value->message = "rut-rho";
+    numbering_all->value_typedef = 7.7;
     TEST_STRUCT (ThriftThoroughNumberingAll *, 
                  thrift_thorough_numbering_all__numbering_all, numbering_all, 
-                 ((ret->value_bool == numbering_all->value_bool) &&
+                 (
+                  (ret->value_bool == numbering_all->value_bool) &&
                   (ret->value_byte == numbering_all->value_byte) &&
                   (ret->value_i16 == numbering_all->value_i16) &&
                   (ret->value_i32 == numbering_all->value_i32) &&
                   (ret->value_i64 == numbering_all->value_i64) &&
-                  (ret->value_double == numbering_all->value_double) &&
-                  (ret->value_string == numbering_all->value_string) &&
-                  (ret->value_typedef == numbering_all->value_typedef) &&
-                  (ret->value_value_exception == numbering_all->value_value_exception))
+                  (fabs (ret->value_double - numbering_all->value_double) < 0.001) &&
+                  (strcmp (ret->value_string, numbering_all->value_string) == 0) &&
+                  (ret->value_typedef == numbering_all->value_typedef)
+                 )
                 );
     g_object_unref (numbering_all);
-     */
 
     ThriftThoroughHighMember * high_member = g_object_new (THRIFT_THOROUGH_TYPE_HIGH_MEMBER, NULL);
     high_member->value = 3;
@@ -386,6 +383,31 @@ int main (int argc, char * argv[])
                     (strcmp (g_hash_table_lookup (ret, "hello"), "world") == 0) &&
                     (strcmp (g_hash_table_lookup (ret, "world"), "huh") == 0) &&
                     (strcmp (g_hash_table_lookup (ret, "huh"), "bye") == 0)
+                   )
+                  );
+        g_hash_table_destroy (val);
+    }
+
+    {
+        GHashTable * val = g_hash_table_new (g_str_hash, g_str_equal);
+        ThriftThoroughSimpleI32 * sd1 = g_object_new (THRIFT_THOROUGH_TYPE_SIMPLE_I32, 
+                                                      NULL);
+        sd1->value = 1;
+        g_hash_table_insert (val, "hello", sd1);
+        ThriftThoroughSimpleI32 * sd2 = g_object_new (THRIFT_THOROUGH_TYPE_SIMPLE_I32, 
+                                                      NULL);
+        sd2->value = 2;
+        g_hash_table_insert (val, "world", sd2);
+        ThriftThoroughSimpleI32 * sd3 = g_object_new (THRIFT_THOROUGH_TYPE_SIMPLE_I32, 
+                                                      NULL);
+        sd3->value = 3;
+        g_hash_table_insert (val, "huh", sd3);
+        TEST_HASH (thrift_thorough_map_string__simple_i32_map_string__simple_i32,
+                   val, 
+                   (
+                    (((ThriftThoroughSimpleI32*)g_hash_table_lookup (ret, "hello"))->value == sd1->value) &&
+                    (((ThriftThoroughSimpleI32*)g_hash_table_lookup (ret, "world"))->value == sd2->value) &&
+                    (((ThriftThoroughSimpleI32*)g_hash_table_lookup (ret, "huh"))->value == sd3->value)
                    )
                   );
         g_hash_table_destroy (val);

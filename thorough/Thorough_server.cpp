@@ -121,11 +121,10 @@ class ThoroughHandler : virtual public ThoroughIf {
     _return = param;
   }
 
-  /* seems to break thrift cpp, undef operator
   void SimpleString_SimpleString(SimpleString& _return, const SimpleString& param) {
+    fprintf (stderr, "SimpleString_SimpleString: %s\n", param.value.c_str());
     _return = param;
   }
-   */
 
   void SimpleTypedef_SimpleTypedef(SimpleTypedef& _return, const SimpleTypedef& param) {
     _return = param;
@@ -136,6 +135,15 @@ class ThoroughHandler : virtual public ThoroughIf {
   }
 
   void SimpleAll_SimpleAll(SimpleAll& _return, const SimpleAll& param) {
+    fprintf (stderr, "SimpleAll_SimpleAll: %d %d %d %d %ld %f %s %f\n",
+             param.value_bool, 
+             param.value_byte, 
+             param.value_i16, 
+             param.value_i32, 
+             param.value_i64, 
+             param.value_double, 
+             param.value_string.c_str(), 
+             param.value_typedef);
     _return = param;
   }
 
@@ -199,6 +207,11 @@ class ThoroughHandler : virtual public ThoroughIf {
     _return = param;
   }
 
+  void list_SimpleI32_list_SimpleI32(std::vector<SimpleI32> & _return, const std::vector<SimpleI32> & param) {
+    printf("list_SimpleI32_list_SimpleI32\n");
+    _return = param;
+  }
+
   void set_i32_set_i32(std::set<int32_t> & _return, const std::set<int32_t> & param) {
     std::set<int32_t, int32_t>::iterator i;
     for (i = param.begin(); i != param.end(); i++)
@@ -221,19 +234,10 @@ class ThoroughHandler : virtual public ThoroughIf {
     _return = param;
   }
 
-  /* seems to break thrift cpp, undef operator
-  void list_SimpleString_list_SimpleString(std::vector<SimpleString> & _return, const std::vector<SimpleString> & param) {
+  void map_string_SimpleI32_map_string_SimpleI32(std::map<std::string, SimpleI32> & _return, const std::map<std::string, SimpleI32> & param) {
+    printf("map_string_SimpleI32_map_string_SimpleI32\n");
     _return = param;
   }
-
-  void set_SimpleString_set_SimpleString(std::set<SimpleString> & _return, const std::set<SimpleString> & param) {
-    _return = param;
-  }
-
-  void map_SimpleString_map_SimpleString(std::map<SimpleString, SimpleString> & _return, const std::map<SimpleString, SimpleString> & param) {
-    _return = param;
-  }
-   */
 
   void throws_simple() {
     Simple e;
@@ -253,7 +257,6 @@ class ThoroughHandler : virtual public ThoroughIf {
     e.simple.value_double = 5.5;
     e.simple.value_string = "hi";
     e.simple.value_typedef = HUMAN;
-    e.simple.value_exception.value.what = "nested ex";
     throw e;
   }
 
@@ -275,7 +278,6 @@ class ThoroughHandler : virtual public ThoroughIf {
     e.simple.value_double = 5.5;
     e.simple.value_string = "hi";
     e.simple.value_typedef = HUMAN;
-    e.simple.value_exception.value.what = "nested ex";
     throw e;
   }
 

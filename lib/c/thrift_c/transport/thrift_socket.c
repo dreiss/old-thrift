@@ -77,7 +77,10 @@ gboolean _thrift_socket_close (ThriftTransport * transport,
     THRIFT_UNUSED_VAR (error);
 
     /* TODO: error handling */
-    close (socket->sd);
+    if (!close (socket->sd))
+    {
+        g_set_error (error, 
+    }
     socket->sd = 0;
 
     return 1;

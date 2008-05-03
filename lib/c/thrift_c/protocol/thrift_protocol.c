@@ -3,10 +3,6 @@
  *
  */
 
-/** TODO:
- * figure out how to make this class glib-object abstract
- */
-
 #include "thrift.h"
 #include "thrift_protocol.h"
 
@@ -530,7 +526,7 @@ GType thrift_protocol_get_type (void)
 
         type = g_type_register_static (G_TYPE_OBJECT,
                                        "ThriftProtocolType",
-                                       &type_info, 0);
+                                       &type_info, G_TYPE_FLAG_ABSTRACT);
     }
 
     return type;

@@ -36,4 +36,13 @@ GType thrift_binary_protocol_get_type (void);
 #define VERSION_1 0x80010000
 #define VERSION_MASK 0xffff0000
 
+typedef enum
+{
+    THRIFT_BINARY_PROTOCOL_ERROR_WRONG_VERSION,
+    THRIFT_BINARY_PROTOCOL_ERROR_NEGATIVE_SIZE
+} ThriftBinaryProtocolError;
+
+GQuark thrift_binary_protocol_error_quark (void);
+#define THRIFT_BINARY_PROTOCOL_ERROR (thrift_binary_protocol_error_quark ())
+
 #endif /* THRIFT_BINARY_PROTOCOL_H */

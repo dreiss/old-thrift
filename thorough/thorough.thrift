@@ -126,12 +126,10 @@ struct SimpleDouble
     1: double value 
 }
 
-/* seems to break thrift cpp, undef operator
 struct SimpleString
 {
     1: string value 
 }
- */
 
 struct SimpleTypedef
 {
@@ -157,8 +155,7 @@ struct SimpleAll
     5: i64             value_i64, 
     6: double          value_double, 
     7: string          value_string,
-    8: String          value_typedef,
-    9: SimpleException value_exception
+    8: Double          value_typedef,
 }
 
 struct InitsBool
@@ -231,13 +228,14 @@ struct TypedefsAll
 
 struct NumberingAll
 {
-    2: bool            value_bool,
-    3: byte            value_byte,
-    10: i16             value_i16,
-    42: i32             value_i32, 
-    43: i64             value_i64, 
-    44: double          value_double, 
-    999: string          value_string,
+    2: bool      value_bool,
+    3: byte      value_byte,
+    10: i16      value_i16,
+    42: i32      value_i32, 
+    43: i64      value_i64, 
+    44: double   value_double, 
+    999: string  value_string,
+    9999: Double value_typedef
 }
 
 struct HighMember
@@ -303,9 +301,7 @@ service Thorough
     SimpleI32 SimpleI32_SimpleI32(SimpleI32 param),
     SimpleI64 SimpleI64_SimpleI64(SimpleI64 param),
     SimpleDouble SimpleDouble_SimpleDouble(SimpleDouble param),
-    /* see SimpleString comment above
     SimpleString SimpleString_SimpleString(SimpleString param),
-     */
     SimpleTypedef SimpleTypedef_SimpleTypedef(SimpleTypedef param),
     SimpleEnum SimpleEnum_SimpleEnum(SimpleEnum param),
     SimpleAll SimpleAll_SimpleAll(SimpleAll param),
@@ -317,10 +313,12 @@ service Thorough
     # collections
     list<i32> list_i32_list_i32(list<i32> param)
     list<string> list_string_list_string(list<string> param)
+    list<SimpleI32> list_SimpleI32_list_SimpleI32(list<SimpleI32> param)
     set<i32> set_i32_set_i32(set<i32> param)
     set<string> set_string_set_string(set<string> param)
     map<i32, i32> map_i32_map_i32(map<i32, i32> param)
     map<string, string> map_string_map_string(map<string, string> param)
+    map<string, SimpleI32> map_string_SimpleI32_map_string_SimpleI32(map<string, SimpleI32> param)
 
     # exceptions
     void throws_simple() throws (Simple s),
