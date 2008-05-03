@@ -117,7 +117,7 @@ gboolean _thrift_socket_read_end (ThriftTransport * transport,
 }
 
 gint32 _thrift_socket_write (ThriftTransport * transport,
-                             const gpointer buf, const guint len,
+                             gconstpointer buf, const guint len,
                              GError ** error)
 {
     ThriftSocket * socket = THRIFT_SOCKET (transport);
