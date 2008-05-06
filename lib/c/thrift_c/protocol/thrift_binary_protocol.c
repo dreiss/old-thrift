@@ -665,6 +665,12 @@ static void _thrift_binary_protocol_class_init (ThriftProtocolClass * thrift_pro
     thrift_protocol_class->read_binary = _thrift_binary_protocol_read_binary;
 }
 
+GQuark
+thrift_binary_protocol_error_quark (void)
+{
+    return g_quark_from_static_string ("thrift-binary-protocol-error-quark");
+}
+
 GType thrift_binary_protocol_get_type (void)
 {
     static GType type = 0;

@@ -391,12 +391,12 @@ void t_c_generator::generate_xception(t_struct* tstruct)
       "GQuark " << this->nspace_u << name_u << "_error_quark (void);" << endl <<
       "#define " << this->nspace_uc << name_uc << "_ERROR (" << this->nspace_u << name_u << "_error_quark ())" << endl <<
       endl <<
-      "gint32 " << this->nspace_u << name_u << "_read (GError ** ex, ThriftProtocol * protocol, GError ** error);" << endl <<
+      "gint32 " << this->nspace_u << name_u << "_ex_read (GError ** ex, ThriftProtocol * protocol, GError ** error);" << endl <<
       endl;
 
   /* TODO: this is a HACK */
   f_types_impl_ << 
-    "gint32 " << this->nspace_u << name_u << "_read (GError ** ex, ThriftProtocol * protocol, GError ** error)" << endl <<
+    "gint32 " << this->nspace_u << name_u << "_ex_read (GError ** ex, ThriftProtocol * protocol, GError ** error)" << endl <<
     "{" << endl <<
     "    gint32 ret;" << endl <<
     "    gint32 xfer = 0;" << endl <<
@@ -419,21 +419,44 @@ void t_c_generator::generate_xception(t_struct* tstruct)
     "            break;" << endl <<
     "        }" << endl <<
     "        switch (fid)" << endl <<
-    "        {" << endl <<
-    "            case 1:" << endl <<
-    "                if (ftype == T_STRING) {" << endl <<
-    "                    gchar * what;" << endl <<
-    "                    if ((ret = thrift_protocol_read_string (protocol, &what, error)) < 0)" << endl <<
-    "                        return -1;" << endl <<
-    "                    xfer += ret;" << endl <<
-    "                    g_set_error (ex, 0, 0, \"%s\", what);" << endl <<
-    "                    if (what) g_free (what);" << endl <<
-    "                } else {" << endl <<
-    "                    if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)" << endl <<
-    "                        return -1;" << endl <<
-    "                    xfer += ret;" << endl <<
-    "                }" << endl <<
-    "                break;" << endl <<
+    "        {" << endl;
+
+  const vector<t_field*>& fields = tstruct->get_members();
+  vector<t_field*>::const_iterator f_iter;
+  for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
+    t_field * field = (*f_iter);
+    if (field->get_name() == "what")
+    {
+      f_types_impl_ << 
+        "            case " << field->get_key() << ":" << endl <<
+        "                if (ftype == T_STRING) {" << endl <<
+        "                    gchar * what;" << endl <<
+        "                    if ((ret = thrift_protocol_read_string (protocol, &what, error)) < 0)" << endl <<
+        "                        return -1;" << endl <<
+        "                    xfer += ret;" << endl <<
+        "                    g_set_error (ex, 0, 0, \"%s\", what);" << endl <<
+        "                    if (what) g_free (what);" << endl <<
+        "                }" << endl <<
+        "                else" << endl <<
+        "                {" << endl <<
+        "                    if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)" << endl <<
+        "                        return -1;" << endl <<
+        "                    xfer += ret;" << endl <<
+        "                }" << endl <<
+        "                break;" << endl;
+    }
+    else
+    {
+      f_types_impl_ <<
+        "            case " << field->get_key() << ":" << endl <<
+        "                if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)" << endl <<
+        "                    return -1;" << endl <<
+        "                xfer += ret;" << endl <<
+        "                break;" << endl;
+    }
+  }
+
+  f_types_impl_ <<
     "            default:" << endl <<
     "                if ((ret = thrift_protocol_skip (protocol, ftype, error)) < 0)" << endl <<
     "                    return -1;" << endl <<
@@ -1176,7 +1199,7 @@ void t_c_generator::generate_deserialize_xception(ofstream& out,
   string name_u = initial_caps_to_underscores (tstruct->get_name());
 
   out <<
-    indent() << "if ((ret = " << this->nspace_u << name_u << "_read (&" << prefix << ", protocol, error)) < 0)" << endl <<
+    indent() << "if ((ret = " << this->nspace_u << name_u << "_ex_read (&" << prefix << ", protocol, error)) < 0)" << endl <<
     indent() << "  return " << error_ret << ";" << endl << 
     indent() << "xfer += ret;" << endl;
 }
@@ -1670,12 +1693,21 @@ void t_c_generator::generate_service_client(t_service* tservice) {
         indent() << "if (fname) g_free (fname);" << endl << 
         endl;
 
+      t_struct* xs = (*f_iter)->get_xceptions();
+      const std::vector<t_field*>& xceptions = xs->get_members();
+      vector<t_field*>::const_iterator x_iter;
+
       {
         t_struct result(program_, tservice->get_name() + "_" + 
                         (*f_iter)->get_name() + "_result");
         t_field success((*f_iter)->get_returntype(), "*_return", 0);
         if (!(*f_iter)->get_returntype()->is_void()) {
           result.append(&success);
+        }
+
+        for (x_iter = xceptions.begin(); x_iter != xceptions.end(); x_iter++) {
+            result.append (*x_iter);
+            indent(f_service_) << "GError * " << (*x_iter)->get_name() << " = NULL;" << endl;
         }
 
         generate_struct_reader (f_service_, &result, "", "", false);
@@ -1689,6 +1721,16 @@ void t_c_generator::generate_service_client(t_service* tservice) {
         indent() << "if (!thrift_transport_read_end (protocol->transport, error))" << endl <<
         indent() << "  return 0;" << endl <<
         endl;
+
+      // copy over any throw exceptions and return failure
+      for (x_iter = xceptions.begin(); x_iter != xceptions.end(); x_iter++) {
+        f_service_ << 
+          indent() << "if (" << (*x_iter)->get_name() << " != NULL)" << endl <<
+          indent() << "{" << endl <<
+          indent() << "    *error = g_error_copy (" << (*x_iter)->get_name() << ");" << endl <<
+          indent() << "    return 0;" << endl <<
+          indent() << "}" << endl;
+      }
 
       // Close function
       indent(f_service_) << "return 1;" << endl;

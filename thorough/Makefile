@@ -5,7 +5,7 @@ case_FILES = gen-c/case_service.c gen-c/case_types.c gen-c/s_e_r_v_i_c_e_a_l_l_c
 case_CFLAGS = `pkg-config --cflags gobject-2.0` -I$(SANDBOX)/include/thrift_c -g -Wall -W
 case_LDFLAGS = `pkg-config --libs gobject-2.0` -L$(SANDBOX)/lib -lthrift_c
 
-case: $(case_FILES) main.c
+case: main.c $(case_FILES) 
 	gcc -o $@ $(case_CFLAGS) $(case_LDFLAGS) $+
 
 $(case_FILES) : case.thrift
@@ -22,11 +22,11 @@ $(thorough_FILES) : thorough.thrift
 	thrift --gen c $<
 
 
-thorough_server_FILES = Thorough_server.cpp gen-cpp/thorough_constants.cpp gen-cpp/Thorough.cpp gen-cpp/thorough_types.cpp
+thorough_server_FILES = gen-cpp/thorough_constants.cpp gen-cpp/Thorough.cpp gen-cpp/thorough_types.cpp
 thorough_server_CFLAGS = `pkg-config --cflags thrift-nb` -g -Wall
 thorough_server_LDFLAGS = `pkg-config --libs thrift-nb` -g -levent
 
-thorough_server: $(thorough_server_FILES)
+thorough_server: Thorough_server.cpp $(thorough_server_FILES) 
 	gcc -o $@ $(thorough_server_CFLAGS) $(thorough_server_LDFLAGS) $+
 
 $(thorough_server_FILES) : thorough.thrift

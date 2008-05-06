@@ -305,6 +305,8 @@ service Thorough
     SimpleTypedef SimpleTypedef_SimpleTypedef(SimpleTypedef param),
     SimpleEnum SimpleEnum_SimpleEnum(SimpleEnum param),
     SimpleAll SimpleAll_SimpleAll(SimpleAll param),
+    /* thrift cpp can't handle this: Simple void_Simple(), */
+    SimpleException void_SimpleException()
 
     NumberingAll NumberingAll_NumberingAll(NumberingAll param),
 

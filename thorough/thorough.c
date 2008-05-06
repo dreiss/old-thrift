@@ -167,6 +167,25 @@ int main (int argc, char * argv[])
                  simple_enum, ret->value == simple_enum->value);
     g_object_unref (simple_enum);
 
+    {
+        ThriftThoroughSimpleException * ret = NULL;
+        if (!thrift_thorough_void__simple_exception (client, &ret, &error))
+        {
+            fprintf (stderr, "%s failed: %s\n", 
+                     "thrift_thorough_void__simple_exception",
+                     error ? error->message : "(unknown)");
+            exit (-1);
+        }
+        else if (ret == NULL || 
+                 strcmp ("simple exception", ret->value->message) != 0)
+        {
+            fprintf (stderr, "%s failed\n",
+                     "thrift_thorough_void__simple_exception");
+            exit (-1);
+        }
+        if (ret != NULL) g_object_unref (ret);
+    }
+
     ThriftThoroughSimpleAll * simple_all = g_object_new (THRIFT_THOROUGH_TYPE_SIMPLE_ALL, NULL);
     simple_all->value_bool = 1;
     simple_all->value_byte = 2;
@@ -413,17 +432,42 @@ int main (int argc, char * argv[])
         g_hash_table_destroy (val);
     }
 
+#define TEST_EX(func, value) \
+    { \
+        GError * ex = NULL; \
+        if (!func (client, &ex)) \
+        { \
+            if (!ex || !ex->message) \
+            { \
+                fprintf (stderr, "%s failed: no error\n", #func); \
+            } \
+            else if (strcmp (value, ex->message) != 0) \
+            { \
+                fprintf (stderr, "%s failed: unexpected message, expected %s got %s\n", \
+                         #func, value, ex->message); \
+                g_error_free (ex); \
+            } \
+        } \
+        else \
+        { \
+            fprintf (stderr, "%s failed: unexpected success\n", #func); \
+        } \
+    }
+
+    TEST_EX (thrift_thorough_throws_simple, "simple exception");
+
+    TEST_EX (thrift_thorough_throws_complex, "complex exception");
+
+    TEST_EX (thrift_thorough_throws_multiple_simple, "simple exception");
+
+    TEST_EX (thrift_thorough_throws_multiple_complex, "complex exception");
+
 #if 0
     gboolean thrift_thorough_number_none (ThriftThoroughClient * client, const gint32 one, const gint32 two, GError ** error);
     gboolean thrift_thorough_number_complete (ThriftThoroughClient * client, const gint32 one, const gint32 two, GError ** error);
     gboolean thrift_thorough_number_skip (ThriftThoroughClient * client, const gint32 one, const gint32 two, GError ** error);
     gboolean thrift_thorough_number_partial (ThriftThoroughClient * client, const gint32 one, const gint32 two, GError ** error);
     gboolean thrift_thorough_number_all (ThriftThoroughClient * client, const gint32 one, const gint32 two, GError ** error);
-
-    gboolean thrift_thorough_throws_simple (ThriftThoroughClient * client, GError ** error);
-    gboolean thrift_thorough_throws_complex (ThriftThoroughClient * client, GError ** error);
-    gboolean thrift_thorough_throws_multiple_simple (ThriftThoroughClient * client, GError ** error);
-    gboolean thrift_thorough_throws_multiple_complex (ThriftThoroughClient * client, GError ** error);
 #endif
 
     return 0;

@@ -134,6 +134,11 @@ class ThoroughHandler : virtual public ThoroughIf {
     _return = param;
   }
 
+  void void_SimpleException(SimpleException& _return) {
+    printf("returns_simple\n");
+    _return.value.what = "simple exception";
+  }
+
   void SimpleAll_SimpleAll(SimpleAll& _return, const SimpleAll& param) {
     fprintf (stderr, "SimpleAll_SimpleAll: %d %d %d %d %ld %f %s %f\n",
              param.value_bool, 
@@ -241,13 +246,13 @@ class ThoroughHandler : virtual public ThoroughIf {
 
   void throws_simple() {
     Simple e;
-    e.what = "exception";
+    e.what = "simple exception";
     throw e;
   }
 
   void throws_complex() {
     Complex e;
-    e.what = "exception";
+    e.what = "complex exception";
     e.count = 42;
     e.simple.value_bool = false;
     e.simple.value_byte = 1;
@@ -262,13 +267,13 @@ class ThoroughHandler : virtual public ThoroughIf {
 
   void throws_multiple_simple() {
     Simple e;
-    e.what = "exception";
+    e.what = "simple exception";
     throw e;
   }
 
   void throws_multiple_complex() {
     Complex e;
-    e.what = "exception";
+    e.what = "complex exception";
     e.count = 42;
     e.simple.value_bool = false;
     e.simple.value_byte = 1;
