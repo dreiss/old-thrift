@@ -1,8 +1,8 @@
 #!/bin/sh
 
-./cleanup.sh
+#./cleanup.sh
 
-autoscan || exit 1
+#autoscan || exit 1
 autoheader || exit 1
 aclocal -I ./aclocal || exit 1
 

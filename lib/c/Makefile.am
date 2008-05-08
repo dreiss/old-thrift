@@ -5,10 +5,6 @@ pkgconfigdir = $(libdir)/pkgconfig
 lib_LTLIBRARIES = libthrift_c.la
 #pkgconfig_DATA = thrift_c.pc
 
-# TODO: pulled out in to configure stuffs
-GLIB_CFLAGS=`pkg-config --cflags gobject-2.0`
-GLIB_LDFLAGS=`pkg-config --libs gobject-2.0`
-
 common_cflags = -g -Wall -W -Ithrift_c $(GLIB_CFLAGS)
 common_ldflags = -g -Wall -W $(GLIB_LDFLAGS)
 

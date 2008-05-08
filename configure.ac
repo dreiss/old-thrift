@@ -49,6 +49,15 @@ fi
 AM_CONDITIONAL([WITH_JAVA],
                [test -n "$ANT" -a -n "$JAVA" -a -n "$JAVAC"])
 
+AX_THRIFT_LIB(c, [C], yes)
+if test "$with_c" = "yes";  then
+    m4_define([glib_required_version], [2.16.0])
+    GLIB_PACKAGES="gobject-2.0"
+    PKG_CHECK_MODULES(GLIB, [gobject-2.0 >= glib_required_version],
+                      have_c=yes, have_c=no)
+fi
+AM_CONDITIONAL([WITH_C], [test "$have_c" = "yes"])
+
 AX_THRIFT_LIB(erlang, [Erlang], yes)
 if test "$with_erlang" = "yes";  then
   AC_PATH_PROG([ERLC], [erlc])
