@@ -648,11 +648,9 @@ void t_cpp_generator::generate_cpp_struct(t_struct* tstruct, bool is_exception) 
   generate_local_reflection(f_types_impl_, tstruct, true);
   generate_local_reflection_pointer(f_types_impl_, tstruct);
 
-  std::ofstream& readers_writers = (gen_templates_
-                                    ? f_types_tcc_
-                                    : f_types_impl_);
-  generate_struct_reader(readers_writers, tstruct);
-  generate_struct_writer(readers_writers, tstruct);
+  std::ofstream& out = (gen_templates_ ? f_types_tcc_ : f_types_impl_);
+  generate_struct_reader(out, tstruct);
+  generate_struct_writer(out, tstruct);
 }
 
 /**
