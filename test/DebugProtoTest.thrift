@@ -75,8 +75,6 @@ struct Base64 {
   7: binary b6,
 }
 
-/*
-// XXX(dreiss): Uncomment this when the template generator works for services.
 service Srv {
   i32 Janky(i32 arg)
 }
@@ -90,7 +88,6 @@ service PartiallyReflectable {
   OneOfEach refl1(1: list<Bonk> arg1),
   OneOfEach refl2(2: list<string> arg1, 1: Bonk arg2);
 }
-*/
 
 // The only purpose of this thing is to increase the size of the generated code
 // so that ZlibTest has more highly compressible data to play with.

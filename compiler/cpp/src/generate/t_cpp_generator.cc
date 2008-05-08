@@ -236,6 +236,7 @@ class t_cpp_generator : public t_oop_generator {
   std::ofstream f_types_tcc_;
   std::ofstream f_header_;
   std::ofstream f_service_;
+  std::ofstream f_service_tcc_;
 
   /**
    * When generating local reflections, make sure we don't generate duplicates.
@@ -1250,8 +1251,14 @@ void t_cpp_generator::generate_struct_result_writer(ofstream& out,
   const vector<t_field*>& fields = tstruct->get_members();
   vector<t_field*>::const_iterator f_iter;
 
-  indent(out) <<
-    "uint32_t " << tstruct->get_name() << "::write(facebook::thrift::protocol::TProtocol* oprot) const {" << endl;
+  if (gen_templates_) {
+    out <<
+      indent() << "template <class Protocol_>" << endl <<
+      indent() << "uint32_t " << tstruct->get_name() << "::write(Protocol_* oprot) const {" << endl;
+  } else {
+    indent(out) <<
+      "uint32_t " << tstruct->get_name() << "::write(facebook::thrift::protocol::TProtocol* oprot) const {" << endl;
+  }
   indent_up();
 
   out <<
@@ -1348,17 +1355,33 @@ void t_cpp_generator::generate_service(t_service* tservice) {
     ns_open_ << endl <<
     endl;
 
-  // Service implementation file includes
   string f_service_name = get_out_dir()+svcname+".cpp";
   f_service_.open(f_service_name.c_str());
   f_service_ <<
     autogen_comment();
   f_service_ <<
-    "#include \"" << get_include_prefix(*get_program()) << svcname << ".h\"" <<
-    endl <<
-    endl <<
-    ns_open_ << endl <<
-    endl;
+    "#include \"" << get_include_prefix(*get_program()) << svcname << ".h\"" << endl;
+  if (gen_templates_) {
+    f_service_ <<
+      "#include \"" << get_include_prefix(*get_program()) << svcname << ".tcc\"" << endl;
+
+    string f_service_tcc_name = get_out_dir()+svcname+".tcc";
+    f_service_tcc_.open(f_service_tcc_name.c_str());
+    f_service_tcc_ <<
+      autogen_comment();
+    f_service_tcc_ <<
+      "#include \"" << get_include_prefix(*get_program()) << svcname << ".h\"" << endl;
+
+    f_service_tcc_ <<
+      "#ifndef " << svcname << "_TCC" << endl <<
+      "#define " << svcname << "_TCC" << endl <<
+      endl;
+  }
+
+  f_service_ <<
+    endl << ns_open_ << endl << endl;
+  f_service_tcc_ <<
+    endl << ns_open_ << endl << endl;
 
   // Generate all the components
   generate_service_interface(tservice);
@@ -1373,13 +1396,28 @@ void t_cpp_generator::generate_service(t_service* tservice) {
   f_service_ <<
     ns_close_ << endl <<
     endl;
-  f_header_ <<
+  f_service_tcc_ <<
     ns_close_ << endl <<
     endl;
   f_header_ <<
+    ns_close_ << endl <<
+    endl;
+
+
+  // TODO(dreiss): Make this a separate option.
+  if (gen_templates_) {
+    f_header_ <<
+      "#include \"" << get_include_prefix(*get_program()) << svcname << ".tcc\"" << endl <<
+      endl;
+  }
+
+  f_header_ <<
+    "#endif" << endl;
+  f_service_tcc_ <<
     "#endif" << endl;
 
   // Close the files
+  f_service_tcc_.close();
   f_service_.close();
   f_header_.close();
 }
@@ -1393,17 +1431,19 @@ void t_cpp_generator::generate_service(t_service* tservice) {
 void t_cpp_generator::generate_service_helpers(t_service* tservice) {
   vector<t_function*> functions = tservice->get_functions();
   vector<t_function*>::iterator f_iter;
+  std::ofstream& out = (gen_templates_ ? f_service_tcc_ : f_service_);
+
   for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
     t_struct* ts = (*f_iter)->get_arglist();
     string name_orig = ts->get_name();
 
     ts->set_name(tservice->get_name() + "_" + (*f_iter)->get_name() + "_args");
     generate_struct_definition(f_header_, ts, false);
-    generate_struct_reader(f_service_, ts);
-    generate_struct_writer(f_service_, ts);
+    generate_struct_reader(out, ts);
+    generate_struct_writer(out, ts);
     ts->set_name(tservice->get_name() + "_" + (*f_iter)->get_name() + "_pargs");
     generate_struct_definition(f_header_, ts, false, true, false, true);
-    generate_struct_writer(f_service_, ts, true);
+    generate_struct_writer(out, ts, true);
     ts->set_name(name_orig);
 
     generate_function_helpers(tservice, *f_iter);
@@ -1633,23 +1673,38 @@ void t_cpp_generator::generate_service_multiface(t_service* tservice) {
  * @param tservice The service to generate a server for.
  */
 void t_cpp_generator::generate_service_client(t_service* tservice) {
+  std::ofstream& out = (gen_templates_ ? f_service_tcc_ : f_service_);
+  string template_header, template_suffix, short_suffix, protocol_type, _this;
+  if (gen_templates_) {
+    template_header = "template <class Protocol_>\n";
+    short_suffix = "T";
+    template_suffix = "T<Protocol_>";
+    protocol_type = "Protocol_";
+    _this = "this->";
+  } else {
+    protocol_type = "facebook::thrift::protocol::TProtocol";
+  }
+  string prot_ptr = "boost::shared_ptr<" + protocol_type + ">";
+  string client_suffix = "Client" + template_suffix;
+
   string extends = "";
   string extends_client = "";
   if (tservice->get_extends() != NULL) {
     extends = type_name(tservice->get_extends());
-    extends_client = ", public " + extends + "Client";
+    extends_client = ", public " + extends + client_suffix;
   }
 
   // Generate the header portion
   f_header_ <<
-    "class " << service_name_ << "Client : " <<
+    template_header <<
+    "class " << service_name_ << "Client" << short_suffix << " : " <<
     "virtual public " << service_name_ << "If" <<
     extends_client << " {" << endl <<
     " public:" << endl;
 
   indent_up();
   f_header_ <<
-    indent() << service_name_ << "Client(boost::shared_ptr<facebook::thrift::protocol::TProtocol> prot) :" << endl;
+    indent() << service_name_ << "Client" << short_suffix << "(" << prot_ptr << " prot) :" << endl;
   if (extends.empty()) {
     f_header_ <<
       indent() << "  piprot_(prot)," << endl <<
@@ -1659,11 +1714,11 @@ void t_cpp_generator::generate_service_client(t_service* tservice) {
       indent() << "}" << endl;
   } else {
     f_header_ <<
-      indent() << "  " << extends << "Client(prot, prot) {}" << endl;
+      indent() << "  " << extends << client_suffix << "(prot, prot) {}" << endl;
   }
 
   f_header_ <<
-    indent() << service_name_ << "Client(boost::shared_ptr<facebook::thrift::protocol::TProtocol> iprot, boost::shared_ptr<facebook::thrift::protocol::TProtocol> oprot) :" << endl;
+    indent() << service_name_ << "Client" << short_suffix << "(" << prot_ptr << " iprot, " << prot_ptr << " oprot) :" << endl;
   if (extends.empty()) {
     f_header_ <<
       indent() << "  piprot_(iprot)," << endl <<
@@ -1673,18 +1728,19 @@ void t_cpp_generator::generate_service_client(t_service* tservice) {
       indent() << "}" << endl;
   } else {
     f_header_ <<
-      indent() << "  " << extends << "Client(iprot, oprot) {}" << endl;
+      indent() << "  " << extends << client_suffix << "(iprot, oprot) {}" << endl;
   }
 
   // Generate getters for the protocols.
+  // Note that these are not currently templated for simplicity.
   f_header_ <<
     indent() << "boost::shared_ptr<facebook::thrift::protocol::TProtocol> getInputProtocol() {" << endl <<
-    indent() << "  return piprot_;" << endl <<
+    indent() << "  return " << _this << "piprot_;" << endl <<
     indent() << "}" << endl;
 
   f_header_ <<
     indent() << "boost::shared_ptr<facebook::thrift::protocol::TProtocol> getOutputProtocol() {" << endl <<
-    indent() << "  return poprot_;" << endl <<
+    indent() << "  return " << _this << "poprot_;" << endl <<
     indent() << "}" << endl;
 
   vector<t_function*> functions = tservice->get_functions();
@@ -1710,10 +1766,10 @@ void t_cpp_generator::generate_service_client(t_service* tservice) {
       " protected:" << endl;
     indent_up();
     f_header_ <<
-      indent() << "boost::shared_ptr<facebook::thrift::protocol::TProtocol> piprot_;"  << endl <<
-      indent() << "boost::shared_ptr<facebook::thrift::protocol::TProtocol> poprot_;"  << endl <<
-      indent() << "facebook::thrift::protocol::TProtocol* iprot_;"  << endl <<
-      indent() << "facebook::thrift::protocol::TProtocol* oprot_;"  << endl;
+      indent() << prot_ptr << "piprot_;"  << endl <<
+      indent() << prot_ptr << "poprot_;"  << endl <<
+      indent() << protocol_type << "* iprot_;"  << endl <<
+      indent() << protocol_type << "* oprot_;"  << endl;
     indent_down();
   }
 
@@ -1721,17 +1777,25 @@ void t_cpp_generator::generate_service_client(t_service* tservice) {
     "};" << endl <<
     endl;
 
-  string scope = service_name_ + "Client::";
+  if (gen_templates_) {
+    f_header_ <<
+      "typedef " << service_name_ << "ClientT<facebook::thrift::protocol::TProtocol> " <<
+      service_name_ << "Client;" << endl <<
+      endl;
+  }
+
+  string scope = service_name_ + client_suffix + "::";
 
   // Generate client method implementations
   for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
     string funname = (*f_iter)->get_name();
 
     // Open function
-    indent(f_service_) <<
-      function_signature(*f_iter, scope) << endl;
-    scope_up(f_service_);
-    indent(f_service_) <<
+    out <<
+      indent() << template_header <<
+      indent() << function_signature(*f_iter, scope) << endl;
+    scope_up(out);
+    indent(out) <<
       "send_" << funname << "(";
 
     // Get the struct of function call params
@@ -1745,27 +1809,27 @@ void t_cpp_generator::generate_service_client(t_service* tservice) {
       if (first) {
         first = false;
       } else {
-        f_service_ << ", ";
+        out << ", ";
       }
-      f_service_ << (*fld_iter)->get_name();
+      out << (*fld_iter)->get_name();
     }
-    f_service_ << ");" << endl;
+    out << ");" << endl;
 
     if (!(*f_iter)->is_async()) {
-      f_service_ << indent();
+      out << indent();
       if (!(*f_iter)->get_returntype()->is_void()) {
         if (is_complex_type((*f_iter)->get_returntype())) {
-          f_service_ << "recv_" << funname << "(_return);" << endl;
+          out << "recv_" << funname << "(_return);" << endl;
         } else {
-          f_service_ << "return recv_" << funname << "();" << endl;
+          out << "return recv_" << funname << "();" << endl;
         }
       } else {
-        f_service_ <<
+        out <<
           "recv_" << funname << "();" << endl;
       }
     }
-    scope_down(f_service_);
-    f_service_ << endl;
+    scope_down(out);
+    out << endl;
 
     // Function for sending
     t_function send_function(g_type_void,
@@ -1773,35 +1837,36 @@ void t_cpp_generator::generate_service_client(t_service* tservice) {
                              (*f_iter)->get_arglist());
 
     // Open the send function
-    indent(f_service_) <<
-      function_signature(&send_function, scope) << endl;
-    scope_up(f_service_);
+    out <<
+      indent() << template_header <<
+      indent() << function_signature(&send_function, scope) << endl;
+    scope_up(out);
 
     // Function arguments and results
     string argsname = tservice->get_name() + "_" + (*f_iter)->get_name() + "_pargs";
     string resultname = tservice->get_name() + "_" + (*f_iter)->get_name() + "_presult";
 
     // Serialize the request
-    f_service_ <<
+    out <<
       indent() << "int32_t cseqid = 0;" << endl <<
-      indent() << "oprot_->writeMessageBegin(\"" << (*f_iter)->get_name() << "\", facebook::thrift::protocol::T_CALL, cseqid);" << endl <<
+      indent() << _this << "oprot_->writeMessageBegin(\"" << (*f_iter)->get_name() << "\", facebook::thrift::protocol::T_CALL, cseqid);" << endl <<
       endl <<
       indent() << argsname << " args;" << endl;
 
     for (fld_iter = fields.begin(); fld_iter != fields.end(); ++fld_iter) {
-      f_service_ <<
+      out <<
         indent() << "args." << (*fld_iter)->get_name() << " = &" << (*fld_iter)->get_name() << ";" << endl;
     }
 
-    f_service_ <<
-      indent() << "args.write(oprot_);" << endl <<
+    out <<
+      indent() << "args.write(" << _this << "oprot_);" << endl <<
       endl <<
-      indent() << "oprot_->writeMessageEnd();" << endl <<
-      indent() << "oprot_->getTransport()->flush();" << endl <<
-      indent() << "oprot_->getTransport()->writeEnd();" << endl;
+      indent() << _this << "oprot_->writeMessageEnd();" << endl <<
+      indent() << _this << "oprot_->getTransport()->flush();" << endl <<
+      indent() << _this << "oprot_->getTransport()->writeEnd();" << endl;
 
-    scope_down(f_service_);
-    f_service_ << endl;
+    scope_down(out);
+    out << endl;
 
     // Generate recv function only if not an async function
     if (!(*f_iter)->is_async()) {
@@ -1810,68 +1875,69 @@ void t_cpp_generator::generate_service_client(t_service* tservice) {
                                string("recv_") + (*f_iter)->get_name(),
                                &noargs);
       // Open function
-      indent(f_service_) <<
-        function_signature(&recv_function, scope) << endl;
-      scope_up(f_service_);
+      out <<
+        indent() << template_header <<
+        indent() << function_signature(&recv_function, scope) << endl;
+      scope_up(out);
 
-      f_service_ <<
+      out <<
         endl <<
         indent() << "int32_t rseqid = 0;" << endl <<
         indent() << "std::string fname;" << endl <<
         indent() << "facebook::thrift::protocol::TMessageType mtype;" << endl <<
         endl <<
-        indent() << "iprot_->readMessageBegin(fname, mtype, rseqid);" << endl <<
+        indent() << _this << "iprot_->readMessageBegin(fname, mtype, rseqid);" << endl <<
         indent() << "if (mtype == facebook::thrift::protocol::T_EXCEPTION) {" << endl <<
         indent() << "  facebook::thrift::TApplicationException x;" << endl <<
-        indent() << "  x.read(iprot_);" << endl <<
-        indent() << "  iprot_->readMessageEnd();" << endl <<
-        indent() << "  iprot_->getTransport()->readEnd();" << endl <<
+        indent() << "  x.read(" << _this << "iprot_);" << endl <<
+        indent() << "  " << _this << "iprot_->readMessageEnd();" << endl <<
+        indent() << "  " << _this << "iprot_->getTransport()->readEnd();" << endl <<
         indent() << "  throw x;" << endl <<
         indent() << "}" << endl <<
         indent() << "if (mtype != facebook::thrift::protocol::T_REPLY) {" << endl <<
-        indent() << "  iprot_->skip(facebook::thrift::protocol::T_STRUCT);" << endl <<
-        indent() << "  iprot_->readMessageEnd();" << endl <<
-        indent() << "  iprot_->getTransport()->readEnd();" << endl <<
+        indent() << "  " << _this << "iprot_->skip(facebook::thrift::protocol::T_STRUCT);" << endl <<
+        indent() << "  " << _this << "iprot_->readMessageEnd();" << endl <<
+        indent() << "  " << _this << "iprot_->getTransport()->readEnd();" << endl <<
         indent() << "  throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::INVALID_MESSAGE_TYPE);" << endl <<
         indent() << "}" << endl <<
         indent() << "if (fname.compare(\"" << (*f_iter)->get_name() << "\") != 0) {" << endl <<
-        indent() << "  iprot_->skip(facebook::thrift::protocol::T_STRUCT);" << endl <<
-        indent() << "  iprot_->readMessageEnd();" << endl <<
-        indent() << "  iprot_->getTransport()->readEnd();" << endl <<
+        indent() << "  " << _this << "iprot_->skip(facebook::thrift::protocol::T_STRUCT);" << endl <<
+        indent() << "  " << _this << "iprot_->readMessageEnd();" << endl <<
+        indent() << "  " << _this << "iprot_->getTransport()->readEnd();" << endl <<
         indent() << "  throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::WRONG_METHOD_NAME);" << endl <<
         indent() << "}" << endl;
 
       if (!(*f_iter)->get_returntype()->is_void() &&
           !is_complex_type((*f_iter)->get_returntype())) {
         t_field returnfield((*f_iter)->get_returntype(), "_return");
-        f_service_ <<
+        out <<
           indent() << declare_field(&returnfield) << endl;
       }
 
-      f_service_ <<
+      out <<
         indent() << resultname << " result;" << endl;
 
       if (!(*f_iter)->get_returntype()->is_void()) {
-        f_service_ <<
+        out <<
           indent() << "result.success = &_return;" << endl;
       }
 
-      f_service_ <<
-        indent() << "result.read(iprot_);" << endl <<
-        indent() << "iprot_->readMessageEnd();" << endl <<
-        indent() << "iprot_->getTransport()->readEnd();" << endl <<
+      out <<
+        indent() << "result.read(" << _this << "iprot_);" << endl <<
+        indent() << _this << "iprot_->readMessageEnd();" << endl <<
+        indent() << _this << "iprot_->getTransport()->readEnd();" << endl <<
         endl;
 
       // Careful, only look for _result if not a void function
       if (!(*f_iter)->get_returntype()->is_void()) {
         if (is_complex_type((*f_iter)->get_returntype())) {
-          f_service_ <<
+          out <<
             indent() << "if (result.__isset.success) {" << endl <<
             indent() << "  // _return pointer has now been filled" << endl <<
             indent() << "  return;" << endl <<
             indent() << "}" << endl;
         } else {
-          f_service_ <<
+          out <<
             indent() << "if (result.__isset.success) {" << endl <<
             indent() << "  return _return;" << endl <<
             indent() << "}" << endl;
@@ -1882,7 +1948,7 @@ void t_cpp_generator::generate_service_client(t_service* tservice) {
       const std::vector<t_field*>& xceptions = xs->get_members();
       vector<t_field*>::const_iterator x_iter;
       for (x_iter = xceptions.begin(); x_iter != xceptions.end(); ++x_iter) {
-        f_service_ <<
+        out <<
           indent() << "if (result.__isset." << (*x_iter)->get_name() << ") {" << endl <<
           indent() << "  throw result." << (*x_iter)->get_name() << ";" << endl <<
           indent() << "}" << endl;
@@ -1890,16 +1956,16 @@ void t_cpp_generator::generate_service_client(t_service* tservice) {
 
       // We only get here if we are a void function
       if ((*f_iter)->get_returntype()->is_void()) {
-        indent(f_service_) <<
+        indent(out) <<
           "return;" << endl;
       } else {
-        f_service_ <<
+        out <<
           indent() << "throw facebook::thrift::TApplicationException(facebook::thrift::TApplicationException::MISSING_RESULT, \"" << (*f_iter)->get_name() << " failed: unknown result\");" << endl;
       }
 
       // Close function
-      scope_down(f_service_);
-      f_service_ << endl;
+      scope_down(out);
+      out << endl;
     }
   }
 }
@@ -2074,6 +2140,8 @@ void t_cpp_generator::generate_function_helpers(t_service* tservice,
     return;
   }
 
+  std::ofstream& out = (gen_templates_ ? f_service_tcc_ : f_service_);
+
   t_struct result(program_, tservice->get_name() + "_" + tfunction->get_name() + "_result");
   t_field success(tfunction->get_returntype(), "success", 0);
   if (!tfunction->get_returntype()->is_void()) {
@@ -2088,12 +2156,12 @@ void t_cpp_generator::generate_function_helpers(t_service* tservice,
   }
 
   generate_struct_definition(f_header_, &result, false);
-  generate_struct_reader(f_service_, &result);
-  generate_struct_result_writer(f_service_, &result);
+  generate_struct_reader(out, &result);
+  generate_struct_result_writer(out, &result);
 
   result.set_name(tservice->get_name() + "_" + tfunction->get_name() + "_presult");
-  generate_struct_definition(f_header_, &result, false, true, true, false);
-  generate_struct_reader(f_service_, &result, true);
+  generate_struct_definition(out, &result, false, true, true, false);
+  generate_struct_reader(out, &result, true);
 
 }
 
