@@ -34,7 +34,7 @@ Complaints are not. :R
  *
  * @author David Reiss <dreiss@facebook.com>
  */
-class TDebugProtocol : public TWriteOnlyProtocol {
+class TDebugProtocol : public TWriteOnlyProtocol<TDebugProtocol> {
  private:
   enum write_state_t {
     UNINIT,
@@ -47,7 +47,7 @@ class TDebugProtocol : public TWriteOnlyProtocol {
 
  public:
   TDebugProtocol(boost::shared_ptr<TTransport> trans)
-    : TWriteOnlyProtocol(trans, "TDebugProtocol")
+    : TWriteOnlyProtocol<TDebugProtocol>(trans, "TDebugProtocol")
     , string_limit_(DEFAULT_STRING_LIMIT)
     , string_prefix_size_(DEFAULT_STRING_PREFIX_SIZE)
   {

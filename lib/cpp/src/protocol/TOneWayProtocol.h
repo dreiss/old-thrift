@@ -8,6 +8,7 @@
 #define _THRIFT_PROTOCOL_TONEWAYPROTOCOL_H_ 1
 
 #include "TProtocol.h"
+#include "TVirtualProtocol.h"
 
 namespace facebook { namespace thrift { namespace protocol {
 
@@ -17,14 +18,15 @@ namespace facebook { namespace thrift { namespace protocol {
  *
  * @author David Reiss <dreiss@facebook.com>
  */
-class TWriteOnlyProtocol : public TProtocol {
+template <class Protocol_>
+class TWriteOnlyProtocol : public TVirtualProtocol<Protocol_> {
  public:
   /**
    * @param subclass_name  The name of the concrete subclass.
    */
   TWriteOnlyProtocol(boost::shared_ptr<TTransport> trans,
                      const std::string& subclass_name)
-    : TProtocol(trans)
+    : TVirtualProtocol<Protocol_>(trans)
     , trans_(trans.get())
     , subclass_(subclass_name)
   {}
@@ -35,110 +37,110 @@ class TWriteOnlyProtocol : public TProtocol {
    * Reading functions all throw an exception.
    */
 
-  uint32_t readMessageBegin(std::string& name,
-                            TMessageType& messageType,
-                            int32_t& seqid) {
+  uint32_t readMessageBegin_virtual(std::string& name,
+                                    TMessageType& messageType,
+                                    int32_t& seqid) {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support reading (yet).");
   }
 
-  uint32_t readMessageEnd() {
+  uint32_t readMessageEnd_virtual() {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support reading (yet).");
   }
 
-  uint32_t readStructBegin(std::string& name) {
+  uint32_t readStructBegin_virtual(std::string& name) {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support reading (yet).");
   }
 
-  uint32_t readStructEnd() {
+  uint32_t readStructEnd_virtual() {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support reading (yet).");
   }
 
-  uint32_t readFieldBegin(std::string& name,
-                          TType& fieldType,
-                          int16_t& fieldId) {
+  uint32_t readFieldBegin_virtual(std::string& name,
+                                  TType& fieldType,
+                                  int16_t& fieldId) {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support reading (yet).");
   }
 
-  uint32_t readFieldEnd() {
+  uint32_t readFieldEnd_virtual() {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support reading (yet).");
   }
 
-  uint32_t readMapBegin(TType& keyType,
-                        TType& valType,
-                        uint32_t& size) {
+  uint32_t readMapBegin_virtual(TType& keyType,
+                                TType& valType,
+                                uint32_t& size) {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support reading (yet).");
   }
 
-  uint32_t readMapEnd() {
+  uint32_t readMapEnd_virtual() {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support reading (yet).");
   }
 
-  uint32_t readListBegin(TType& elemType,
-                         uint32_t& size) {
+  uint32_t readListBegin_virtual(TType& elemType,
+                                 uint32_t& size) {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support reading (yet).");
   }
 
-  uint32_t readListEnd() {
+  uint32_t readListEnd_virtual() {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support reading (yet).");
   }
 
-  uint32_t readSetBegin(TType& elemType,
-                        uint32_t& size) {
+  uint32_t readSetBegin_virtual(TType& elemType,
+                                uint32_t& size) {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support reading (yet).");
   }
 
-  uint32_t readSetEnd() {
+  uint32_t readSetEnd_virtual() {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support reading (yet).");
   }
 
-  uint32_t readBool(bool& value) {
+  uint32_t readBool_virtual(bool& value) {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support reading (yet).");
   }
 
-  uint32_t readByte(int8_t& byte) {
+  uint32_t readByte_virtual(int8_t& byte) {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support reading (yet).");
   }
 
-  uint32_t readI16(int16_t& i16) {
+  uint32_t readI16_virtual(int16_t& i16) {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support reading (yet).");
   }
 
-  uint32_t readI32(int32_t& i32) {
+  uint32_t readI32_virtual(int32_t& i32) {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support reading (yet).");
   }
 
-  uint32_t readI64(int64_t& i64) {
+  uint32_t readI64_virtual(int64_t& i64) {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support reading (yet).");
   }
 
-  uint32_t readDouble(double& dub) {
+  uint32_t readDouble_virtual(double& dub) {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support reading (yet).");
   }
 
-  uint32_t readString(std::string& str) {
+  uint32_t readString_virtual(std::string& str) {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support reading (yet).");
   }
 
-  uint32_t readBinary(std::string& str) {
+  uint32_t readBinary_virtual(std::string& str) {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support reading (yet).");
   }
@@ -156,14 +158,15 @@ class TWriteOnlyProtocol : public TProtocol {
  *
  * @author David Reiss <dreiss@facebook.com>
  */
-class TReadOnlyProtocol : public TProtocol {
+template <class Protocol_>
+class TReadOnlyProtocol : public TVirtualProtocol<Protocol_> {
  public:
   /**
    * @param subclass_name  The name of the concrete subclass.
    */
-  TReadOnlyProtocol(boost::shared_ptr<TTransport> trans,
-                    const std::string& subclass_name)
-    : TProtocol(trans)
+   TReadOnlyProtocol(boost::shared_ptr<TTransport> trans,
+                     const std::string& subclass_name)
+    : TVirtualProtocol<Protocol_>(trans)
     , subclass_(subclass_name)
   {}
 
@@ -173,116 +176,116 @@ class TReadOnlyProtocol : public TProtocol {
    * Writing functions all throw an exception.
    */
 
-  uint32_t writeMessageBegin(const std::string& name,
-                             const TMessageType messageType,
-                             const int32_t seqid) {
+  uint32_t writeMessageBegin_virtual(const std::string& name,
+                                     const TMessageType messageType,
+                                     const int32_t seqid) {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support writing (yet).");
   }
 
-  uint32_t writeMessageEnd() {
+  uint32_t writeMessageEnd_virtual() {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support writing (yet).");
   }
 
 
-  uint32_t writeStructBegin(const char* name) {
+  uint32_t writeStructBegin_virtual(const char* name) {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support writing (yet).");
   }
 
-  uint32_t writeStructEnd() {
+  uint32_t writeStructEnd_virtual() {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support writing (yet).");
   }
 
-  uint32_t writeFieldBegin(const char* name,
-                           const TType fieldType,
-                           const int16_t fieldId) {
+  uint32_t writeFieldBegin_virtual(const char* name,
+                                   const TType fieldType,
+                                   const int16_t fieldId) {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support writing (yet).");
   }
 
-  uint32_t writeFieldEnd() {
+  uint32_t writeFieldEnd_virtual() {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support writing (yet).");
   }
 
-  uint32_t writeFieldStop() {
+  uint32_t writeFieldStop_virtual() {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support writing (yet).");
   }
 
-  uint32_t writeMapBegin(const TType keyType,
-                         const TType valType,
-                         const uint32_t size) {
+  uint32_t writeMapBegin_virtual(const TType keyType,
+                                 const TType valType,
+                                 const uint32_t size) {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support writing (yet).");
   }
 
-  uint32_t writeMapEnd() {
+  uint32_t writeMapEnd_virtual() {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support writing (yet).");
   }
 
-  uint32_t writeListBegin(const TType elemType,
-                          const uint32_t size) {
+  uint32_t writeListBegin_virtual(const TType elemType,
+                                  const uint32_t size) {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support writing (yet).");
   }
 
-  uint32_t writeListEnd() {
+  uint32_t writeListEnd_virtual() {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support writing (yet).");
   }
 
-  uint32_t writeSetBegin(const TType elemType,
-                         const uint32_t size) {
+  uint32_t writeSetBegin_virtual(const TType elemType,
+                                 const uint32_t size) {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support writing (yet).");
   }
 
-  uint32_t writeSetEnd() {
+  uint32_t writeSetEnd_virtual() {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support writing (yet).");
   }
 
-  uint32_t writeBool(const bool value) {
+  uint32_t writeBool_virtual(const bool value) {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support writing (yet).");
   }
 
-  uint32_t writeByte(const int8_t byte) {
+  uint32_t writeByte_virtual(const int8_t byte) {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support writing (yet).");
   }
 
-  uint32_t writeI16(const int16_t i16) {
+  uint32_t writeI16_virtual(const int16_t i16) {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support writing (yet).");
   }
 
-  uint32_t writeI32(const int32_t i32) {
+  uint32_t writeI32_virtual(const int32_t i32) {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support writing (yet).");
   }
 
-  uint32_t writeI64(const int64_t i64) {
+  uint32_t writeI64_virtual(const int64_t i64) {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support writing (yet).");
   }
 
-  uint32_t writeDouble(const double dub) {
+  uint32_t writeDouble_virtual(const double dub) {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support writing (yet).");
   }
 
-  uint32_t writeString(const std::string& str) {
+  uint32_t writeString_virtual(const std::string& str) {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support writing (yet).");
   }
 
-  uint32_t writeBinary(const std::string& str) {
+  uint32_t writeBinary_virtual(const std::string& str) {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support writing (yet).");
   }

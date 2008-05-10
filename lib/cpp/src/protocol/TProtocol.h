@@ -110,108 +110,289 @@ class TProtocol {
    * Writing functions.
    */
 
-  virtual uint32_t writeMessageBegin(const std::string& name,
-                                     const TMessageType messageType,
-                                     const int32_t seqid) = 0;
+  virtual uint32_t writeMessageBegin_virtual(const std::string& name,
+                                             const TMessageType messageType,
+                                             const int32_t seqid) = 0;
 
-  virtual uint32_t writeMessageEnd() = 0;
+  virtual uint32_t writeMessageEnd_virtual() = 0;
 
 
-  virtual uint32_t writeStructBegin(const char* name) = 0;
+  virtual uint32_t writeStructBegin_virtual(const char* name) = 0;
 
-  virtual uint32_t writeStructEnd() = 0;
+  virtual uint32_t writeStructEnd_virtual() = 0;
 
-  virtual uint32_t writeFieldBegin(const char* name,
-                                   const TType fieldType,
-                                   const int16_t fieldId) = 0;
+  virtual uint32_t writeFieldBegin_virtual(const char* name,
+                                           const TType fieldType,
+                                           const int16_t fieldId) = 0;
 
-  virtual uint32_t writeFieldEnd() = 0;
+  virtual uint32_t writeFieldEnd_virtual() = 0;
 
-  virtual uint32_t writeFieldStop() = 0;
+  virtual uint32_t writeFieldStop_virtual() = 0;
 
-  virtual uint32_t writeMapBegin(const TType keyType,
-                                 const TType valType,
-                                 const uint32_t size) = 0;
+  virtual uint32_t writeMapBegin_virtual(const TType keyType,
+                                         const TType valType,
+                                         const uint32_t size) = 0;
 
-  virtual uint32_t writeMapEnd() = 0;
+  virtual uint32_t writeMapEnd_virtual() = 0;
 
-  virtual uint32_t writeListBegin(const TType elemType,
-                                  const uint32_t size) = 0;
+  virtual uint32_t writeListBegin_virtual(const TType elemType,
+                                          const uint32_t size) = 0;
 
-  virtual uint32_t writeListEnd() = 0;
+  virtual uint32_t writeListEnd_virtual() = 0;
 
-  virtual uint32_t writeSetBegin(const TType elemType,
-                                 const uint32_t size) = 0;
+  virtual uint32_t writeSetBegin_virtual(const TType elemType,
+                                         const uint32_t size) = 0;
 
-  virtual uint32_t writeSetEnd() = 0;
+  virtual uint32_t writeSetEnd_virtual() = 0;
 
-  virtual uint32_t writeBool(const bool value) = 0;
+  virtual uint32_t writeBool_virtual(const bool value) = 0;
 
-  virtual uint32_t writeByte(const int8_t byte) = 0;
+  virtual uint32_t writeByte_virtual(const int8_t byte) = 0;
 
-  virtual uint32_t writeI16(const int16_t i16) = 0;
+  virtual uint32_t writeI16_virtual(const int16_t i16) = 0;
 
-  virtual uint32_t writeI32(const int32_t i32) = 0;
+  virtual uint32_t writeI32_virtual(const int32_t i32) = 0;
 
-  virtual uint32_t writeI64(const int64_t i64) = 0;
+  virtual uint32_t writeI64_virtual(const int64_t i64) = 0;
 
-  virtual uint32_t writeDouble(const double dub) = 0;
+  virtual uint32_t writeDouble_virtual(const double dub) = 0;
 
-  virtual uint32_t writeString(const std::string& str) = 0;
+  virtual uint32_t writeString_virtual(const std::string& str) = 0;
 
-  virtual uint32_t writeBinary(const std::string& str) = 0;
+  virtual uint32_t writeBinary_virtual(const std::string& str) = 0;
+
+  uint32_t writeMessageBegin(const std::string& name,
+                             const TMessageType messageType,
+                             const int32_t seqid) {
+    return writeMessageBegin_virtual(name, messageType, seqid);
+  }
+
+  uint32_t writeMessageEnd() {
+    return writeMessageEnd_virtual();
+  }
+
+
+  uint32_t writeStructBegin(const char* name) {
+    return writeStructBegin_virtual(name);
+  }
+
+  uint32_t writeStructEnd() {
+    return writeStructEnd_virtual();
+  }
+
+  uint32_t writeFieldBegin(const char* name,
+                           const TType fieldType,
+                           const int16_t fieldId) {
+    return writeFieldBegin_virtual(name, fieldType, fieldId);
+  }
+
+  uint32_t writeFieldEnd() {
+    return writeFieldEnd_virtual();
+  }
+
+  uint32_t writeFieldStop() {
+    return writeFieldStop_virtual();
+  }
+
+  uint32_t writeMapBegin(const TType keyType,
+                         const TType valType,
+                         const uint32_t size) {
+    return writeMapBegin_virtual(keyType, valType, size);
+  }
+
+  uint32_t writeMapEnd() {
+    return writeMapEnd_virtual();
+  }
+
+  uint32_t writeListBegin(const TType elemType,
+                          const uint32_t size) {
+    return writeListBegin_virtual(elemType, size);
+  }
+
+  uint32_t writeListEnd() {
+    return writeListEnd_virtual();
+  }
+
+  uint32_t writeSetBegin(const TType elemType,
+                         const uint32_t size) {
+    return writeSetBegin_virtual(elemType, size);
+  }
+
+  uint32_t writeSetEnd() {
+    return writeSetEnd_virtual();
+  }
+
+  uint32_t writeBool(const bool value) {
+    return writeBool_virtual(value);
+  }
+
+  uint32_t writeByte(const int8_t byte) {
+    return writeByte_virtual(byte);
+  }
+
+  uint32_t writeI16(const int16_t i16) {
+    return writeI16_virtual(i16);
+  }
+
+  uint32_t writeI32(const int32_t i32) {
+    return writeI32_virtual(i32);
+  }
+
+  uint32_t writeI64(const int64_t i64) {
+    return writeI64_virtual(i64);
+  }
+
+  uint32_t writeDouble(const double dub) {
+    return writeDouble_virtual(dub);
+  }
+
+  uint32_t writeString(const std::string& str) {
+    return writeString_virtual(str);
+  }
+
+  uint32_t writeBinary(const std::string& str) {
+    return writeBinary_virtual(str);
+  }
 
   /**
    * Reading functions
    */
 
-  virtual uint32_t readMessageBegin(std::string& name,
-                                    TMessageType& messageType,
-                                    int32_t& seqid) = 0;
+  virtual uint32_t readMessageBegin_virtual(std::string& name,
+                                            TMessageType& messageType,
+                                            int32_t& seqid) = 0;
 
-  virtual uint32_t readMessageEnd() = 0;
+  virtual uint32_t readMessageEnd_virtual() = 0;
 
-  virtual uint32_t readStructBegin(std::string& name) = 0;
+  virtual uint32_t readStructBegin_virtual(std::string& name) = 0;
 
-  virtual uint32_t readStructEnd() = 0;
+  virtual uint32_t readStructEnd_virtual() = 0;
 
-  virtual uint32_t readFieldBegin(std::string& name,
-                                  TType& fieldType,
-                                  int16_t& fieldId) = 0;
+  virtual uint32_t readFieldBegin_virtual(std::string& name,
+                                          TType& fieldType,
+                                          int16_t& fieldId) = 0;
 
-  virtual uint32_t readFieldEnd() = 0;
+  virtual uint32_t readFieldEnd_virtual() = 0;
 
-  virtual uint32_t readMapBegin(TType& keyType,
-                                TType& valType,
-                                uint32_t& size) = 0;
+  virtual uint32_t readMapBegin_virtual(TType& keyType,
+                                        TType& valType,
+                                        uint32_t& size) = 0;
 
-  virtual uint32_t readMapEnd() = 0;
+  virtual uint32_t readMapEnd_virtual() = 0;
 
-  virtual uint32_t readListBegin(TType& elemType,
-                                 uint32_t& size) = 0;
+  virtual uint32_t readListBegin_virtual(TType& elemType,
+                                         uint32_t& size) = 0;
 
-  virtual uint32_t readListEnd() = 0;
+  virtual uint32_t readListEnd_virtual() = 0;
 
-  virtual uint32_t readSetBegin(TType& elemType,
-                                uint32_t& size) = 0;
+  virtual uint32_t readSetBegin_virtual(TType& elemType,
+                                        uint32_t& size) = 0;
 
-  virtual uint32_t readSetEnd() = 0;
+  virtual uint32_t readSetEnd_virtual() = 0;
 
-  virtual uint32_t readBool(bool& value) = 0;
+  virtual uint32_t readBool_virtual(bool& value) = 0;
 
-  virtual uint32_t readByte(int8_t& byte) = 0;
+  virtual uint32_t readByte_virtual(int8_t& byte) = 0;
 
-  virtual uint32_t readI16(int16_t& i16) = 0;
+  virtual uint32_t readI16_virtual(int16_t& i16) = 0;
 
-  virtual uint32_t readI32(int32_t& i32) = 0;
+  virtual uint32_t readI32_virtual(int32_t& i32) = 0;
 
-  virtual uint32_t readI64(int64_t& i64) = 0;
+  virtual uint32_t readI64_virtual(int64_t& i64) = 0;
 
-  virtual uint32_t readDouble(double& dub) = 0;
+  virtual uint32_t readDouble_virtual(double& dub) = 0;
 
-  virtual uint32_t readString(std::string& str) = 0;
+  virtual uint32_t readString_virtual(std::string& str) = 0;
 
-  virtual uint32_t readBinary(std::string& str) = 0;
+  virtual uint32_t readBinary_virtual(std::string& str) = 0;
+
+  uint32_t readMessageBegin(std::string& name,
+                            TMessageType& messageType,
+                            int32_t& seqid) {
+    return readMessageBegin_virtual(name, messageType, seqid);
+  }
+
+  uint32_t readMessageEnd() {
+    return readMessageEnd_virtual();
+  }
+
+  uint32_t readStructBegin(std::string& name) {
+    return readStructBegin_virtual(name);
+  }
+
+  uint32_t readStructEnd() {
+    return readStructEnd_virtual();
+  }
+
+  uint32_t readFieldBegin(std::string& name,
+                          TType& fieldType,
+                          int16_t& fieldId) {
+    return readFieldBegin_virtual(name, fieldType, fieldId);
+  }
+
+  uint32_t readFieldEnd() {
+    return readFieldEnd_virtual();
+  }
+
+  uint32_t readMapBegin(TType& keyType,
+                        TType& valType,
+                        uint32_t& size) {
+    return readMapBegin_virtual(keyType, valType, size);
+  }
+
+  uint32_t readMapEnd() {
+    return readMapEnd_virtual();
+  }
+
+  uint32_t readListBegin(TType& elemType,
+                         uint32_t& size) {
+    return readListBegin_virtual(elemType, size);
+  }
+
+  uint32_t readListEnd() {
+    return readListEnd_virtual();
+  }
+
+  uint32_t readSetBegin(TType& elemType,
+                        uint32_t& size) {
+    return readSetBegin_virtual(elemType, size);
+  }
+
+  uint32_t readSetEnd() {
+    return readSetEnd_virtual();
+  }
+
+  uint32_t readBool(bool& value) {
+    return readBool_virtual(value);
+  }
+
+  uint32_t readByte(int8_t& byte) {
+    return readByte_virtual(byte);
+  }
+
+  uint32_t readI16(int16_t& i16) {
+    return readI16_virtual(i16);
+  }
+
+  uint32_t readI32(int32_t& i32) {
+    return readI32_virtual(i32);
+  }
+
+  uint32_t readI64(int64_t& i64) {
+    return readI64_virtual(i64);
+  }
+
+  uint32_t readDouble(double& dub) {
+    return readDouble_virtual(dub);
+  }
+
+  uint32_t readString(std::string& str) {
+    return readString_virtual(str);
+  }
+
+  uint32_t readBinary(std::string& str) {
+    return readBinary_virtual(str);
+  }
 
   /**
    * Method to arbitrarily skip over data.

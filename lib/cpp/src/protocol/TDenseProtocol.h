@@ -44,6 +44,7 @@ namespace facebook { namespace thrift { namespace protocol {
  *
  * @author David Reiss <dreiss@facebook.com>
  */
+// XXX Broken in template branch.
 class TDenseProtocol : public TBinaryProtocol {
  protected:
   static const int32_t VERSION_MASK = 0xffff0000;

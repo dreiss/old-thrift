@@ -20,7 +20,7 @@ using facebook::thrift::transport::TTransport;
  *
  * @author David Reiss <dreiss@facebook.com>
  */
-class TProtocolTap : public TReadOnlyProtocol {
+class TProtocolTap : public TReadOnlyProtocol<TProtocolTap> {
  public:
    TProtocolTap(boost::shared_ptr<TProtocol> source,
                 boost::shared_ptr<TProtocol> sink)

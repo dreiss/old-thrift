@@ -8,6 +8,7 @@
 #define _THRIFT_PROTOCOL_TBINARYPROTOCOL_H_ 1
 
 #include "TProtocol.h"
+#include "TVirtualProtocol.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/static_assert.hpp>
@@ -21,7 +22,7 @@ namespace facebook { namespace thrift { namespace protocol {
  * @author Mark Slee <mcslee@facebook.com>
  */
 template <class Transport_>
-class TBinaryProtocolT : public TProtocol {
+class TBinaryProtocolT : public TVirtualProtocol< TBinaryProtocolT<Transport_> > {
  protected:
   static const int32_t VERSION_MASK = 0xffff0000;
   static const int32_t VERSION_1 = 0x80010000;
@@ -29,7 +30,7 @@ class TBinaryProtocolT : public TProtocol {
 
  public:
   TBinaryProtocolT(boost::shared_ptr<Transport_> trans) :
-    TProtocol(trans),
+    TVirtualProtocol< TBinaryProtocolT<Transport_> >(trans),
     trans_(trans.get()),
     string_limit_(0),
     container_limit_(0),
@@ -43,7 +44,7 @@ class TBinaryProtocolT : public TProtocol {
                    int32_t container_limit,
                    bool strict_read,
                    bool strict_write) :
-    TProtocol(trans),
+    TVirtualProtocol< TBinaryProtocolT<Transport_> >(trans),
     string_limit_(string_limit),
     container_limit_(container_limit),
     strict_read_(strict_read),

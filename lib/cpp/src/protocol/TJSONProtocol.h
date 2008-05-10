@@ -8,6 +8,7 @@
 #define _THRIFT_PROTOCOL_TJSONPROTOCOL_H_ 1
 
 #include "TProtocol.h"
+#include "TVirtualProtocol.h"
 
 #include <stack>
 
@@ -80,7 +81,7 @@ class TJSONContext;
  *
  * @author Chad Walters <chad@powerset.com>
  */
-class TJSONProtocol : public TProtocol {
+class TJSONProtocol : public TVirtualProtocol<TJSONProtocol> {
  public:
 
   TJSONProtocol(boost::shared_ptr<TTransport> ptrans);
