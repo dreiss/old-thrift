@@ -214,22 +214,22 @@ class TBufferedTransport : public TBufferBase {
     initPointers();
   }
 
-  void open() {
+  void open_virt() {
     transport_->open();
   }
 
-  bool isOpen() {
+  bool isOpen_virt() {
     return transport_->isOpen();
   }
 
-  bool peek() {
+  bool peek_virt() {
     if (rBase_ == rBound_) {
       setReadBuffer(rBuf_.get(), transport_->read(rBuf_.get(), rBufSize_));
     }
     return (rBound_ > rBase_);
   }
 
-  void close() {
+  void close_virt() {
     flush();
     transport_->close();
   }
@@ -238,7 +238,7 @@ class TBufferedTransport : public TBufferBase {
 
   virtual void writeSlow(const uint8_t* buf, uint32_t len);
 
-  void flush();
+  void flush_virt();
 
 
   /**
@@ -330,19 +330,19 @@ class TFramedTransport : public TBufferBase {
     initPointers();
   }
 
-  void open() {
+  void open_virt() {
     transport_->open();
   }
 
-  bool isOpen() {
+  bool isOpen_virt() {
     return transport_->isOpen();
   }
 
-  bool peek() {
+  bool peek_virt() {
     return (rBase_ < rBound_) || transport_->peek();
   }
 
-  void close() {
+  void close_virt() {
     flush();
     transport_->close();
   }
@@ -351,7 +351,7 @@ class TFramedTransport : public TBufferBase {
 
   virtual void writeSlow(const uint8_t* buf, uint32_t len);
 
-  virtual void flush();
+  virtual void flush_virt();
 
   const uint8_t* borrowSlow(uint8_t* buf, uint32_t* len);
 
@@ -526,17 +526,17 @@ class TMemoryBuffer : public TBufferBase {
     }
   }
 
-  bool isOpen() {
+  bool isOpen_virt() {
     return true;
   }
 
-  bool peek() {
+  bool peek_virt() {
     return (rBase_ < wBase_);
   }
 
-  void open() {}
+  void open_virt() {}
 
-  void close() {}
+  void close_virt() {}
 
   // TODO(dreiss): Make bufPtr const.
   void getBuffer(uint8_t** bufPtr, uint32_t* sz) {
@@ -604,7 +604,7 @@ class TMemoryBuffer : public TBufferBase {
 
   uint32_t readAppendToString(std::string& str, uint32_t len);
 
-  void readEnd() {
+  void readEnd_virt() {
     if (rBase_ == wBase_) {
       resetBuffer();
     }
