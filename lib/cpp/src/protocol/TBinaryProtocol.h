@@ -45,6 +45,7 @@ class TBinaryProtocolT : public TVirtualProtocol< TBinaryProtocolT<Transport_> >
                    bool strict_read,
                    bool strict_write) :
     TVirtualProtocol< TBinaryProtocolT<Transport_> >(trans),
+    trans_(trans.get()),
     string_limit_(string_limit),
     container_limit_(container_limit),
     strict_read_(strict_read),
