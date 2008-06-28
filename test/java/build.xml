@@ -5,7 +5,7 @@
   <property name="src" location="src" />
   <property name="gen" location="gen-java" />
   <property name="build" location="build" />
-  <property name="cpath" location="../../lib/java/libthrift.jar:/Users/bryanduxbury/jars/commons-lang-2.4/commons-lang-2.4.jar" />
+  <property name="cpath" location="../../lib/java/libthrift.jar:/usr/share/java/commons-lang.jar" />
   <property name="testjar" location="thrifttest.jar" />
 
   <target name="init">
