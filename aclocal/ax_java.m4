@@ -38,7 +38,7 @@ with some compilers like guavac).
 divert(0)
 
 AC_DEFUN([AX_PROG_JAVAC],[
-test -z "$JAVAC" && AC_CHECK_PROGS(JAVAC, "gcj -C" guavac jikes javac)
+test -z "$JAVAC" && AC_CHECK_PROGS(JAVAC, "gcj -C" guavac javac)
 test -z "$JAVAC" && AC_MSG_ERROR([no acceptable Java compiler found in \$PATH])
 AX_PROG_JAVAC_WORKS
 ])
