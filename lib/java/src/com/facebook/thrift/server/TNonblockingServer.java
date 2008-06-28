@@ -381,7 +381,7 @@ public class TNonblockingServer extends TServer {
      * Class that implements a sort of state machine around the interaction with
      * a client and an invoker. It manages reading the frame size and frame data,
      * getting it handed off as wrapped transports, and then the writing of
-     * reponse data back to the client. In the process it manages flipping the
+     * response data back to the client. In the process it manages flipping the
      * read and write bits on the selection key for its client.
      */
     protected class FrameBuffer {
@@ -393,7 +393,7 @@ public class TNonblockingServer extends TServer {
       // reading the actual frame data now, but not all the way done yet
       private static final int READING_FRAME = 2;
       // completely read the frame, so an invocation can now happen
-      private static final int READ_FRAME = 3;
+      private static final int READ_FRAME_COMPLETE = 3;
       // waiting to get switched to listening for write events
       private static final int AWAITING_REGISTER_WRITE = 4;
       // started writing response data, not fully complete yet
@@ -419,7 +419,7 @@ public class TNonblockingServer extends TServer {
                           final SelectionKey selectionKey) {
         this.trans = trans;
         this.selectionKey = selectionKey;
-        buffer = ByteBuffer.allocate(4);
+        enterReadingFrameSizeState();
       }
 
       /**
@@ -436,28 +436,27 @@ public class TNonblockingServer extends TServer {
             return false;
           }
 
-          // if the frame size has been read completely, then prepare to read the 
-          // actual frame.
-          if (buffer.remaining() == 0) {
-            // pull out the frame size as an integer.
-            int frameSize = buffer.getInt(0);
-            if (frameSize <= 0) {
-              System.out.println("Read an invalid frame size of " + frameSize 
-                + ". Are you using TFramedTransport on the client side?");
-              return false;
-            }
-            // reallocate the readbuffer as a frame-sized buffer
-            buffer = ByteBuffer.allocate(frameSize + 4);
-            // put the frame size at the head of the buffer
-            buffer.putInt(frameSize);
 
-            state = READING_FRAME;
-          } else {
-            // this skips the check of READING_FRAME state below, since we can't
-            // possibly go on to that state if there's data left to be read at
-            // this one.
+          // if the frame size has not yet been read completely, we must
+          // wait for the connection to become readable again to complete
+          // this state.
+          if (buffer.remaining() > 0) {
             return true;
           }
+
+          // pull out the frame size as an integer.
+          int frameSize = buffer.getInt(0);
+          if (frameSize <= 0) {
+            System.out.println("Read an invalid frame size of " + frameSize 
+                               + ". Are you using TFramedTransport on the client side?");
+            return false;
+          }
+          // reallocate the readbuffer as a frame-sized buffer
+          buffer = ByteBuffer.allocate(frameSize + 4);
+          // put the frame size at the head of the buffer
+          buffer.putInt(frameSize);
+
+          state = READING_FRAME;
         }
 
         // it is possible to fall through from the READING_FRAME_SIZE section 
@@ -474,7 +473,7 @@ public class TNonblockingServer extends TServer {
           if (buffer.remaining() == 0) {
             // get rid of the read select interests
             selectionKey.interestOps(0);
-            state = READ_FRAME;
+            state = READ_FRAME_COMPLETE;
           } 
 
           return true;
@@ -507,8 +506,7 @@ public class TNonblockingServer extends TServer {
             // we're in the select thread.
             selectionKey.interestOps(SelectionKey.OP_READ);
             // get ready for another go-around
-            buffer = ByteBuffer.allocate(4);
-            state = READING_FRAME_SIZE;
+            enterReadingFrameSizeState();
           }
           return true;
         } else {
@@ -535,6 +533,15 @@ public class TNonblockingServer extends TServer {
       }
 
       /**
+       * Reset the state of this frame buffer to READING_FRAME_SIZE, also
+       * resetting the internal byte buffer.
+       */
+      private void enterReadingFrameSizeState() {
+        state = READING_FRAME_SIZE;
+        buffer = ByteBuffer.allocate(4);
+      }
+
+      /**
        * Shut the connection down.
        */
       public void close() {
@@ -545,7 +552,7 @@ public class TNonblockingServer extends TServer {
        * Check if this FrameBuffer has a full frame read.
        */
       public boolean isFrameFullyRead() {
-        return state == READ_FRAME;
+        return state == READ_FRAME_COMPLETE;
       }
 
       /** 
