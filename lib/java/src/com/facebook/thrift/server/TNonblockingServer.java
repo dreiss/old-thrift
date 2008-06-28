@@ -221,13 +221,7 @@ public class TNonblockingServer extends TServer {
     // FrameBuffer to interact with when we get some action on a selection key.
     private final HashMap<SelectionKey, FrameBuffer> keysToBuffers = 
       new HashMap<SelectionKey, FrameBuffer>();
-    
-    // Mapping of FrameBuffers back to their appropriate SelectionKey. Used to
-    // find our way back to the SelectionKey when we're processing interest
-    // changes.
-    private final HashMap<FrameBuffer, SelectionKey> buffersToKeys = 
-      new HashMap<FrameBuffer, SelectionKey>();
-    
+        
     // List of FrameBuffers that want to change their selection interests.
     private final Set<FrameBuffer> selectInterestChanges = 
       new HashSet<FrameBuffer>();
@@ -328,7 +322,6 @@ public class TNonblockingServer extends TServer {
         // add this key to the map
         FrameBuffer frameBuffer = new FrameBuffer(client, clientKey);
         keysToBuffers.put(clientKey, frameBuffer);
-        buffersToKeys.put(frameBuffer, clientKey);
       } catch (TTransportException tte) {
         // something went wrong accepting. 
         // we should just close our side of the connection and move on.
@@ -370,7 +363,6 @@ public class TNonblockingServer extends TServer {
     private void cleanupSelectionkey(SelectionKey key) {
       // remove the records from the two maps
       FrameBuffer buffer = keysToBuffers.remove(key);
-      buffersToKeys.remove(buffer);
       // close the buffer
       buffer.close();
       // cancel the selection key
