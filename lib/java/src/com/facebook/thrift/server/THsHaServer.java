@@ -258,8 +258,8 @@ public class THsHaServer extends TNonblockingServer {
    * invoker service instead of immediately invoking. The thread pool takes care of the rest.
    */
   @Override
-  protected void invoke(TTransport inTrans, TTransport outTrans) {
-    invoker.execute(new Invocation(inTrans, outTrans));
+  protected void invoke(TTransport inTrans, TTransport outTrans, Runnable completion) {
+    invoker.execute(new Invocation(inTrans, outTrans, completion));
   }
 
   /** 
@@ -271,16 +271,20 @@ public class THsHaServer extends TNonblockingServer {
     
     private final TTransport input;
     private final TTransport output;
+    private final Runnable completion;
     
-    public Invocation(final TTransport input, final TTransport output) {
+    public Invocation(final TTransport input,
+                      final TTransport output,
+                      final Runnable completion) {
       this.input = input;
       this.output = output;
+      this.completion = completion;
     }
     
     /**
      * This method will set up the appropriate input and output protocols
      * and perform a single invocation. When the invocation is completed, it
-     * will put itself onto the response queue.
+     * will call the provided completion handler.
      */
     public void run() {
       TProcessor processor = null;
@@ -296,6 +300,7 @@ public class THsHaServer extends TNonblockingServer {
 
         // perform the actual invocation
         processor.process(inputProtocol, outputProtocol);
+        completion.run();
       } catch (TTransportException ttx) {
         // Assume the client died and continue silently
       } catch (TException tx) {

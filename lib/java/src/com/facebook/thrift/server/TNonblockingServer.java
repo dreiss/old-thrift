@@ -117,7 +117,7 @@ public class TNonblockingServer extends TServer {
     TNonblockingServerTransport serverTransport, TTransportFactory inputTransportFactory,
     TTransportFactory outputTransportFactory, TProtocolFactory inputProtocolFactory,
     TProtocolFactory outputProtocolFactory) 
-  {      
+  {
     super(processorFactory, serverTransport,
       inputTransportFactory, outputTransportFactory,
       inputProtocolFactory, outputProtocolFactory);
@@ -196,12 +196,15 @@ public class TNonblockingServer extends TServer {
    * Perform an invocation. This method could behave several different ways
    * - invoke immediately inline, queue for separate execution, etc.
    */
-  protected void invoke(TTransport inTrans, TTransport outTrans) {
+  protected void invoke(TTransport inTrans,
+                        TTransport outTrans,
+                        Runnable completion) {
     TProtocol inProt = inputProtocolFactory_.getProtocol(inTrans);
     TProtocol outProt = outputProtocolFactory_.getProtocol(outTrans);
 
     try {
       processorFactory_.getProcessor(inTrans).process(inProt, outProt);
+      completion.run();
     } catch (TException te) {
       System.out.println("Exception while invoking! " + te);
       te.printStackTrace();
@@ -216,12 +219,7 @@ public class TNonblockingServer extends TServer {
     
     private final TNonblockingServerTransport serverTransport;
     private final Selector selector;
-    
-    // Mapping of selection keys to FrameBuffers so we can find the right
-    // FrameBuffer to interact with when we get some action on a selection key.
-    private final HashMap<SelectionKey, FrameBuffer> keysToBuffers = 
-      new HashMap<SelectionKey, FrameBuffer>();
-        
+            
     // List of FrameBuffers that want to change their selection interests.
     private final Set<FrameBuffer> selectInterestChanges = 
       new HashSet<FrameBuffer>();
@@ -321,7 +319,9 @@ public class TNonblockingServer extends TServer {
 
         // add this key to the map
         FrameBuffer frameBuffer = new FrameBuffer(client, clientKey);
-        keysToBuffers.put(clientKey, frameBuffer);
+        if (clientKey.attach(frameBuffer) != null)
+          throw new RuntimeException("TNonblockingTransport implementation is " +
+                                     "returning SelectionKeys with attachments");
       } catch (TTransportException tte) {
         // something went wrong accepting. 
         // we should just close our side of the connection and move on.
@@ -336,11 +336,13 @@ public class TNonblockingServer extends TServer {
      * fully read, then invoke the method call.
      */
     private void handleRead(SelectionKey key) {
-      FrameBuffer buffer = keysToBuffers.get(key);
+      FrameBuffer buffer = (FrameBuffer)key.attachment();
       if (buffer.read()) {
         // if the buffer's frame read is complete, invoke the method.
         if (buffer.isFrameFullyRead()) {
-          invoke(buffer.getInputTransport(), buffer.getOutputTransport());
+          invoke(buffer.getInputTransport(),
+                 buffer.getOutputTransport(),
+                 buffer.getCompletionNotifier());
         }
       } else {
         cleanupSelectionkey(key);
@@ -351,7 +353,7 @@ public class TNonblockingServer extends TServer {
      * Let a writable client get written, if there's data to be written.
      */
     private void handleWrite(SelectionKey key) {
-      FrameBuffer buffer = keysToBuffers.get(key);
+      FrameBuffer buffer = (FrameBuffer)key.attachment();
       if (!buffer.write()) {
         cleanupSelectionkey(key);
       }
@@ -362,7 +364,7 @@ public class TNonblockingServer extends TServer {
      */
     private void cleanupSelectionkey(SelectionKey key) {
       // remove the records from the two maps
-      FrameBuffer buffer = keysToBuffers.remove(key);
+      FrameBuffer buffer = (FrameBuffer)key.attachment();
       // close the buffer
       buffer.close();
       // cancel the selection key
@@ -406,6 +408,10 @@ public class TNonblockingServer extends TServer {
 
       // the ByteBuffer we'll be using to write and read, depending on the state
       private ByteBuffer buffer;
+
+      // when queueing up a response from a processor, bytes are written into this
+      // output stream
+      private ByteArrayOutputStream pendingWriteStream_;
 
       public FrameBuffer( final TNonblockingTransport trans, 
                           final SelectionKey selectionKey) {
@@ -548,8 +554,8 @@ public class TNonblockingServer extends TServer {
       }
 
       /** 
-       * Once isComplete is true, this returns a TTransport backed by the frame 
-       * data. 
+       * Once we are in READ_FRAME_COMPLETE state, this returns a TTransport
+       * backed by the frame data. 
        */
       public TTransport getInputTransport() {
         return inputTransportFactory_.getTransport(new TIOStreamTransport(
@@ -560,7 +566,8 @@ public class TNonblockingServer extends TServer {
        * Get the transport that should be used by the invoker for responding.
        */
       public TTransport getOutputTransport() {
-        return outputTransportFactory_.getTransport(new NotifyingMemoryTransport());
+        pendingWriteStream_ = new ByteArrayOutputStream();
+        return outputTransportFactory_.getTransport(new TIOStreamTransport(pendingWriteStream_));
       }
 
       /**
@@ -596,36 +603,25 @@ public class TNonblockingServer extends TServer {
       }
 
       /**
-       * This internal class is basically a memory buffer transport whose flush 
-       * method also puts the FrameBuffer into the writable state.
-       */ 
-      private class NotifyingMemoryTransport extends TIOStreamTransport {
+       * Return a Runnable used to notify this buffer that the processor has written
+       * its entire response and should register itself to write the response out.
+       *
+       * This cannot be done on the flush() of the transport because async void
+       * functions never have flush() called.
+       */
+      public Runnable getCompletionNotifier() {
+        return new Runnable() {
+            public void run() {
+              buffer = ByteBuffer.wrap(pendingWriteStream_.toByteArray());
+              pendingWriteStream_ = null;
 
-        public NotifyingMemoryTransport() {
-          outputStream_ = new ByteArrayOutputStream();
-        }
-
-        /**
-         * When flush is called, we know the invoking process is done writing.
-         * We use the call of flush as a signal to indicate we're ready to be
-         * put back on the write queue.
-         */ 
-        @Override
-        public void flush() throws TTransportException {
-          super.flush();
-
-          // capture the data we want to write as a byte array.
-          buffer = ByteBuffer.wrap(((ByteArrayOutputStream)outputStream_).toByteArray());
-                    
-          // set state that we're waiting to be switched to write. we do this 
-          // asynchronously through requestInterestChange() because there is a
-          // possibility that we're not in the main thread, and thus currently 
-          // blocked in select(). (this functionality is in place for the sake of
-          // the HsHa server.)
-          state = AWAITING_REGISTER_WRITE;
-          requestInterestChange();
-        }
-      } // NotifyingMemoryTransport
+              // TODO: we can probably skip the AWAITING_REGISTER_WRITE state in the
+              // case where buffer.length == 0 here.
+              state = AWAITING_REGISTER_WRITE;
+              requestInterestChange();
+            }
+          };
+      }
       
     } // FrameBuffer
     
