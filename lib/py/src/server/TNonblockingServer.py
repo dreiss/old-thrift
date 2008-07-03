@@ -18,11 +18,13 @@ class Slave(threading.Thread):
     def run(self):
         while not self.stop.isSet():
             print "wait task"
-            processor, iprot, oprot, otrans, callback = self.queue.get()
-            print "proc task"
-            processor.process(iprot, oprot)
-            callback(otrans.getvalue())
-        print "thread exit..."
+            try:
+                processor, iprot, oprot, otrans, callback = self.queue.get()
+                print "proc task"
+                processor.process(iprot, oprot)
+                callback(True, otrans.getvalue())
+            except Exception:
+                callback(False, '')
 
 WAIT_LEN = 0
 WAIT_MESSAGE = 1
@@ -94,10 +96,14 @@ class Connection:
             raise Exception
 
     @locked
-    def ready(self, buffer):
+    def ready(self, all_ok, buffer):
         print "task ready (%d)" % len(buffer)
+        if not all_ok:
+            self.close()
+            self.wake_up()
+            return
         self.len = ''
-        self.message = buffer
+        self.message = struct.pack('!i', len(buffer)) + buffer
         if len(buffer) == 0:
             # it was async request, do not write answer
             self.status = WAIT_LEN
