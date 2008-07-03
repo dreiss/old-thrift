@@ -35,7 +35,6 @@ CLOSED = 4
 
 def locked(func):
     def nested(self, *args, **kwargs):
-        print "run locked %s" % func.__name__
         self.lock.acquire()
         try:
             return func(self, *args, **kwargs)
