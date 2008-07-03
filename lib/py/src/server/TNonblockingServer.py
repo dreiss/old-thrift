@@ -3,6 +3,7 @@ import socket
 import Queue
 import select
 import struct
+import logging
 
 from thrift.Thrift import TProcessor
 from thrift.transport import TTransport
@@ -10,20 +11,20 @@ from thrift.protocol import TBinaryProtocol
 from thrift.server import TServer
 
 class Slave(threading.Thread):
-    def __init__(self, queue, stop):
+    def __init__(self, queue):
         threading.Thread.__init__(self)
         self.queue = queue
-        self.stop = stop
 
     def run(self):
-        while not self.stop.isSet():
-            print "wait task"
+        while True:
             try:
                 processor, iprot, oprot, otrans, callback = self.queue.get()
-                print "proc task"
+                if processor is None:
+                    break
                 processor.process(iprot, oprot)
                 callback(True, otrans.getvalue())
-            except Exception:
+            except Exception, err:
+                logging.exception("Exception while processing request")
                 callback(False, '')
 
 WAIT_LEN = 0
@@ -34,6 +35,7 @@ CLOSED = 4
 
 def locked(func):
     def nested(self, *args, **kwargs):
+        print "run locked %s" % func.__name__
         self.lock.acquire()
         try:
             return func(self, *args, **kwargs)
@@ -54,26 +56,31 @@ class Connection:
         self.socket = socket
         self.socket.setblocking(False)
         self.status = WAIT_LEN
-        print "create new connection with '%s', fileno %d" % (self.socket, self.socket.fileno())
         self.len = ''
         self.message = ''
         self.lock = threading.Lock()
         self.wake_up = wake_up
 
+    def _read_len(self):
+        read = self.socket.recv(4 - len(self.len))
+        if len(read) == 0:
+            self.close()
+            return
+        self.len += read
+        if len(self.len) == 4:
+            self.len, = struct.unpack('!i', self.len)
+            if self.len < 0:
+                logging.error("negative size, it seems client doesn't use FramedTransport")
+                self.close()
+                return
+            self.message = ''
+            self.status = WAIT_MESSAGE
+
     @socket_exception
     def read(self):
         if self.status == WAIT_LEN:
-            read = self.socket.recv(4 - len(self.len))
-            if len(read) == 0:
-                self.close()
-                return
-            self.len += read
-            if len(self.len) == 4:
-                self.len, = struct.unpack('!i', self.len)
-                self.message = ''
-                self.status = WAIT_MESSAGE
+            self._read_len()
         elif self.status == WAIT_MESSAGE:
-            print self.len, len(self.message)
             read = self.socket.recv(self.len - len(self.message))
             if len(read) == 0:
                 self.close()
@@ -86,18 +93,15 @@ class Connection:
 
     @socket_exception
     def write(self):
-        if self.status == SEND_ANSWER:
-            sent = self.socket.send(self.message)
-            if sent == len(self.message):
-                self.status = WAIT_LEN
-            else:
-                self.message = self.message[sent:]
+        assert self.status == SEND_ANSWER
+        sent = self.socket.send(self.message)
+        if sent == len(self.message):
+            self.status = WAIT_LEN
         else:
-            raise Exception
+            self.message = self.message[sent:]
 
     @locked
     def ready(self, all_ok, buffer):
-        print "task ready (%d)" % len(buffer)
         if not all_ok:
             self.close()
             self.wake_up()
@@ -139,13 +143,12 @@ class TNonblockingServer:
         self.threads = threads
         self.clients = {}
         self.tasks = Queue.Queue()
-        self.stop = threading.Event()
         self._read, self._write = socket.socketpair()
 
     def prepare(self):
         self.socket.listen()
         for _ in xrange(self.threads):
-            thread = Slave(self.tasks, self.stop)
+            thread = Slave(self.tasks)
             thread.setDaemon(True)
             thread.start()
 
@@ -157,31 +160,24 @@ class TNonblockingServer:
         writable = []
         for i, connection in self.clients.items():
             if connection.is_readable():
-                print "add readable"
                 readable.append(connection.fileno())
             if connection.is_writeable():
                 writable.append(connection.fileno())
             if connection.is_closed():
                 del self.clients[i]
-        print "will select with", readable, writable
         return select.select(readable, writable, readable)
         
     select = _select
 
     def handle(self):
         r, w, x = self.select()
-        print "after select: ", r, w, x
         for readable in r:
-            print "select"
             if readable == self._read.fileno():
                 self._read.recv(1024) # don't care i just need to clean readable flag
             elif readable == self.socket.handle.fileno():
-                print "accept"
                 client = self.socket.accept().handle
                 self.clients[client.fileno()] = Connection(client, self.wake_up)
-                print self.clients
             else:
-                print "read"
                 connection = self.clients[readable]
                 connection.read()
                 if connection.status == WAIT_PROCESS:
@@ -191,20 +187,19 @@ class TNonblockingServer:
                     oprot = self.protocol.getProtocol(otransport)
                     self.tasks.put([self.processor, iprot, oprot, otransport, connection.ready])
         for writeable in w:
-            print "write"
             self.clients[writeable].write()
         for oob in x:
-            print "oob"
             for i, connection in self.clients.items():
                 if connection.fileno() == oob:
+                    connection.close()
                     del self.clients[i]
-        print "handle ok"
 
+    def close(self):
+        for _ in xrange(self.threads):
+            self.tasks.put([None, None, None, None, None])
+        self.socket.close()
+        
     def serve(self):
         self.prepare()
-        try:
-            while True:
-                self.handle()
-        finally:
-            print "exit..."
-            self.stop.set()
+        while True:
+            self.handle()
