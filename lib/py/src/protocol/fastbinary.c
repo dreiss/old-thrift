@@ -105,6 +105,7 @@ typedef struct {
 typedef struct {
   PyObject* klass;
   PyObject* spec;
+  long offset;
 } StructTypeArgs;
 
 /**
@@ -207,6 +208,7 @@ parse_map_args(MapTypeArgs* dest, PyObject* typeargs) {
 
 static bool
 parse_struct_args(StructTypeArgs* dest, PyObject* typeargs) {
+  PyObject *offset;
   if (PyTuple_Size(typeargs) != 2) {
     PyErr_SetString(PyExc_TypeError, "expecting tuple of size 2 for struct args");
     return false;
@@ -215,6 +217,18 @@ parse_struct_args(StructTypeArgs* dest, PyObject* typeargs) {
   dest->klass = PyTuple_GET_ITEM(typeargs, 0);
   dest->spec = PyTuple_GET_ITEM(typeargs, 1);
 
+  offset = PyObject_GetAttrString(dest->klass, "thrift_offset");
+  if (offset) {
+    ssize_t result = PyInt_AsLong(offset);
+    if (result == -1 && PyErr_Occurred()) {
+      Py_DECREF(offset);
+      return false;
+    }
+    dest->offset = result;
+    Py_DECREF(offset);
+  } else {
+    dest->offset = 0;
+  }
   return true;
 }
 
@@ -818,7 +832,7 @@ static PyObject*
 decode_val(DecodeBuffer* input, TType type, PyObject* typeargs);
 
 static bool
-decode_struct(DecodeBuffer* input, PyObject* output, PyObject* spec_seq) {
+decode_struct(DecodeBuffer* input, PyObject* output, PyObject* spec_seq, const long offset) {
   int spec_seq_len = PyTuple_Size(spec_seq);
   if (spec_seq_len == -1) {
     return false;
@@ -842,8 +856,8 @@ decode_struct(DecodeBuffer* input, PyObject* output, PyObject* spec_seq) {
     if (INT_CONV_ERROR_OCCURRED(tag)) {
       return false;
     }
-    if (tag >= 0 && tag < spec_seq_len) {
-      item_spec = PyTuple_GET_ITEM(spec_seq, tag);
+    if (tag >= offset && tag < (spec_seq_len + offset)) {
+      item_spec = PyTuple_GET_ITEM(spec_seq, tag - offset);
     } else {
       item_spec = Py_None;
     }
@@ -1077,7 +1091,7 @@ decode_val(DecodeBuffer* input, TType type, PyObject* typeargs) {
       return NULL;
     }
 
-    if (!decode_struct(input, ret, parsedargs.spec)) {
+    if (!decode_struct(input, ret, parsedargs.spec, parsedargs.offset)) {
       Py_DECREF(ret);
       return NULL;
     }
@@ -1119,7 +1133,7 @@ decode_binary(PyObject *self, PyObject *args) {
     return NULL;
   }
 
-  if (!decode_struct(&input, output_obj, parsedargs.spec)) {
+  if (!decode_struct(&input, output_obj, parsedargs.spec, parsedargs.offset)) {
     free_decodebuf(&input);
     return NULL;
   }
