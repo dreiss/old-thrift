@@ -96,6 +96,15 @@ bool TSocket::peek() {
   int r = recv(socket_, &buf, 1, MSG_PEEK);
   if (r == -1) {
     int errno_copy = errno;
+    /* shigin: dirty hack
+     * freebsd returns -1 and ECONNRESET if socket was closed by 
+     * the other side
+     */
+    if (errno_copy == ECONNRESET)
+    {
+      close();
+      return false;
+    }
     GlobalOutput.perror("TSocket::peek() recv() " + getSocketInfo(), errno_copy);
     throw TTransportException(TTransportException::UNKNOWN, "recv()", errno_copy);
   }
