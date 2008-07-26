@@ -58,12 +58,12 @@ def complex(class_, instance):
                 TBinaryProtocol.TBinaryProtocolFactory())
 
 if __name__ == '__main__':
-    instanity = Insanity(userMap={1:2}, xtructs=[
-        Xtruct(string_thing="Zero", byte_thing=1, i32_thing=-3, i64_thing=5), 
-        Xtruct(string_thing="One", byte_thing=1, i32_thing=4, i64_thing=18)
-      ])
+    instanity = Insanity(dict(userMap={1:2}, xtructs=[
+        Xtruct(dict(string_thing="Zero", byte_thing=1, i32_thing=-3, i64_thing=5)),
+        Xtruct(dict(string_thing="One", byte_thing=1, i32_thing=4, i64_thing=18))
+      ]))
     print "instanity:"
     complex(Insanity, instanity)
-    bonk = Bonk(message="answer", type=42)
+    bonk = Bonk(dict(message="answer", type=42))
     print "bonk:"
     complex(Bonk, bonk)
