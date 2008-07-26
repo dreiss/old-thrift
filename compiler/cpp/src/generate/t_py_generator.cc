@@ -548,11 +548,12 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
   // for structures with no members.
   // TODO(dreiss): Test encoding of structs where some inner structs
   // don't have thrift_spec.
-  if (sorted_members.empty() || (sorted_members[0]->get_key() >= 0)) {
+  if (!sorted_members.empty()) {
+    int sorted_keys_pos = sorted_members[0]->get_key();
+    indent(out) << "thrift_offset = " << sorted_keys_pos << endl;
     indent(out) << "thrift_spec = (" << endl;
     indent_up();
 
-    int sorted_keys_pos = 0;
     for (m_iter = sorted_members.begin(); m_iter != sorted_members.end(); ++m_iter) {
 
       for (; sorted_keys_pos != (*m_iter)->get_key(); sorted_keys_pos++) {
@@ -574,9 +575,9 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
     indent_down();
     indent(out) << ")" << endl << endl;
   } else {
-    indent(out) << "thrift_spec = None" << endl;
+    indent(out) << "thrift_offset = 0" << endl;
+    indent(out) << "thrift_spec = ()" << endl;
   }
-
 
   out <<
     indent() << "def __init__(self, d=None):" << endl;
