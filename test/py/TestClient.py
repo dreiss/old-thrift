@@ -98,6 +98,14 @@ class AbstractTest(unittest.TestCase):
     end = time.time()
     self.assertTrue(end - start < 0.2,
                     "async sleep took %f sec" % (end - start))
+  def testList(self):
+    self.client.testList([1, 2, 3])
+
+  def testSet(self):
+    self.client.testSet(set([1, 2, 3]))
+  
+  def testMap(self):
+    self.client.testMap({1:2, 2:3})
 
 class NormalBinaryTest(AbstractTest):
   protocol_factory = TBinaryProtocol.TBinaryProtocolFactory()
