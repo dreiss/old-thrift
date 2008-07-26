@@ -331,7 +331,15 @@ uint32_t TSocket::read(uint8_t* buf, uint32_t len) {
 
     // If we disconnect with no linger time
     if (errno_copy == ECONNRESET) {
+      #ifdef __FreeBSD__
+      /* shigin: freebsd doesn't follow POSIX semantic of recv and fails with
+       * ECONNRESET if peer performed shutdown 
+       */
+      close();
+      return 0;
+      #else
       throw TTransportException(TTransportException::NOT_OPEN, "ECONNRESET");
+      #endif
     }
 
     // This ish isn't open
