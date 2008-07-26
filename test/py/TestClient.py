@@ -107,6 +107,18 @@ class AbstractTest(unittest.TestCase):
   def testMap(self):
     self.client.testMap({1:2, 2:3})
 
+  def testInsanity(self):
+    x = Xtruct()
+    x.string_thing = "Zero"
+    x.byte_thing = 1
+    x.i32_thing = -3
+    x.i64_thing = -5
+
+    y = self.client.testInsanity(Insanity(dict(userMap={1:2}, xtructs=[x])))
+    z = y[1][Numberz.ONE]
+    assert z.xtructs[0] == x
+    assert z.userMap == {1:2}
+
 class NormalBinaryTest(AbstractTest):
   protocol_factory = TBinaryProtocol.TBinaryProtocolFactory()
 

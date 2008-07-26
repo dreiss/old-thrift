@@ -40,6 +40,10 @@ class TestHandler:
     print 'testDouble(%f)' % dub
     return dub
 
+  def testInsanity(self, x):
+    n = Numberz.ONE
+    return {1: {n: x}}
+
   def testStruct(self, thing):
     print 'testStruct({%s, %d, %d, %d})' % (thing.string_thing, thing.byte_thing, thing.i32_thing, thing.i64_thing)
     return thing
