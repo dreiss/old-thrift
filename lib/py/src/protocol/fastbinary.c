@@ -217,15 +217,17 @@ parse_struct_args(StructTypeArgs* dest, PyObject* typeargs) {
   dest->klass = PyTuple_GET_ITEM(typeargs, 0);
   dest->spec = PyTuple_GET_ITEM(typeargs, 1);
 
-  offset = PyObject_GetAttrString(dest->klass, "thrift_offset");
+  //fprintf(stderr, "is tuple %d\n", PyTuple_Check(dest->spec));
+  offset = PyTuple_GET_ITEM(dest->spec, 0);
+  assert(PyTuple_Check(offset));
+  offset = PyTuple_GET_ITEM(offset, 0);
   if (offset) {
+    //printf("offset ok, %s\n", PyString_AsString(PyObject_Str(offset)));
     ssize_t result = PyInt_AsLong(offset);
     if (result == -1 && PyErr_Occurred()) {
-      Py_DECREF(offset);
       return false;
     }
     dest->offset = result;
-    Py_DECREF(offset);
   } else {
     dest->offset = 0;
   }
