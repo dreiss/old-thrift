@@ -663,7 +663,8 @@ void t_py_generator::generate_py_struct_reader(ofstream& out,
   indent_up();
 
   indent(out) <<
-    "fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))" << endl;
+    "fastbinary.decode_binary(self, iprot.trans, (" << tstruct->get_name() << 
+    ", " << tstruct->get_name() << ".thrift_spec))" << endl;
   indent(out) <<
     "return" << endl;
   indent_down();
@@ -748,7 +749,8 @@ void t_py_generator::generate_py_struct_writer(ofstream& out,
   indent_up();
 
   indent(out) <<
-    "oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))" << endl;
+    "oprot.trans.write(fastbinary.encode_binary(self, (" << tstruct->get_name() <<
+    ", " << tstruct->get_name() << ".thrift_spec)))" << endl;
   indent(out) <<
     "return" << endl;
   indent_down();
