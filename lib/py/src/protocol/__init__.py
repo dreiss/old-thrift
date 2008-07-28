@@ -4,4 +4,10 @@
 # See accompanying file LICENSE or visit the Thrift site at:
 # http://developers.facebook.com/thrift/
 
-__all__ = ['TProtocol', 'TBinaryProtocol', 'fastbinary']
+from TProtocol import TProtocolException, TProtocolBase, TProtocolFactory
+from TBinaryProtocol import TBinaryProtocol, TBinaryProtocolFactory, \
+        TBinaryProtocolAccelerated, TBinaryProtocolAcceleratedFactory
+try:
+    import fastbinary
+except ImportError:
+    fastbinary = None
