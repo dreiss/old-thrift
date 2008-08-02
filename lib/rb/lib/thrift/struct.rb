@@ -6,7 +6,7 @@ module Thrift
     def initialize(d={})
       each_field do |fid, type, name, default|
         value = d.delete(name.to_s) { d.delete(name.to_sym) { default.dup rescue default } }
-        Thrift.check_type(value, type, name) if Thrift.type_checking
+        Thrift.check_type(value, struct_fields[fid], name) if Thrift.type_checking
         instance_variable_set("@#{name}", value)
       end
       raise Exception, "Unknown keys given to #{self.class}.new: #{d.keys.join(", ")}" unless d.empty?
@@ -72,13 +72,39 @@ module Thrift
       fields.each do |field|
         klass.send :attr_reader, field
         klass.send :define_method, "#{field}=" do |value|
-          Thrift.check_type(value, klass::FIELDS.values.find { |f| f[:name].to_s == field.to_s }[:type], field) if Thrift.type_checking
+          Thrift.check_type(value, klass::FIELDS.values.find { |f| f[:name].to_s == field.to_s }, field) if Thrift.type_checking
           instance_variable_set("@#{field}", value)
         end
       end
     end
 
     protected
+
+    def self.append_features(mod)
+      if mod.ancestors.include? ::Exception
+        mod.send :class_variable_set, :'@@__thrift_struct_real_initialize', mod.instance_method(:initialize)
+        super
+        # set up our custom initializer so `raise Xception, 'message'` works
+        mod.send :define_method, :struct_initialize, mod.instance_method(:initialize)
+        mod.send :define_method, :initialize, mod.instance_method(:exception_initialize)
+      else
+        super
+      end
+    end
+
+    def exception_initialize(*args, &block)
+      if args.size == 1 and args.first.is_a? Hash
+        # looks like it's a regular Struct initialize
+        method(:struct_initialize).call(args.first)
+      else
+        # call the Struct initializer first with no args
+        # this will set our field default values
+        method(:struct_initialize).call()
+        # now give it to the exception
+        self.class.send(:class_variable_get, :'@@__thrift_struct_real_initialize').bind(self).call(*args, &block)
+        # self.class.instance_method(:initialize).bind(self).call(*args, &block)
+      end
+    end
 
     def handle_message(iprot, fid, ftype)
       field = struct_fields[fid]
