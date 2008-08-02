@@ -16,6 +16,7 @@ noinst_LTLIBRARIES = libtestgencpp.la
 libtestgencpp_la_SOURCES = \
 	gen-cpp/DebugProtoTest_types.cpp \
 	gen-cpp/OptionalRequiredTest_types.cpp \
+	gen-cpp/ConstructorOrderTest_types.cpp \
 	gen-cpp/DebugProtoTest_types.cpp \
 	gen-cpp/PartiallyReflectable.cpp \
 	gen-cpp/Service.cpp \
@@ -40,6 +41,7 @@ check_PROGRAMS = \
 	DebugProtoTest \
 	JSONProtoTest \
 	OptionalRequiredTest \
+	ConstructorOrderTest \
 	ReflectionTest \
 	UnitTests
 
@@ -97,6 +99,14 @@ OptionalRequiredTest_SOURCES = \
 
 OptionalRequiredTest_LDADD = libtestgencpp.la
 
+#
+# ConstructorOrderTest
+#
+ConstructorOrderTest_SOURCES = \
+	ConstructorOrderTest.cpp
+
+ConstructorOrderTest_LDADD = libtestgencpp.la
+
 
 #
 # ReflectionTest
@@ -116,6 +126,9 @@ gen-cpp/DebugProtoTest_types.cpp gen-cpp/PartiallyReflectable.cpp: DebugProtoTes
 
 gen-cpp/OptionalRequiredTest_types.cpp: OptionalRequiredTest.thrift
 	$(THRIFT) --gen cpp:dense $<
+
+gen-cpp/ConstructorOrderTest_types.cpp: ConstructorOrderTest.thrift
+	$(THRIFT) --gen cpp $<
 
 gen-cpp/Service.cpp gen-cpp/StressTest_types.cpp: StressTest.thrift
 	$(THRIFT) --gen cpp:dense,reflection_limited $<

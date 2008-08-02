@@ -9,19 +9,38 @@ int main() {
   using namespace thrift::test::debug;
 
 
-  OneOfEach ooe;
-  ooe.im_true   = true;
-  ooe.im_false  = false;
-  ooe.a_bite    = 0xd6;
-  ooe.integer16 = 27000;
-  ooe.integer32 = 1<<24;
-  ooe.integer64 = (uint64_t)6000 * 1000 * 1000;
-  ooe.double_precision = M_PI;
-  ooe.some_characters  = "Debug THIS!";
-  ooe.zomg_unicode     = "\xd7\n\a\t";
+  OneOfEach ooe(true, false, 0xd6, 27000, 1<<24, (int64_t)6000 * 1000 * 1000,
+		M_PI, "Debug THIS!", "\xd7\n\a\t", true, 
+		std::string("\x00\x41\xFF\x7F",4));
+
+  // was:
+//  ooe.im_true   = true;
+//  ooe.im_false  = false;
+//  ooe.a_bite    = 0xd6;
+//  ooe.integer16 = 27000;
+//  ooe.integer32 = 1<<24;
+//  ooe.integer64 = (uint64_t)6000 * 1000 * 1000;
+//  ooe.double_precision = M_PI;
+//  ooe.some_characters  = "Debug THIS!";
+//  ooe.zomg_unicode     = "\xd7\n\a\t";
 
   cout << facebook::thrift::ThriftDebugString(ooe) << endl << endl;
 
+  std::string expected_debug_string = 
+    "OneOfEach {\n"
+    "  01: im_true (bool) = true,\n"
+    "  02: im_false (bool) = false,\n"
+    "  03: a_bite (byte) = 0xd6,\n"
+    "  04: integer16 (i16) = 27000,\n"
+    "  05: integer32 (i32) = 16777216,\n"
+    "  06: integer64 (i64) = 6000000000,\n"
+    "  07: double_precision (double) = 3.141592653589793,\n"
+    "  08: some_characters (string) = \"Debug THIS!\",\n"
+    "  09: zomg_unicode (string) = \"\\xd7\\n\\a\\t\",\n"
+    "  10: what_who (bool) = true,\n"
+    "  11: base64 (string) = \"\\x00A\\xff\\x7f\",\n"
+    "}";
+  assert(expected_debug_string == facebook::thrift::ThriftDebugString(ooe));
 
   Nesting n;
   n.my_ooe = ooe;

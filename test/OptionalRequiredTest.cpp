@@ -10,6 +10,7 @@ using std::cout;
 using std::endl;
 using std::map;
 using std::string;
+using std::vector;
 using namespace thrift::test;
 using namespace facebook::thrift;
 using namespace facebook::thrift::transport;
@@ -43,8 +44,41 @@ int main() {
 
   cout << "This old school struct should have three fields." << endl;
   {
-    OldSchool o;
+    map<int32_t, string> tmp_map;
+    tmp_map[3] = "three";
+    tmp_map[4] = "four";
+    vector<map<int32_t, string> > tmp_list;
+    tmp_list.push_back(tmp_map);
+    tmp_map[1] = "one";
+    tmp_map[2] = "two";
+    tmp_list.push_back(tmp_map);
+    OldSchool o(37, "test-string\nwith-newline", tmp_list);
+
     cout << ThriftDebugString(o) << endl;
+
+    string expected_debug_string = 
+      "OldSchool {\n"
+      "  01: im_int (i16) = 37,\n"
+      "  02: im_str (string) = \"test-string\\nwith-newline\",\n"
+      "  03: im_big (list) = list<map>[2] {\n"
+      "    [0] = map<i32,string>[2] {\n"
+      "      3 -> \"three\",\n"
+      "      4 -> \"four\",\n"
+      "    },\n"
+      "    [1] = map<i32,string>[4] {\n"
+      "      1 -> \"one\",\n"
+      "      2 -> \"two\",\n"
+      "      3 -> \"three\",\n"
+      "      4 -> \"four\",\n"
+      "    },\n"
+      "  },\n"
+      "}";
+    
+    if (expected_debug_string != ThriftDebugString(o)) {
+      cout << "??????\n" << expected_debug_string << "---------------\n"
+	   << ThriftDebugString(o);
+    }
+    assert(expected_debug_string == ThriftDebugString(o));
   }
   cout << endl;
 

@@ -68,6 +68,7 @@ class t_cpp_generator : public t_oop_generator {
     generate_cpp_struct(txception, true);
   }
   void generate_cpp_struct(t_struct* tstruct, bool is_exception);
+  void generate_cpp_struct_constructor(ofstream& out, t_struct* tstruct);
 
   void generate_service(t_service* tservice);
 
@@ -676,6 +677,8 @@ void t_cpp_generator::generate_struct_definition(ofstream& out,
       }
     }
     scope_down(out);
+
+    generate_cpp_struct_constructor(out, tstruct);
   }
 
   out <<
@@ -794,6 +797,103 @@ void t_cpp_generator::generate_struct_definition(ofstream& out,
   indent(out) <<
     "};" << endl <<
     endl;
+}
+
+/**
+ * Less than operator for sorting structure members by key.  Sorts all
+ * positive values before negative values.  Sorts in increasing order
+ * for positive values, and decreasing order for negative numbers so
+ * that things are relatively sanely sorted relative to the keys that
+ * are automatically generated.
+ */
+struct kinda_by_id_less_than {
+  bool operator()(const t_field* a, const t_field* b) {
+    if (a->get_key() < 0 && b->get_key() > 0) {
+      return false;
+    } 
+    if (a->get_key() > 0 && b->get_key() < 0) {
+      return true;
+    }
+    if (a->get_key() > 0) {
+      return a->get_key() < b->get_key();
+    }
+    if (a->get_key() < 0) {
+      return a->get_key() > b->get_key();
+    }
+    assert(0);
+  }
+};
+
+/**
+ * Writes the full structure constructor
+ *
+ * @param out Output stream
+ * @param tstruct The struct
+ */
+void t_cpp_generator::generate_cpp_struct_constructor(ofstream& out,
+						      t_struct* tstruct) {
+  vector<t_field*> sorted_members = tstruct->get_members();
+
+  sort(sorted_members.begin(), sorted_members.end(), kinda_by_id_less_than());
+
+  if (sorted_members.empty()) {
+    return; // nothing to do
+  }
+
+  vector<t_field*>::const_iterator m_iter;
+
+  string init_prefix = "in";
+  bool ok_prefix = false;
+  while(!ok_prefix) {
+    init_prefix.append("_");
+
+    ok_prefix = true;
+    for (m_iter = sorted_members.begin(); m_iter != sorted_members.end(); 
+	 ++m_iter) {
+      if ((*m_iter)->get_name().substr(0,init_prefix.size()) ==
+	  init_prefix) {
+	ok_prefix = false;
+	break;
+      }
+    }
+  }
+	
+  indent(out) << "explicit " << tstruct->get_name() << "(" << "\n";
+  indent_up();
+  indent_up();
+  for (m_iter = sorted_members.begin(); m_iter != sorted_members.end(); 
+       ++m_iter) {
+    if (m_iter != sorted_members.begin()) {
+      out << ",\n";
+    }
+    indent(out) << "const " << type_name((*m_iter)->get_type()) 
+		<< "& " << init_prefix << (*m_iter)->get_name();
+  }
+  out << ")\n";
+  indent_down();
+  indent(out) << ": \n";
+  indent_up();
+  for (m_iter = sorted_members.begin(); m_iter != sorted_members.end(); 
+       ++m_iter) {
+    if (m_iter != sorted_members.begin()) {
+      out << ",\n";
+    }
+    indent(out) << (*m_iter)->get_name() << "(" << init_prefix
+		<< (*m_iter)->get_name() << ")";
+  }
+  out << "\n";
+  indent_down();
+  indent(out) << "{\n";
+  indent_up();
+  for (m_iter = sorted_members.begin(); m_iter != sorted_members.end(); 
+       ++m_iter) {
+    if ((*m_iter)->get_req() != t_field::T_REQUIRED) {
+      indent(out) << "__isset." << (*m_iter)->get_name() << " = true;\n";
+    }
+  }
+  indent_down();
+  indent(out) << "} \n";
+  indent_down();
 }
 
 /**
