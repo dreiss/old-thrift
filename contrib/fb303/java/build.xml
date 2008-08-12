@@ -36,7 +36,7 @@
     <echo>Building libfb303.jar .... </echo>
     <javac srcdir="${src.dir}" destdir="${build.classes.dir}" debug="on">
       <classpath>
-        <pathelement location="${thrift_home}/lib/libthrift.jar"/>
+        <pathelement location="/usr/share/java/libthrift.jar"/>
       </classpath>
       <include name="*.java"/>
       <include name="${build.dir}/gen-java/com/facebook/fb303"/>
