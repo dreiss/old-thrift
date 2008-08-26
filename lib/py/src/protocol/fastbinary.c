@@ -219,7 +219,7 @@ parse_struct_args(StructTypeArgs* dest, PyObject* typeargs) {
 
   offset = PyObject_GetAttrString(dest->klass, "thrift_offset");
   if (offset) {
-    ssize_t result = PyInt_AsLong(offset);
+    long result = PyInt_AsLong(offset);
     if (result == -1 && PyErr_Occurred()) {
       Py_DECREF(offset);
       return false;
