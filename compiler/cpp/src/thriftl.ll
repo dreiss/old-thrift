@@ -100,6 +100,7 @@ st_identifier ([a-zA-Z-][\.a-zA-Z_0-9-]*)
 "i32"                { return tok_i32;                  }
 "i64"                { return tok_i64;                  }
 "double"             { return tok_double;               }
+"any"                { return tok_any;                  }
 "string"             { return tok_string;               }
 "binary"             { return tok_binary;               }
 "slist"              { return tok_slist;                }

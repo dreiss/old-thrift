@@ -123,6 +123,8 @@ class TBinaryProtocol : public TProtocol {
 
   uint32_t writeBinary(const std::string& str);
 
+  uint32_t writeAny(const boost::any& val);
+
   /**
    * Reading functions
    */
@@ -175,6 +177,8 @@ class TBinaryProtocol : public TProtocol {
   uint32_t readString(std::string& str);
 
   uint32_t readBinary(std::string& str);
+
+  uint32_t readAny(boost::any& val);
 
  protected:
   uint32_t readStringBody(std::string& str, int32_t sz);

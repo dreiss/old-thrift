@@ -132,6 +132,10 @@ class TWriteOnlyProtocol : public TProtocol {
         subclass_ + " does not support reading (yet).");
   }
 
+  uint32_t readAny(boost::any& val) {
+    throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
+        subclass_ + " does not support reading (yet).");
+  }
   uint32_t readString(std::string& str) {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support reading (yet).");
@@ -270,6 +274,11 @@ class TReadOnlyProtocol : public TProtocol {
   }
 
   uint32_t writeDouble(const double dub) {
+    throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
+        subclass_ + " does not support writing (yet).");
+  }
+
+  uint32_t writeAny(const boost::any &val) {
     throw TProtocolException(TProtocolException::NOT_IMPLEMENTED,
         subclass_ + " does not support writing (yet).");
   }

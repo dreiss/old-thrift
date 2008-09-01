@@ -109,6 +109,7 @@ int g_arglist = 0;
 %token tok_i32
 %token tok_i64
 %token tok_double
+%token tok_any
 
 /**
  * Complex type keywords
@@ -995,6 +996,11 @@ BaseType:
     {
       pdebug("BaseType -> tok_double");
       $$ = g_type_double;
+    }
+| tok_any
+    {
+      pdebug("BaseType -> tok_any");
+      $$ = g_type_any;
     }
 
 ContainerType:

@@ -10,6 +10,7 @@
 #include "TProtocol.h"
 #include "TOneWayProtocol.h"
 
+#include <boost/any.hpp>
 #include <boost/shared_ptr.hpp>
 
 namespace facebook { namespace thrift { namespace protocol {
@@ -112,6 +113,8 @@ class TDebugProtocol : public TWriteOnlyProtocol {
   uint32_t writeI64(const int64_t i64);
 
   uint32_t writeDouble(const double dub);
+
+  uint32_t writeAny(const boost::any& val);
 
   uint32_t writeString(const std::string& str);
 

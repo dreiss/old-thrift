@@ -45,6 +45,7 @@ string TDebugProtocol::fieldTypeName(TType type) {
     case T_LIST   : return "list"   ;
     case T_UTF8   : return "utf8"   ;
     case T_UTF16  : return "utf16"  ;
+    case T_ANY    : return "any"    ;
     default: return "unknown";
   }
 }
@@ -286,6 +287,14 @@ uint32_t TDebugProtocol::writeDouble(const double dub) {
   return writeItem(boost::lexical_cast<string>(dub));
 }
 
+uint32_t TDebugProtocol::writeAny(const boost::any &val) {
+/*
+  switch (guess_type(val)) {
+    switch T_BOOL:
+      return writeItem(boost::lexical_cast<string>(boost::any_cast<bool>(val)));
+  }*/
+  return 0;
+}
 
 uint32_t TDebugProtocol::writeString(const string& str) {
   // XXX Raw/UTF-8?

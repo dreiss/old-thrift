@@ -29,6 +29,7 @@ libthrift_la_SOURCES = src/Thrift.cpp \
                        src/concurrency/ThreadManager.cpp \
                        src/concurrency/TimerManager.cpp \
                        src/concurrency/Util.cpp \
+                       src/protocol/TProtocol.cpp \
                        src/protocol/TBinaryProtocol.cpp \
                        src/protocol/TDebugProtocol.cpp \
                        src/protocol/TDenseProtocol.cpp \

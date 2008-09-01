@@ -193,9 +193,81 @@ uint32_t TBinaryProtocol::writeBinary(const string& str) {
   return TBinaryProtocol::writeString(str);
 }
 
+uint32_t TBinaryProtocol::writeAny(const boost::any& val) {
+  uint32_t result = 0;
+  int8_t type = guess_type(val);
+  result += writeByte(type);
+  switch (type) {
+    case T_BYTE:
+        return result + writeByte(boost::any_cast<int8_t>(val));
+    case T_BOOL:
+        return result + writeBool(boost::any_cast<bool>(val));
+    case T_I16:
+        return result + writeI16(boost::any_cast<int16_t>(val));
+    case T_I32:
+        return result + writeI32(boost::any_cast<int32_t>(val));
+    case T_I64:
+        return result + writeI64(boost::any_cast<int64_t>(val));
+    case T_DOUBLE:
+        return result + writeDouble(boost::any_cast<double>(val));
+    case T_STRING:
+        return result + writeString(boost::any_cast<std::string>(val));
+    default:
+        // TODO(shigin): fill it
+        throw "not implemented (yet)";
+  }
+}
+
 /**
  * Reading functions
  */
+
+uint32_t TBinaryProtocol::readAny(boost::any& val) {
+  int8_t type;
+  uint32_t result = readByte(type);
+  std::string str = std::string();
+  result += writeByte(type);
+  switch (type) {
+    case T_BYTE:
+        int8_t bt;
+        result += readByte(bt);
+        val = bt;
+        break;
+    case T_BOOL:
+        bool bl;
+        result += readBool(bl);
+        val = bl;
+        break;
+    case T_I16:
+        int16_t i1;
+        result += readI16(i1);
+        val = i1;
+        break;
+    case T_I32:
+        int32_t i2;
+        result += readI32(i2);
+        val = i2;
+        break;
+    case T_I64:
+        int64_t i4;
+        result += readI64(i4);
+        val = i4;
+        break;
+    case T_DOUBLE:
+        double db;
+        result += readDouble(db);
+        val = db;
+        break;
+    case T_STRING:
+        result += readString(str);
+        val = str;
+        break;
+    default:
+        // TODO(shigin): fill it
+        throw "not implemented (yet)";
+  }
+  return result;
+}
 
 uint32_t TBinaryProtocol::readMessageBegin(std::string& name,
                                            TMessageType& messageType,

@@ -265,6 +265,7 @@ void t_cpp_generator::init_generator() {
 
   // Include base types
   f_types_ <<
+    "#include <boost/any.hpp>" << endl <<
     "#include <Thrift.h>" << endl <<
     "#include <reflection_limited_types.h>" << endl <<
     "#include <protocol/TProtocol.h>" << endl <<
@@ -2175,6 +2176,7 @@ bool t_cpp_generator::generate_simple_type_limited_reflection(ostream & out, t_t
       case t_base_type::TYPE_I32    : type = "T_I32;"    ; break;
       case t_base_type::TYPE_I64    : type = "T_I64;"    ; break;
       case t_base_type::TYPE_DOUBLE : type = "T_DOUBLE;" ; break;
+      case t_base_type::TYPE_ANY    : type = "T_ANY;"    ; break;
       default: return false;
     }
     out << indent() << target << ".ttype = " << type << endl;
@@ -2455,6 +2457,9 @@ void t_cpp_generator::generate_deserialize_field(ofstream& out,
     case t_base_type::TYPE_DOUBLE:
       out << "readDouble(" << name << ");";
       break;
+    case t_base_type::TYPE_ANY:
+      out << "readAny(" << name << ");";
+      break;
     default:
       throw "compiler error: no C++ reader for base type " + t_base_type::t_base_name(tbase) + name;
     }
@@ -2675,6 +2680,9 @@ void t_cpp_generator::generate_serialize_field(ofstream& out,
         break;
       case t_base_type::TYPE_DOUBLE:
         out << "writeDouble(" << name << ");";
+        break;
+      case t_base_type::TYPE_ANY:
+        out << "writeAny(" << name << ");";
         break;
       default:
         throw "compiler error: no C++ writer for base type " + t_base_type::t_base_name(tbase) + name;
@@ -2957,6 +2965,8 @@ string t_cpp_generator::base_type_name(t_base_type::t_base tbase) {
     return "int64_t";
   case t_base_type::TYPE_DOUBLE:
     return "double";
+  case t_base_type::TYPE_ANY:
+    return "boost::any";
   default:
     throw "compiler error: no C++ base type name for base type " + t_base_type::t_base_name(tbase);
   }
@@ -3004,6 +3014,9 @@ string t_cpp_generator::declare_field(t_field* tfield, bool init, bool pointer, 
         break;
       case t_base_type::TYPE_DOUBLE:
         result += " = (double)0";
+        break;
+      case t_base_type::TYPE_ANY:
+        result += " = 0";
         break;
       default:
         throw "compiler error: no C++ initializer for base type " + t_base_type::t_base_name(tbase);
@@ -3095,6 +3108,8 @@ string t_cpp_generator::type_to_enum(t_type* type) {
       return "facebook::thrift::protocol::T_I64";
     case t_base_type::TYPE_DOUBLE:
       return "facebook::thrift::protocol::T_DOUBLE";
+    case t_base_type::TYPE_ANY:
+      return "facebook::thrift::protocol::T_ANY";
     }
   } else if (type->is_enum()) {
     return "facebook::thrift::protocol::T_I32";

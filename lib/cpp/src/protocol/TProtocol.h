@@ -11,6 +11,7 @@
 #include <protocol/TProtocolException.h>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/any.hpp>
 
 #include <netinet/in.h>
 #include <sys/types.h>
@@ -74,7 +75,8 @@ enum TType {
   T_SET        = 14,
   T_LIST       = 15,
   T_UTF8       = 16,
-  T_UTF16      = 17
+  T_UTF16      = 17,
+  T_ANY        = 20
 };
 
 /**
@@ -157,6 +159,8 @@ class TProtocol {
 
   virtual uint32_t writeDouble(const double dub) = 0;
 
+  virtual uint32_t writeAny(const boost::any& dub) = 0;
+
   virtual uint32_t writeString(const std::string& str) = 0;
 
   virtual uint32_t writeBinary(const std::string& str) = 0;
@@ -209,6 +213,8 @@ class TProtocol {
 
   virtual uint32_t readDouble(double& dub) = 0;
 
+  virtual uint32_t readAny(boost::any& val) = 0;
+
   virtual uint32_t readString(std::string& str) = 0;
 
   virtual uint32_t readBinary(std::string& str) = 0;
@@ -252,6 +258,11 @@ class TProtocol {
       {
         std::string str;
         return readBinary(str);
+      }
+    case T_ANY:
+      {
+        boost::any val;
+        return readAny(val);
       }
     case T_STRUCT:
       {
@@ -351,6 +362,8 @@ class TProtocolFactory {
 
   virtual boost::shared_ptr<TProtocol> getProtocol(boost::shared_ptr<TTransport> trans) = 0;
 };
+
+uint8_t guess_type(const boost::any& val);
 
 }}} // facebook::thrift::protocol
 
