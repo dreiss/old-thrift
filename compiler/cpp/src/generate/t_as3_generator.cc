@@ -51,8 +51,8 @@ private:
   void generate_imports(ofstream &ostream);
   void generate_as3_struct(t_struct* tstruct, bool is_exception);
 
-  string type_name(t_type* ttype, bool in_container = false, bool in_init = false);
-  std::string base_type_name(t_base_type* tbase, bool in_container=false);
+  string type_name(t_type* ttype);
+  std::string base_type_name(t_base_type* tbase);
 
   std::string as3_package();
 };
@@ -63,6 +63,7 @@ void t_as3_generator::init_generator() {
   MKDIR(get_out_dir().c_str());
   package_name_ = program_->get_namespace("as3");
 
+  
   string dir = package_name_;
   string subdir = get_out_dir();
   string::size_type loc;
@@ -78,7 +79,9 @@ void t_as3_generator::init_generator() {
 
   package_dir_ = subdir;  
 
-  string outfile = package_dir_ + "/" + program_->get_name();
+  //TODO(atm): We should probably generate Service.as and VO.as here.
+/*
+  string outfile = package_dir_ + "/" + program_->get_name() + ".as";
   f_out_.open(outfile.c_str());
 
   f_out_ <<
@@ -86,14 +89,11 @@ void t_as3_generator::init_generator() {
     as3_package();
   indent_up();
   generate_imports(f_out_);
-
+*/
 }
 
 void t_as3_generator::close_generator() {
   // Close package
-  indent_down();
-  indent(f_out_) << "}" << endl;
-  f_out_.close();
 }
 
 
@@ -106,7 +106,8 @@ string t_as3_generator::as3_package() {
   if (!package_name_.empty()) {
     return string("package ") + package_name_ + " {\n\n";
   }
-  return "";
+  // TODO(atm): Ask Todd about this.
+  return "package {\n";
 }
 
 /**
@@ -134,8 +135,9 @@ void t_as3_generator::generate_typedef(t_typedef* ttypedef) {}
  * @param tenum The enumeration
  */
 void t_as3_generator::generate_enum(t_enum* tenum) {
+  /*
   // Make output file
-  string f_enum_name = package_dir_+"/"+(tenum->get_name())+".as3";
+  string f_enum_name = package_dir_+"/"+(tenum->get_name())+".as";
   ofstream f_enum;
   f_enum.open(f_enum_name.c_str());
 
@@ -165,6 +167,7 @@ void t_as3_generator::generate_enum(t_enum* tenum) {
 
   scope_down(f_enum);
   f_enum.close();
+*/
 }
 
 /**
@@ -205,7 +208,55 @@ void t_as3_generator::generate_xception(t_struct* txception) {
  */
 void t_as3_generator::generate_as3_struct(t_struct* tstruct,
                                             bool is_exception) {
+  // Make output file
+  std::ofstream struct_out;
+  string outfile = package_dir_ + "/" + tstruct->get_name() + ".as";
+  struct_out.open(outfile.c_str());
 
+  struct_out << autogen_comment();
+
+  indent(struct_out) << as3_package();
+
+  indent_up();
+
+  indent(struct_out) << "public class " + tstruct->get_name() + " {" << endl;
+  
+  indent_up();
+ 
+  const vector<t_field*>& members = tstruct->get_members();
+  vector<t_field*>::const_iterator m_iter;
+  for(m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
+    indent(struct_out) << "public var " + (*m_iter)->get_name()  + ":" + type_name((*m_iter)->get_type()) + ";" << endl;
+  }
+
+  struct_out << endl;
+
+  indent(struct_out) << "public function " + tstruct->get_name() + "(remote:Object) {" << endl;
+
+  indent_up();
+
+  for(m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
+    indent(struct_out) << (*m_iter)->get_name() << " = ";
+    if((*m_iter)->get_type()->is_list()) {
+      t_list* tlist = (t_list*) (*m_iter)->get_type();
+      struct_out << "VO.makeList('" + type_name(tlist->get_elem_type()) + "', remote." + (*m_iter)->get_name() + ");" << endl;
+    } else if(!((*m_iter)->get_type()->is_base_type())) {
+      struct_out << "new " + type_name((*m_iter)->get_type()) + "(remote." + (*m_iter)->get_name() + ");" << endl;
+    } else {
+      struct_out << "remote." + (*m_iter)->get_name() + ";" << endl;
+    }
+  }
+
+  indent_down();
+  indent(struct_out) << "}" << endl;
+
+  indent_down();
+  indent(struct_out) << "}" << endl;
+
+  indent_down();
+  indent(struct_out) << "}" << endl;
+
+  struct_out.close();
 }
 
 /**
@@ -218,9 +269,18 @@ void t_as3_generator::generate_as3_struct(t_struct* tstruct,
  */
 void t_as3_generator::generate_service(t_service* tservice) {
   // Make output file
+  std::ofstream service_out;
+  string outfile = package_dir_ + "/" + service_name_ + ".as";
+  service_out.open(outfile.c_str());
 
-  indent(f_out_) <<
-    "public class " << service_name_ << " {" << endl;
+  service_out << autogen_comment();
+  service_out <<  as3_package();
+
+  indent_up();
+
+  generate_imports(service_out);
+
+  indent(service_out) << "public class " << service_name_ << " {" << endl;
   indent_up();
 
   const vector<t_function *> functions = tservice->get_functions();
@@ -229,7 +289,7 @@ void t_as3_generator::generate_service(t_service* tservice) {
        ++f_iter) {
     const t_function *func = *f_iter;
 
-    indent(f_out_) << "public function " << func->get_name() << "(";
+    indent(service_out) << "public function " << func->get_name() << "(";
 
     const vector<t_field *> &arg_fields = func->get_arglist()->get_members();
     bool first = true;
@@ -239,32 +299,50 @@ void t_as3_generator::generate_service(t_service* tservice) {
     {
       // comma separate args
       if (!first) {
-        f_out_ << ", ";
+        indent(service_out) << ", ";
       }
       first = false;
 
       const t_field *arg = *a_iter;
       t_type *type = get_true_type(arg->get_type());
-      f_out_ << arg->get_name() << ":" << type_name(type);
+      service_out << arg->get_name() << ":" << type_name(type);
     }
 
     // Add the onSuccess handler argument
-    if (!first) f_out_ << ", ";
-    f_out_ << "onSuccess:Function";
+    if (!first)
+      service_out << ", ";
+
+    service_out << "onSuccess:Function";
 
     t_type *ret_type = get_true_type(func->get_returntype());
-    f_out_ << ") : " << type_name(ret_type) << " {" << endl;
+    service_out << "):void {" << endl;
     indent_up();
 
-    indent(f_out_) << "var resp:Responder = new Responder(" << endl;
-    indent(f_out_) << "  function(result:Object) : void { " << endl;
-    indent(f_out_) << "    onSuccess(new " << type_name(ret_type) << "(result));" << endl;
-    indent(f_out_) << "  }" << endl;
-    indent(f_out_) << ");" << endl;
-    indent(f_out_) << "this.getConnection().call('" <<
-      tservice->get_name() << "." << func->get_name() << "'," << 
-      "resp, {" << endl;
+    indent(service_out) << "var resp:Responder = new Responder(" << endl;
     indent_up();
+
+    if(ret_type->is_list()) {
+      indent(service_out) << "function(result:Array):void {" << endl;
+    } else {
+      indent(service_out) << "function(result:Object):void {" << endl;
+    }
+
+    indent_up();
+    indent(service_out) << "onSuccess(";
+
+    if(ret_type->is_list()) {
+      t_list* tlist = (t_list*) ret_type;
+      service_out << "VO.makeList('" + type_name(tlist->get_elem_type()) + "', result));" << endl;
+    } else {
+      service_out << "new " << type_name(ret_type) << "(result));" << endl;
+    }
+
+    indent_down();
+    indent(service_out) << "});" << endl;
+    indent_down();
+    indent(service_out) << "Service.getInstance().connection.call('" <<
+      tservice->get_name() << "." << func->get_name() << "', " << 
+      "resp, {";
 
     // Make hash of args
     first = true;
@@ -274,24 +352,25 @@ void t_as3_generator::generate_service(t_service* tservice) {
     {
       // comma separate args
       if (!first) {
-        f_out_ << ", " << endl;
+        service_out << ", ";
       }
       first = false;
 
       const t_field *arg = *a_iter;
-      indent(f_out_) << arg->get_name() << ":" << arg->get_name();
+      service_out << arg->get_name() << ": " << arg->get_name();
     }
-    indent_down();
-    indent(f_out_) << endl;
-    indent(f_out_) << "});" << endl;
+    service_out << "});" << endl;
 
     indent_down();
-    indent(f_out_) << "} // end " << func->get_name() << endl << endl;;
+    indent(service_out) << "} // end " << func->get_name() << endl << endl;;
   }
 
   indent_down();
-  indent(f_out_) <<
-    "}" << endl;
+  indent(service_out) << "}" << endl;
+  indent_down();
+  indent(service_out) << "}" << endl;
+
+  service_out.close();
 }
 
 
@@ -302,43 +381,27 @@ void t_as3_generator::generate_service(t_service* tservice) {
  * @param container Is the type going inside a container?
  * @return As3 type name, i.e. HashMap<Key,Value>
  */
-string t_as3_generator::type_name(t_type* ttype, bool in_container, bool in_init) {
+string t_as3_generator::type_name(t_type* ttype) {
   // In As3 typedefs are just resolved to their real type
   ttype = get_true_type(ttype);
   string prefix;
 
   if (ttype->is_base_type()) {
-    return base_type_name((t_base_type*)ttype, in_container);
+    return base_type_name((t_base_type*)ttype);
   } else if (ttype->is_enum()) {
-    return (in_container ? "Integer" : "int");
+    return "int";
   } else if (ttype->is_map()) {
-    t_map* tmap = (t_map*) ttype;
-    if (in_init) {
-      prefix = "HashMap";
-    } else {
-      prefix = "Map";
-    }
-    return prefix + "<" +
-      type_name(tmap->get_key_type(), true) + "," +
-      type_name(tmap->get_val_type(), true) + ">";
+    // TODO(atm): maybe this could be implemented with an associative array.
+    return "AS3 DOESN'T HAVE MAPS";
   } else if (ttype->is_set()) {
-    t_set* tset = (t_set*) ttype;
-    if (in_init) {
-      prefix = "HashSet<";
-    } else {
-      prefix = "Set<";
-    }
-    return prefix + type_name(tset->get_elem_type(), true) + ">";
+    // TODO(atm): perhaps an arraycollection?
+    return "AS3 DOESN'T HAVE SETS";
   } else if (ttype->is_list()) {
-    t_list* tlist = (t_list*) ttype;
-    if (in_init) {
-      prefix = "ArrayList<";
-    } else {
-      prefix = "List<";
-    }
-    return prefix + type_name(tlist->get_elem_type(), true) + ">";
+    return "Array";
   }
 
+  // TODO(atm): I doubt the below is necessary.
+  
   // Check for namespacing
   t_program* program = ttype->get_program();
   if (program != NULL && program != program_) {
@@ -357,8 +420,7 @@ string t_as3_generator::type_name(t_type* ttype, bool in_container, bool in_init
  * @param tbase The base type
  * @param container Is it going in a As3 container?
  */
-string t_as3_generator::base_type_name(t_base_type* type,
-                                        bool in_container) {
+string t_as3_generator::base_type_name(t_base_type* type) {
   t_base_type::t_base tbase = type->get_base();
 
   switch (tbase) {
@@ -366,24 +428,23 @@ string t_as3_generator::base_type_name(t_base_type* type,
     return "void";
   case t_base_type::TYPE_STRING:
     if (type->is_binary()) {
-      return "byte[]";
+      throw "compiler error: no AS 3 name for base type " + t_base_type::t_base_name(tbase);
     } else {
       return "String";
     }
   case t_base_type::TYPE_BOOL:
-    return (in_container ? "Boolean" : "boolean");
+    return "Boolean";
   case t_base_type::TYPE_BYTE:
-    return (in_container ? "Byte" : "byte");
+    return "uint";
   case t_base_type::TYPE_I16:
-    return (in_container ? "Short" : "short");
+    return "int";
   case t_base_type::TYPE_I32:
-    return (in_container ? "Integer" : "int");
-  case t_base_type::TYPE_I64:
-    return (in_container ? "Long" : "long");
+    return "int";
+  case t_base_type::TYPE_I64: // this isn't quite accurate, but we'll see how it goes.
   case t_base_type::TYPE_DOUBLE:
-    return (in_container ? "Double" : "double");
+    return "Number";
   default:
-    throw "compiler error: no C++ name for base type " + t_base_type::t_base_name(tbase);
+    throw "compiler error: no AS 3 name for base type " + t_base_type::t_base_name(tbase);
   }
 }
 
