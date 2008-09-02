@@ -51,6 +51,7 @@ private:
   void generate_imports(ofstream &ostream);
   void generate_as3_struct(t_struct* tstruct, bool is_exception);
 
+  string generate_makelist(t_list* tlist, string field_name);
   string type_name(t_type* ttype);
   std::string base_type_name(t_base_type* tbase);
 
@@ -106,8 +107,7 @@ string t_as3_generator::as3_package() {
   if (!package_name_.empty()) {
     return string("package ") + package_name_ + " {\n\n";
   }
-  // TODO(atm): Ask Todd about this.
-  return "package {\n";
+  return "package {\n\n";
 }
 
 /**
@@ -117,6 +117,7 @@ string t_as3_generator::as3_package() {
  */
 void t_as3_generator::generate_imports(ofstream &ostream) {
   indent(ostream) << "import flash.net.Responder;" << endl;
+  indent(ostream) << "import flash.net.NetConnection;" << endl << endl;
 }
 
 
@@ -235,11 +236,12 @@ void t_as3_generator::generate_as3_struct(t_struct* tstruct,
 
   indent_up();
 
+  // Create constructor to marshall remote objects.
   for(m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
     indent(struct_out) << (*m_iter)->get_name() << " = ";
     if((*m_iter)->get_type()->is_list()) {
       t_list* tlist = (t_list*) (*m_iter)->get_type();
-      struct_out << "VO.makeList('" + type_name(tlist->get_elem_type()) + "', remote." + (*m_iter)->get_name() + ");" << endl;
+      struct_out << generate_makelist(tlist, "remote." + (*m_iter)->get_name()) + ";" << endl;
     } else if(!((*m_iter)->get_type()->is_base_type())) {
       struct_out << "new " + type_name((*m_iter)->get_type()) + "(remote." + (*m_iter)->get_name() + ");" << endl;
     } else {
@@ -283,6 +285,16 @@ void t_as3_generator::generate_service(t_service* tservice) {
   indent(service_out) << "public class " << service_name_ << " {" << endl;
   indent_up();
 
+  indent(service_out) << "private var connection:NetConnection;" << endl << endl;
+
+  indent(service_out) << "public function " + service_name_ + "(conn:NetConnection) {" << endl;
+  indent_up();
+
+  indent(service_out) << "connection = conn;" << endl;
+
+  indent_down();
+  indent(service_out) << "}" << endl << endl;
+
   const vector<t_function *> functions = tservice->get_functions();
   for (vector<t_function *>::const_iterator f_iter = functions.begin();
        f_iter != functions.end();
@@ -299,7 +311,7 @@ void t_as3_generator::generate_service(t_service* tservice) {
     {
       // comma separate args
       if (!first) {
-        indent(service_out) << ", ";
+        service_out << ", ";
       }
       first = false;
 
@@ -332,7 +344,7 @@ void t_as3_generator::generate_service(t_service* tservice) {
 
     if(ret_type->is_list()) {
       t_list* tlist = (t_list*) ret_type;
-      service_out << "VO.makeList('" + type_name(tlist->get_elem_type()) + "', result));" << endl;
+      service_out << generate_makelist(tlist, "result") + ");" << endl;
     } else {
       service_out << "new " << type_name(ret_type) << "(result));" << endl;
     }
@@ -340,7 +352,7 @@ void t_as3_generator::generate_service(t_service* tservice) {
     indent_down();
     indent(service_out) << "});" << endl;
     indent_down();
-    indent(service_out) << "Service.getInstance().connection.call('" <<
+    indent(service_out) << "connection.call('" <<
       tservice->get_name() << "." << func->get_name() << "', " << 
       "resp, {";
 
@@ -373,6 +385,18 @@ void t_as3_generator::generate_service(t_service* tservice) {
   service_out.close();
 }
 
+string t_as3_generator::generate_makelist(t_list* tlist, string field_name) {
+  string ret = "ThriftUtils.makeList(" + type_name(tlist->get_elem_type()) + ", ";
+  if(tlist->get_elem_type()->is_list()) {
+    ret += generate_makelist((t_list*) tlist->get_elem_type(), field_name);
+  } else {
+    ret += field_name;
+  }
+
+  ret += ")";
+
+  return ret;
+}
 
 /**
  * Returns a As3 type name
@@ -399,9 +423,9 @@ string t_as3_generator::type_name(t_type* ttype) {
   } else if (ttype->is_list()) {
     return "Array";
   }
-
-  // TODO(atm): I doubt the below is necessary.
   
+  //TODO(atm): What is this for?
+
   // Check for namespacing
   t_program* program = ttype->get_program();
   if (program != NULL && program != program_) {
