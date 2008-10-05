@@ -158,6 +158,7 @@ uint32_t TBinaryProtocol::writeI16(const int16_t i16) {
 }
 
 uint32_t TBinaryProtocol::writeI32(const int32_t i32) {
+  printf("write int32\n");
   int32_t net = (int32_t)htonl(i32);
   trans_->write((uint8_t*)&net, 4);
   return 4;
@@ -194,9 +195,9 @@ uint32_t TBinaryProtocol::writeBinary(const string& str) {
 }
 
 uint32_t TBinaryProtocol::writeAny(const boost::any& val) {
-  uint32_t result = 0;
   int8_t type = guess_type(val);
-  result += writeByte(type);
+  uint32_t result = writeByte(type);
+  printf("guessed type is %d\n", type);
   switch (type) {
     case T_BYTE:
         return result + writeByte(boost::any_cast<int8_t>(val));
@@ -205,6 +206,7 @@ uint32_t TBinaryProtocol::writeAny(const boost::any& val) {
     case T_I16:
         return result + writeI16(boost::any_cast<int16_t>(val));
     case T_I32:
+        printf("print guessed\n");
         return result + writeI32(boost::any_cast<int32_t>(val));
     case T_I64:
         return result + writeI64(boost::any_cast<int64_t>(val));
@@ -226,7 +228,6 @@ uint32_t TBinaryProtocol::readAny(boost::any& val) {
   int8_t type;
   uint32_t result = readByte(type);
   std::string str = std::string();
-  result += writeByte(type);
   switch (type) {
     case T_BYTE:
         int8_t bt;

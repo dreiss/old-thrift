@@ -17,6 +17,6 @@ uint8_t guess_type(const boost::any& val)
   if (val.type() == typeid(std::string))
     return T_STRING;
   fprintf(stderr, "sorry, i can't handle %s type\n", val.type().name());
-  assert(0);
+  throw "can't guess type";
 }
 }}}
