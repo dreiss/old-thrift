@@ -7,21 +7,37 @@
 from TTransport import *
 from cStringIO import StringIO
 
+import urlparse
 import httplib
 
 class THttpClient(TTransportBase):
 
   """Http implementation of TTransport base."""
 
-  def __init__(self, host, port, uri):
-    self.host = host
-    self.port = port
-    self.uri = uri
+  def __init__(self, uri, port=None, path=None):
+    if port is not None:
+      self.host = uri
+      self.port = port
+      self.uri = path
+      self.scheme = 'http'
+    else:
+      parsed = urlparse.urlparse(uri)
+      self.scheme = parsed.scheme
+      assert self.scheme in ['http', 'https']
+      if self.scheme == 'http':
+        self.port = parsed.port or httplib.HTTP_PORT
+      elif self.scheme == 'https':
+        self.port = parsed.port or httplib.HTTPS_PORT
+      self.host = parsed.hostname
+      self.uri = parsed.path
     self.__wbuf = StringIO()
     self.__http = None
 
   def open(self):
-    self.__http = httplib.HTTP(self.host, self.port)
+    if self.scheme == 'http':
+      self.__http = httplib.HTTP(self.host, self.port)
+    else:
+      self.__http = httplib.HTTPS(self.host, self.port)
 
   def close(self):
     self.__http.close()
