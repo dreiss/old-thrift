@@ -198,10 +198,17 @@ class TNonblockingServer:
         self.socket = lsocket
         self.in_protocol = inputProtocolFactory or TBinaryProtocolFactory()
         self.out_protocol = outputProtocolFactory or self.in_protocol
-        self.threads = threads
+        self.threads = int(threads)
         self.clients = {}
         self.tasks = Queue.Queue()
         self._read, self._write = socket.socketpair()
+        self.prepared = False
+
+    def setNumThreads(self, num):
+        """Set the number of worker threads that should be created."""
+        # implement ThreadPool interface
+        assert not self.prepared, "You can't change number of threads for working server"
+        self.threads = num
 
     def prepare(self):
         """Prepares server for serve requests."""
@@ -210,6 +217,7 @@ class TNonblockingServer:
             thread = Worker(self.tasks)
             thread.setDaemon(True)
             thread.start()
+        self.prepared = True
 
     def wake_up(self):
         """Wake up main thread.
@@ -240,8 +248,8 @@ class TNonblockingServer:
         """Handle requests.
        
         WARNING! You must call prepare BEFORE calling handle.
-
-        TODO: checks if server was prepared."""
+        """
+        assert self.prepared, "You have to call prepare before handle"
         rset, wset, xset = self._select()
         for readable in rset:
             if readable == self._read.fileno():
@@ -271,6 +279,7 @@ class TNonblockingServer:
         for _ in xrange(self.threads):
             self.tasks.put([None, None, None, None, None])
         self.socket.close()
+        self.prepared = False
         
     def serve(self):
         """Serve forever."""
