@@ -251,10 +251,8 @@ class TNonblockingServer:
         for writeable in wset:
             self.clients[writeable].write()
         for oob in xset:
-            for i, connection in self.clients.items():
-                if connection.fileno() == oob:
-                    connection.close()
-                    del self.clients[i]
+            self.clients[oob].close()
+            del self.clients[oob]
 
     def close(self):
         """Closes the server."""
