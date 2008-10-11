@@ -75,7 +75,7 @@ class Connection:
         self.socket = new_socket
         self.socket.setblocking(False)
         self.status = WAIT_LEN
-        self.len = ''
+        self.len = 0
         self.message = ''
         self.lock = threading.Lock()
         self.wake_up = wake_up
@@ -85,13 +85,17 @@ class Connection:
         
         It's really paranoic routine and it may be replaced by 
         self.socket.recv(4)."""
-        read = self.socket.recv(4 - len(self.len))
+        read = self.socket.recv(4 - len(self.message))
         if len(read) == 0:
+            # if we read 0 bytes and self.message is empty, it means client close 
+            # connection
+            if len(self.message) != 0:
+                logging.error("can't read frame size from socket")
             self.close()
             return
-        self.len += read
-        if len(self.len) == 4:
-            self.len, = struct.unpack('!i', self.len)
+        self.message += read
+        if len(self.message) == 4:
+            self.len, = struct.unpack('!i', self.message)
             if self.len < 0:
                 logging.error("negative frame size, it seems client"\
                     " doesn't use FramedTransport")
@@ -103,18 +107,19 @@ class Connection:
     @socket_exception
     def read(self):
         """Reads data from stream and switch state."""
+        assert self.status in (WAIT_LEN, WAIT_MESSAGE)
         if self.status == WAIT_LEN:
             self._read_len()
         elif self.status == WAIT_MESSAGE:
             read = self.socket.recv(self.len - len(self.message))
             if len(read) == 0:
+                logging.error("can't read frame from socket (get %d of %d bytes)" %
+                    (len(self.message), self.len))
                 self.close()
                 return
             self.message += read
             if len(self.message) == self.len:
                 self.status = WAIT_PROCESS
-        else:
-            raise Exception
 
     @socket_exception
     def write(self):
@@ -123,6 +128,8 @@ class Connection:
         sent = self.socket.send(self.message)
         if sent == len(self.message):
             self.status = WAIT_LEN
+            self.message = ''
+            self.len = 0
         else:
             self.message = self.message[sent:]
 
