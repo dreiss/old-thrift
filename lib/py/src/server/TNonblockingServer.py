@@ -15,6 +15,8 @@ import logging
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
 
+__all__ = ['TNonblockingServer']
+
 class Worker(threading.Thread):
     """Worker is a small helper to process incoming connection."""
     def __init__(self, queue):
