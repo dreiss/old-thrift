@@ -102,9 +102,12 @@ class Connection:
                 logging.error("negative frame size, it seems client"\
                     " doesn't use FramedTransport")
                 self.close()
-                return
-            self.message = ''
-            self.status = WAIT_MESSAGE
+            elif self.len == 0:
+                logging.error("empty frame, it's really strange")
+                self.close()
+            else:
+                self.message = ''
+                self.status = WAIT_MESSAGE
 
     @socket_exception
     def read(self):
