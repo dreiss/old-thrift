@@ -233,15 +233,13 @@ class TNonblockingServer:
                 del self.clients[i]
         return select.select(readable, writable, readable)
         
-    select = _select
-
     def handle(self):
         """Handle requests.
        
         WARNING! You must call prepare BEFORE calling handle.
 
         TODO: checks if server was prepared."""
-        rset, wset, xset = self.select()
+        rset, wset, xset = self._select()
         for readable in rset:
             if readable == self._read.fileno():
                 # don't care i just need to clean readable flag
