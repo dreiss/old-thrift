@@ -13,7 +13,7 @@ import struct
 import logging
 
 from thrift.transport import TTransport
-from thrift.protocol import TBinaryProtocol
+from thrift.protocol.TBinaryProtocol import TBinaryProtocolFactory
 
 __all__ = ['TNonblockingServer']
 
@@ -189,10 +189,12 @@ class Connection:
 
 class TNonblockingServer:
     """Non-blocking server."""
-    def __init__(self, processor, lsocket, protocol=None, threads=10):
+    def __init__(self, processor, lsocket, inputProtocolFactory=None, 
+            outputProtocolFactory=None, threads=10):
         self.processor = processor
         self.socket = lsocket
-        self.protocol = protocol or TBinaryProtocol.TBinaryProtocolFactory()
+        self.in_protocol = inputProtocolFactory or TBinaryProtocolFactory()
+        self.out_protocol = outputProtocolFactory or self.in_protocol
         self.threads = threads
         self.clients = {}
         self.tasks = Queue.Queue()
@@ -253,8 +255,8 @@ class TNonblockingServer:
                 if connection.status == WAIT_PROCESS:
                     itransport = TTransport.TMemoryBuffer(connection.message)
                     otransport = TTransport.TMemoryBuffer()
-                    iprot = self.protocol.getProtocol(itransport)
-                    oprot = self.protocol.getProtocol(otransport)
+                    iprot = self.in_protocol.getProtocol(itransport)
+                    oprot = self.out_protocol.getProtocol(otransport)
                     self.tasks.put([self.processor, iprot, oprot, 
                                     otransport, connection.ready])
         for writeable in wset:
