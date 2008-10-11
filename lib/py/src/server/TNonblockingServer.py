@@ -15,7 +15,7 @@ import logging
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
 
-class Slave(threading.Thread):
+class Worker(threading.Thread):
     """Worker is a small helper to process incoming connection."""
     def __init__(self, queue):
         threading.Thread.__init__(self)
@@ -193,7 +193,7 @@ class TNonblockingServer:
         """Prepares server for serve requests."""
         self.socket.listen()
         for _ in xrange(self.threads):
-            thread = Slave(self.tasks)
+            thread = Worker(self.tasks)
             thread.setDaemon(True)
             thread.start()
 
