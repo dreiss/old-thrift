@@ -30,6 +30,22 @@ bool operator == (const TAny &lhs, const TAny &rhs)
   }
   throw "can't guess type";
 }
+
+using facebook::thrift::concurrency::Synchronized;
+
+bool ThriftFactory_::registerStruct(const std::string &md5, StructCreator func) {
+  Synchronized s(monitor_);
+  mapping_[md5] = func;
+  return true;
+}
+
+ThriftBase* ThriftFactory_::get(const std::string &md5) {
+  Synchronized s(monitor_);
+  std::map<std::string, StructCreator>::iterator i = mapping_.find(md5);
+  if (i == mapping_.end())
+    return 0;
+  return i->second();
+}
 }}
 
 /*bool TAny::operator = (const TAny &rhs) {
@@ -72,7 +88,8 @@ uint32_t TAny::write(TProtocol *oprot) const {
 uint32_t TAny::read(TProtocol *iprot) {
   int8_t type;
   uint32_t result = iprot->readByte(type);
-  uint8_t finger[16];
+  char finger[32];
+  ThriftBase *tmp;
   std::string str = std::string();
   switch (type) {
     case T_BYTE:
@@ -110,8 +127,24 @@ uint32_t TAny::read(TProtocol *iprot) {
       value_ = str;
       break;
     case T_STRUCT:
+      int8_t x;
+      // TODO(shigin): it's aweful, fix it
       for (int i=0; i<16; ++i)
-        result += iprot->readString(str);
+      {
+        result += iprot->readByte(x);
+        uint8_t hi = (uint8_t)x / 32; // is it safe???
+        uint8_t lo = (uint8_t)x % 32;
+        finger[i*2] = (hi > 9) ? hi + 'A' - 10 : hi + '0';
+        finger[i*2] = (lo > 9) ? lo + 'A' - 10 : lo + '0';
+      }
+      tmp = ThriftFactory::get(finger);
+      if (tmp != 0)
+      {
+        result += tmp->read(iprot);
+        value_ = tmp;
+      } else {
+        result += iprot->skip(T_STRUCT);
+      }
       break;
     default:
       // TODO(shigin): fill it

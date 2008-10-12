@@ -2,8 +2,11 @@
 #define _THRIFT_ANY_H_
 
 #include <boost/any.hpp>
+#include <boost/pool/detail/singleton.hpp>
+#include <map>
 #include <string>
-#include "Thrift.h"
+#include <Thrift.h>
+#include <concurrency/Monitor.h>
 
 namespace facebook { namespace thrift {
 class TAny;
@@ -34,6 +37,39 @@ class TAny {
   uint32_t write(facebook::thrift::protocol::TProtocol *oprot) const;
 };
 
-//TAny & operator = (const TAny &lhs, const TAny &rhs);
+typedef ThriftBase* (*StructCreator)();
+// i've check out boost::singleton_default: it's thread safe if thread runs inside main
+// i belive that thread in thrift will work only in main().
+class ThriftFactory_ {
+ private:
+  facebook::thrift::concurrency::Monitor monitor_;
+  std::map<std::string, StructCreator> mapping_;
+ public:
+  ThriftFactory_() : monitor_(), mapping_() {}
+  /**
+   * Register class in factory, if you have class which derived from generated
+   * thrift class you should re-register your class. It's not a problem.
+   *
+   * Returns true if previos class was registered under that md5.
+   */
+  bool registerStruct(const std::string &md5, StructCreator func);
+
+  /**
+   * If thrift structure is unknown it's okay, like versioning in the rest
+   * of thrift, 'get' returns 0 in this case.
+   */
+  ThriftBase* get(const std::string &md5);
+};
+
+class ThriftFactory : public boost::details::pool::singleton_default<ThriftFactory_>
+{
+ public:
+  static ThriftBase* get(const std::string &md5) {
+    return instance().get(md5);
+  }
+  static bool registerStruct(const std::string &md5, StructCreator func) {
+    return instance().registerStruct(md5, func);
+  }
+};
 }}
 #endif // _THRIFT_ANY_H_
