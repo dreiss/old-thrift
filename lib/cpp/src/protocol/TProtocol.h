@@ -9,9 +9,9 @@
 
 #include <transport/TTransport.h>
 #include <protocol/TProtocolException.h>
+#include <TAny.h>
 
 #include <boost/shared_ptr.hpp>
-#include <boost/any.hpp>
 
 #include <netinet/in.h>
 #include <sys/types.h>
@@ -159,7 +159,7 @@ class TProtocol {
 
   virtual uint32_t writeDouble(const double dub) = 0;
 
-  virtual uint32_t writeAny(const boost::any& dub) = 0;
+  virtual uint32_t writeAny(const TAny& dub) = 0;
 
   virtual uint32_t writeString(const std::string& str) = 0;
 
@@ -213,7 +213,7 @@ class TProtocol {
 
   virtual uint32_t readDouble(double& dub) = 0;
 
-  virtual uint32_t readAny(boost::any& val) = 0;
+  virtual uint32_t readAny(TAny& val) = 0;
 
   virtual uint32_t readString(std::string& str) = 0;
 
@@ -261,7 +261,7 @@ class TProtocol {
       }
     case T_ANY:
       {
-        boost::any val;
+        TAny val;
         return readAny(val);
       }
     case T_STRUCT:
@@ -362,8 +362,6 @@ class TProtocolFactory {
 
   virtual boost::shared_ptr<TProtocol> getProtocol(boost::shared_ptr<TTransport> trans) = 0;
 };
-
-uint8_t guess_type(const boost::any& val);
 
 }}} // facebook::thrift::protocol
 

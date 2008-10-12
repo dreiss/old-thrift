@@ -287,13 +287,8 @@ uint32_t TDebugProtocol::writeDouble(const double dub) {
   return writeItem(boost::lexical_cast<string>(dub));
 }
 
-uint32_t TDebugProtocol::writeAny(const boost::any &val) {
-/*
-  switch (guess_type(val)) {
-    switch T_BOOL:
-      return writeItem(boost::lexical_cast<string>(boost::any_cast<bool>(val)));
-  }*/
-  return 0;
+uint32_t TDebugProtocol::writeAny(const TAny &val) {
+  return val.write(this);
 }
 
 uint32_t TDebugProtocol::writeString(const string& str) {

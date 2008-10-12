@@ -22,6 +22,7 @@ AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(srcdir)/src
 # Define the source files for the module
 
 libthrift_la_SOURCES = src/Thrift.cpp \
+                       src/TAny.cpp \
                        src/reflection_limited_types.cpp \
                        src/concurrency/Mutex.cpp \
                        src/concurrency/Monitor.cpp \

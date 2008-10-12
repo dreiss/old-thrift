@@ -610,11 +610,11 @@ uint32_t TJSONProtocol::writeSetEnd() {
   return writeJSONArrayEnd();
 }
 
-uint32_t TJSONProtocol::writeAny(const boost::any& val) {
+uint32_t TJSONProtocol::writeAny(const TAny& val) {
   throw "not implemented (yet)";
 }
 
-uint32_t TJSONProtocol::readAny(boost::any& val) {
+uint32_t TJSONProtocol::readAny(TAny& val) {
   throw "not implemented (yet)";
 }
 

@@ -189,7 +189,7 @@ class TJSONProtocol : public TProtocol {
 
   uint32_t writeDouble(const double dub);
 
-  uint32_t writeAny(const boost::any& val);
+  uint32_t writeAny(const TAny& val);
 
   uint32_t writeString(const std::string& str);
 
@@ -243,7 +243,7 @@ class TJSONProtocol : public TProtocol {
 
   uint32_t readDouble(double& dub);
 
-  uint32_t readAny(boost::any& val);
+  uint32_t readAny(TAny& val);
 
   uint32_t readString(std::string& str);
 

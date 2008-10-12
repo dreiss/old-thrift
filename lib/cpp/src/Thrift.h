@@ -71,6 +71,18 @@ namespace protocol {
   class TProtocol;
 }
 
+class ThriftBase {
+ public:
+  virtual ~ThriftBase() {}
+  virtual bool operator == (const ThriftBase &rhs)=0;
+  virtual bool operator != (const ThriftBase &rhs) {
+    return !(*this == rhs);
+  }
+  virtual uint32_t read(facebook::thrift::protocol::TProtocol *iprot)=0;
+  virtual uint32_t write(facebook::thrift::protocol::TProtocol *oprot) const=0;
+  virtual uint32_t writeFingerPrint(facebook::thrift::protocol::TProtocol *oprot) const=0;
+};
+
 class TException : public std::exception {
  public:
   TException() {}
