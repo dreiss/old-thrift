@@ -43,6 +43,9 @@ class t_cpp_generator : public t_oop_generator {
     iter = parsed_options.find("reflection_limited");
     gen_reflection_limited_ = (iter != parsed_options.end());
 
+    iter = parsed_options.find("any");
+    gen_any_ = (iter != parsed_options.end());
+
     out_dir_base_ = "gen-cpp";
   }
 
@@ -200,6 +203,11 @@ class t_cpp_generator : public t_oop_generator {
   bool gen_reflection_limited_;
 
   /**
+   * True iff we should generated structure can be in any type.
+   */
+  bool gen_any_;
+
+  /**
    * True iff we should generate local reflection metadata for TDenseProtocol.
    */
   bool gen_dense_;
@@ -265,8 +273,8 @@ void t_cpp_generator::init_generator() {
 
   // Include base types
   f_types_ <<
-    "#include <boost/any.hpp>" << endl <<
     "#include <Thrift.h>" << endl <<
+    "#include <TAny.h>" << endl <<
     "#include <reflection_limited_types.h>" << endl <<
     "#include <protocol/TProtocol.h>" << endl <<
     "#include <transport/TTransport.h>" << endl <<
@@ -619,6 +627,9 @@ void t_cpp_generator::generate_struct_definition(ofstream& out,
   if (is_exception) {
     extends = " : public facebook::thrift::TException";
   }
+  if (gen_any_ && !is_exception) {
+    extends = " : public facebook::thrift::ThriftBase";
+  }
 
   // Open struct def
   out <<
@@ -741,11 +752,16 @@ void t_cpp_generator::generate_struct_definition(ofstream& out,
 
   out << endl;
 
+  string virt = "";
+  if (gen_any_)
+  {
+    virt = "virtual";
+  }
   if (!pointers) {
     // Generate an equality testing operator.  Make it inline since the compiler
     // will do a better job than we would when deciding whether to inline it.
     out <<
-      indent() << "bool operator == (const " << tstruct->get_name() << " & " <<
+      indent() << virt << "bool operator == (const " << tstruct->get_name() << " & " <<
       (members.size() > 0 ? "rhs" : "/* rhs */") << ") const" << endl;
     scope_up(out);
     for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
@@ -770,7 +786,7 @@ void t_cpp_generator::generate_struct_definition(ofstream& out,
     indent(out) << "return true;" << endl;
     scope_down(out);
     out <<
-      indent() << "bool operator != (const " << tstruct->get_name() << " &rhs) const {" << endl <<
+      indent() << virt << "bool operator != (const " << tstruct->get_name() << " &rhs) const {" << endl <<
       indent() << "  return !(*this == rhs);" << endl <<
       indent() << "}" << endl << endl;
 
@@ -778,16 +794,16 @@ void t_cpp_generator::generate_struct_definition(ofstream& out,
     // implemented by the application developer if they wish to use it.  (They
     // will get a link error if they try to use it without an implementation.)
     out <<
-      indent() << "bool operator < (const "
+      indent() << virt << "bool operator < (const "
                << tstruct->get_name() << " & ) const;" << endl << endl;
   }
   if (read) {
     out <<
-      indent() << "uint32_t read(facebook::thrift::protocol::TProtocol* iprot);" << endl;
+      indent() << virt << "uint32_t read(facebook::thrift::protocol::TProtocol* iprot);" << endl;
   }
   if (write) {
     out <<
-      indent() << "uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;" << endl;
+      indent() << virt << "uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;" << endl;
   }
   out << endl;
 
@@ -830,6 +846,19 @@ void t_cpp_generator::generate_struct_fingerprint(ofstream& out,
       comma = ",";
     }
     out << "};" << endl << endl;
+  }
+
+  if (!is_definition) {
+    indent(out) << "virtual uint32_t writeFingerPrint(facebook::thrift::protocol"
+      << "::TProtocol *oprot) const { \n";
+    indent_up();
+    indent(out) << "uint32_t result = 0;" << endl << indent() << "for (int i=0; i<16; ++i)\n";
+    indent_up();
+    indent(out) << "result += oprot->writeByte(binary_fingerprint[i]);\n";
+    indent_down();
+    indent(out) << "return result;\n";
+    indent_down();
+    indent(out) << "}" << endl << endl;
   }
 }
 
@@ -2966,7 +2995,7 @@ string t_cpp_generator::base_type_name(t_base_type::t_base tbase) {
   case t_base_type::TYPE_DOUBLE:
     return "double";
   case t_base_type::TYPE_ANY:
-    return "boost::any";
+    return "facebook::thrift::TAny";
   default:
     throw "compiler error: no C++ base type name for base type " + t_base_type::t_base_name(tbase);
   }
