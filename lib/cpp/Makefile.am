@@ -65,6 +65,7 @@ include_thriftdir = $(includedir)/thrift
 include_thrift_HEADERS = \
                          $(top_builddir)/config.h \
                          src/Thrift.h \
+                         src/TAny.h \
                          src/TReflectionLocal.h \
                          src/reflection_limited_types.h \
                          src/TProcessor.h \
