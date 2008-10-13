@@ -1,4 +1,4 @@
-#include "TAny.h"
+#include <TAny.h>
 #include <protocol/TProtocol.h>
 
 using namespace facebook::thrift;
@@ -46,14 +46,14 @@ ThriftBase* ThriftFactory_::get(const std::string &md5) {
     return 0;
   return i->second();
 }
+
+TAny & TAny::operator = (const TAny &rhs)
+{
+  value_ = rhs.value_;
+  return *this;
+}
 }}
 
-/*bool TAny::operator = (const TAny &rhs) {
-}*/
-/*TAny & operator = (const TAny &lhs, const TAny &rhs)
-{
-  lhs.value_ = rhs.value_;
-}*/
 
 uint32_t TAny::write(TProtocol *oprot) const {
   int8_t type = guess_type(*this);

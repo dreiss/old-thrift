@@ -27,7 +27,7 @@ class TAny {
   virtual ~TAny() {/* fill it*/ };
 
   friend bool operator == (const TAny&, const TAny&);
-  /*TAny & operator = (const TAny &rhs);*/
+  TAny & operator = (const TAny &rhs);
   bool operator != (const TAny &rhs) {
     return operator==(*this, rhs);
   }
