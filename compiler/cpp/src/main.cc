@@ -141,6 +141,7 @@ int g_doctext_lineno;
  */
 bool gen_cpp = false;
 bool gen_dense = false;
+bool gen_any = false;
 bool gen_java = false;
 bool gen_javabean = false;
 bool gen_rb = false;
@@ -970,6 +971,8 @@ int main(int argc, char** argv) {
         generator_strings.push_back(arg);
       } else if (strcmp(arg, "-dense") == 0) {
         gen_dense = true;
+      } else if (strcmp(arg, "-any") == 0) {
+        gen_any = true;
       } else if (strcmp(arg, "-cpp") == 0) {
         gen_cpp = true;
       } else if (strcmp(arg, "-javabean") == 0) {
@@ -1080,6 +1083,9 @@ int main(int argc, char** argv) {
     }
     if (g_cpp_use_include_prefix) {
       gen_string.append("include_prefix,");
+    }
+    if (gen_any) {
+      gen_string.append("any,");
     }
     generator_strings.push_back(gen_string);
   }
