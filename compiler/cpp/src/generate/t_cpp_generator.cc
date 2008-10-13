@@ -824,14 +824,46 @@ void t_cpp_generator::generate_struct_definition(ofstream& out,
       indent() << virt << "bool operator < (const "
                << tstruct->get_name() << " & ) const;" << endl << endl;
   }
+
+  // Generate comparation with ThriftBase&
+  if (gen_any_) {
+    out << indent() << "virtual bool operator == (const facebook::thrift::ThriftBase &rhs) const {" << endl;
+    indent_up();
+    out << indent() << "const " << tstruct->get_name() 
+                    << " *p = dynamic_cast<const " << tstruct->get_name() << " *>(&rhs);" << endl
+        << indent() << "if (!p) return false;" << endl
+        << indent() << "return *this == *p;" << endl;
+    indent_down();
+    out << indent() << "}" << endl;
+  }
+
   if (read) {
     out <<
       indent() << virt << "uint32_t read(facebook::thrift::protocol::TProtocol* iprot);" << endl;
+  } else {
+    /* TODO (shigin): do something better */
+    /* we must declare some read and write method else struct will be virtual */
+    if (gen_any_ && !is_exception) {
+      out << 
+        indent() << virt << "uint32_t read(facebook::thrift::protocol::TProtocol* iprot) {"
+        << endl << indent() << "  throw \"assertion failed\";"
+        << indent() << "}" << endl;
+    }
   }
   if (write) {
     out <<
       indent() << virt << "uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const;" << endl;
+  } else {
+    /* TODO (shigin): do something better */
+    /* we must declare some read and write method else struct will be virtual */
+    if (gen_any_ && !is_exception) {
+      out << 
+        indent() << virt << "uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const {"
+        << endl << indent() << "  throw \"assertion failed\";"
+        << indent() << "}" << endl;
+    }
   }
+
   out << endl;
 
   indent_down();
