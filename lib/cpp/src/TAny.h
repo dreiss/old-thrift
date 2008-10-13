@@ -29,7 +29,7 @@ class TAny {
   friend bool operator == (const TAny&, const TAny&);
   TAny & operator = (const TAny &rhs);
   bool operator != (const TAny &rhs) {
-    return operator==(*this, rhs);
+    return !(*this == rhs);
   }
 
   const std::type_info & type() const { return value_.type(); }
