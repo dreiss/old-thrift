@@ -172,6 +172,8 @@ class t_cpp_generator : public t_oop_generator {
   std::string type_to_enum(t_type* ttype);
   std::string local_reflection_name(const char*, t_type* ttype, bool external=false);
 
+  // iff generate with any
+  void generate_factory_register(std::ofstream& out, t_struct *tstruct);
   // These handles checking gen_dense_ and checking for duplicates.
   void generate_local_reflection(std::ofstream& out, t_type* ttype, bool is_definition);
   void generate_local_reflection_pointer(std::ofstream& out, t_type* ttype);
@@ -604,6 +606,8 @@ string t_cpp_generator::render_const_value(ofstream& out, string name, t_type* t
 void t_cpp_generator::generate_cpp_struct(t_struct* tstruct, bool is_exception) {
   generate_struct_definition(f_types_, tstruct, is_exception);
   generate_struct_fingerprint(f_types_impl_, tstruct, true);
+  if (!is_exception)
+    generate_factory_register(f_types_, tstruct);
   generate_local_reflection(f_types_, tstruct, false);
   generate_local_reflection(f_types_impl_, tstruct, true);
   generate_local_reflection_pointer(f_types_impl_, tstruct);
@@ -611,6 +615,29 @@ void t_cpp_generator::generate_cpp_struct(t_struct* tstruct, bool is_exception) 
   generate_struct_writer(f_types_impl_, tstruct);
 }
 
+/**
+ * Register class in factory
+ */
+void t_cpp_generator::generate_factory_register(ofstream& out,
+                                                t_struct* tstruct) {
+  // Alexandrescu, Modern C++ Design
+  if (gen_any_) {
+    out << indent() << "namespace {" << endl;
+    indent_up();
+    out << indent() << "facebook::thrift::ThriftBase* Create" << tstruct->get_name() << "() {" << endl;
+    indent_up();
+    out << indent() << "return new " << tstruct->get_name() << ";" << endl;
+    indent_down();
+    out << indent() << "}" << endl
+        << indent() << "const bool " << tstruct->get_name() << "Register = "
+                    << "facebook::thrift::ThriftFactory::registerStruct(" << endl
+        << indent() << "  " << tstruct->get_name() << "::ascii_fingerprint, Create"
+                    << tstruct->get_name() << endl
+        << indent() << ");" << endl;
+    indent_down();
+    out << indent() << "}" << endl;
+  }
+}
 /**
  * Writes the struct definition into the header file
  *
@@ -755,7 +782,7 @@ void t_cpp_generator::generate_struct_definition(ofstream& out,
   string virt = "";
   if (gen_any_)
   {
-    virt = "virtual";
+    virt = "virtual ";
   }
   if (!pointers) {
     // Generate an equality testing operator.  Make it inline since the compiler
