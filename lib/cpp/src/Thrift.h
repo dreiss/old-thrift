@@ -74,8 +74,8 @@ namespace protocol {
 class ThriftBase {
  public:
   virtual ~ThriftBase() {}
-  virtual bool operator == (const ThriftBase &rhs)=0;
-  virtual bool operator != (const ThriftBase &rhs) {
+  virtual bool operator == (const ThriftBase &rhs) const=0;
+  virtual bool operator != (const ThriftBase &rhs) const {
     return !(*this == rhs);
   }
   virtual uint32_t read(facebook::thrift::protocol::TProtocol *iprot)=0;
