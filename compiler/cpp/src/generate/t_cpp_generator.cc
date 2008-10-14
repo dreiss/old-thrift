@@ -621,7 +621,7 @@ void t_cpp_generator::generate_cpp_struct(t_struct* tstruct, bool is_exception) 
 void t_cpp_generator::generate_factory_register(ofstream& out,
                                                 t_struct* tstruct) {
   // Alexandrescu, Modern C++ Design
-  if (gen_any_) {
+  if (gen_any_ && tstruct->has_fingerprint()) {
     out << indent() << "namespace {" << endl;
     indent_up();
     out << indent() << "facebook::thrift::ThriftBase* Create" << tstruct->get_name() << "() {" << endl;
@@ -638,6 +638,7 @@ void t_cpp_generator::generate_factory_register(ofstream& out,
     out << indent() << "}" << endl;
   }
 }
+
 /**
  * Writes the struct definition into the header file
  *
@@ -651,11 +652,15 @@ void t_cpp_generator::generate_struct_definition(ofstream& out,
                                                  bool read,
                                                  bool write) {
   string extends = "";
+  string virt = "";
+  bool do_any = false;
   if (is_exception) {
     extends = " : public facebook::thrift::TException";
   }
-  if (gen_any_ && !is_exception) {
+  if (gen_any_ && !is_exception && tstruct->has_fingerprint()) {
     extends = " : public facebook::thrift::ThriftBase";
+    virt = "virtual ";
+    do_any = true;
   }
 
   // Open struct def
@@ -779,11 +784,6 @@ void t_cpp_generator::generate_struct_definition(ofstream& out,
 
   out << endl;
 
-  string virt = "";
-  if (gen_any_)
-  {
-    virt = "virtual ";
-  }
   if (!pointers) {
     // Generate an equality testing operator.  Make it inline since the compiler
     // will do a better job than we would when deciding whether to inline it.
@@ -826,7 +826,7 @@ void t_cpp_generator::generate_struct_definition(ofstream& out,
   }
 
   // Generate comparation with ThriftBase&
-  if (gen_any_) {
+  if (do_any) {
     out << indent() << "virtual bool operator == (const facebook::thrift::ThriftBase &rhs) const {" << endl;
     indent_up();
     out << indent() << "const " << tstruct->get_name() 
@@ -843,7 +843,7 @@ void t_cpp_generator::generate_struct_definition(ofstream& out,
   } else {
     /* TODO (shigin): do something better */
     /* we must declare some read and write method else struct will be virtual */
-    if (gen_any_ && !is_exception) {
+    if (do_any) {
       out << 
         indent() << virt << "uint32_t read(facebook::thrift::protocol::TProtocol* iprot) {"
         << endl << indent() << "  throw \"assertion failed\";"
@@ -856,7 +856,7 @@ void t_cpp_generator::generate_struct_definition(ofstream& out,
   } else {
     /* TODO (shigin): do something better */
     /* we must declare some read and write method else struct will be virtual */
-    if (gen_any_ && !is_exception) {
+    if (do_any && !is_exception) {
       out << 
         indent() << virt << "uint32_t write(facebook::thrift::protocol::TProtocol* oprot) const {"
         << endl << indent() << "  throw \"assertion failed\";"
@@ -905,19 +905,20 @@ void t_cpp_generator::generate_struct_fingerprint(ofstream& out,
       comma = ",";
     }
     out << "};" << endl << endl;
-  }
+  
 
-  if (!is_definition) {
-    indent(out) << "virtual uint32_t writeFingerPrint(facebook::thrift::protocol"
-      << "::TProtocol *oprot) const { \n";
-    indent_up();
-    indent(out) << "uint32_t result = 0;" << endl << indent() << "for (int i=0; i<16; ++i)\n";
-    indent_up();
-    indent(out) << "result += oprot->writeByte(binary_fingerprint[i]);\n";
-    indent_down();
-    indent(out) << "return result;\n";
-    indent_down();
-    indent(out) << "}" << endl << endl;
+    if (!is_definition) {
+      indent(out) << "virtual uint32_t writeFingerPrint(facebook::thrift::protocol"
+        << "::TProtocol *oprot) const { \n";
+      indent_up();
+      indent(out) << "uint32_t result = 0;" << endl << indent() << "for (int i=0; i<16; ++i)\n";
+      indent_up();
+      indent(out) << "result += oprot->writeByte(binary_fingerprint[i]);\n";
+      indent_down();
+      indent(out) << "return result;\n";
+      indent_down();
+      indent(out) << "}" << endl << endl;
+    }
   }
 }
 
