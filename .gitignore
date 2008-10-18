@@ -63,4 +63,7 @@ test/java/thrifttest.jar
 test/py/Makefile
 test/py/Makefile.in
 test/py/gen-py
+test/any/gen-cpp/
+test/any/main
+test/any/*.o
 ylwrap

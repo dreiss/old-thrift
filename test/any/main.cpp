@@ -1,12 +1,13 @@
-#include <boost/test/unit_test.hpp>
-#include <boost/any.hpp>
 #include <iostream>
 #include <climits>
 #include <cassert>
+#include <boost/shared_ptr.hpp>
 #include <transport/TBufferTransports.h>
 #include <protocol/TBinaryProtocol.h>
+#include <TAny.h>
 #include "anytest_types.h"
 
+using facebook::thrift::any_cast;
 using facebook::thrift::transport::TMemoryBuffer;
 using facebook::thrift::protocol::TBinaryProtocol;
 using boost::shared_ptr;
@@ -27,6 +28,6 @@ int main() {
     shared_ptr<TBinaryProtocol> binaryProtcol2(new TBinaryProtocol(strBuffer2));
 
     b.read(binaryProtcol2.get());
-    printf("read from buffer %d\n", boost::any_cast<int>(b.tt));
+    printf("read from buffer %d\n", any_cast<int>(b.tt));
     return 0;
 }

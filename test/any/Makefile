@@ -37,7 +37,7 @@ CCFL  = -Wall -O3 -I./gen-cpp $(include_flags)
 CFL   = $(CCFL) $(LFL)
 
 all: main
-	./main
+	LD_LIBRARY_PATH=${thrift_home}/lib/cpp/.libs ./main
 
 gen-cpp/anytest_types.cpp: anytest.thrift
 	$(THRIFT) --cpp $<
