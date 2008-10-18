@@ -4,6 +4,7 @@
 # See accompanying file LICENSE or visit the Thrift site at:
 # http://developers.facebook.com/thrift/
 
+import md5
 from TProtocol import *
 from struct import pack, unpack
 
@@ -22,6 +23,7 @@ class TBinaryProtocol(TProtocolBase):
   VERSION_1 = -2147418112
 
   TYPE_MASK = 0x000000ff
+  MD5LEN = md5.digest_size
 
   def __init__(self, trans, strictRead=False, strictWrite=True):
     TProtocolBase.__init__(self, trans)
@@ -108,6 +110,30 @@ class TBinaryProtocol(TProtocolBase):
   def writeString(self, str):
     self.writeI32(len(str))
     self.trans.write(str)
+
+  def writeAny(self, any):
+    if isinstance(any, bool):
+      self.writeByte(TType.BOOL)
+      self.writeBool(any)
+    elif isinstance(any, int):
+      self.writeByte(TType.I32)
+      self.writeI32(any)
+    elif isinstance(any, long):
+      self.writeByte(TType.I64)
+      self.writeI64(any)
+    elif isinstance(any, str):
+      self.writeByte(TType.STRING)
+      self.writeString(any)
+    elif isinstance(any, float):
+      self.writeByte(TType.DOUBLE)
+      self.writeDouble(any)
+    elif hasattr(any, 'binary_fingerprint'):
+      assert hasattr(any, 'write')
+      self.writeByte(TType.STRUCT)
+      self.trans.write(any.binary_fingerprint)
+      any.write(self)
+    else:
+      raise Exception, "any can't handle type '%s'" % repr(type(any))
 
   def readMessageBegin(self):
     sz = self.readI32()
@@ -200,6 +226,34 @@ class TBinaryProtocol(TProtocolBase):
     buff = self.trans.readAll(8)
     val, = unpack('!d', buff)
     return val
+
+  def readAny(self):
+    type, = unpack('!b', self.trans.readAll(1))
+    if type == TType.BYTE:
+      return self.readByte()
+    if type == TType.BYTE:
+      return self.readByte()
+    if type == TType.I16:
+      return self.readI16()
+    if type == TType.I32:
+      return self.readI32()
+    if type == TType.I64:
+      return self.readI64()
+    if type == TType.DOUBLE:
+      return self.readDouble()
+    if type == TType.STRING:
+      return self.readString()
+    if type == TType.STRUCT:
+      finger = self.trans.read(TBinaryProtocol.MD5LEN)
+      class_ = StructFactory.get(finger)
+      if class_:
+	result = class_()
+	result.read(self)
+	return result
+      else:
+	self.skip(TType.STRUCT)
+	return
+    raise Exception, "can't guess type of '%d'" % type
 
   def readString(self):
     len = self.readI32()

@@ -36,11 +36,15 @@ LFL   =  -L$(thrift_home)/lib/cpp/.libs -lthrift -lthriftnb -levent
 CCFL  = -Wall -O3 -I./gen-cpp $(include_flags)
 CFL   = $(CCFL) $(LFL)
 
-all: main
+all: main gen-py/anytest/ttypes.py
 	LD_LIBRARY_PATH=${thrift_home}/lib/cpp/.libs ./main
+	python main.py
 
 gen-cpp/anytest_types.cpp: anytest.thrift
 	$(THRIFT) --gen cpp:any $<
+
+gen-py/anytest/ttypes.py: anytest.thrift
+	$(THRIFT) --gen py $<
 
 .cpp.o:
 	g++ $(DCFL) -c -o $@ $<
