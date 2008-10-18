@@ -22,7 +22,7 @@ class TAny {
   TAny(int32_t val) : value_(val) {}
   TAny(int64_t val) : value_(val) {}
   TAny(const std::string &val) : value_(val) {}
-  TAny(const ThriftBase *val) : value_(val) {}
+  TAny(ThriftBase *val) : value_(val) {}
   TAny(const TAny &val) : value_(val.value_) {}
   virtual ~TAny() {/* fill it*/ };
 

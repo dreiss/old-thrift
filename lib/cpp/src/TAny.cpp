@@ -82,7 +82,8 @@ uint32_t TAny::write(TProtocol *oprot) const {
 uint32_t TAny::read(TProtocol *iprot) {
   int8_t type;
   uint32_t result = iprot->readByte(type);
-  char finger[32];
+  char finger[33];
+  finger[33] = '\0';
   ThriftBase *tmp;
   std::string str = std::string();
   switch (type) {
@@ -126,10 +127,10 @@ uint32_t TAny::read(TProtocol *iprot) {
       for (int i=0; i<16; ++i)
       {
         result += iprot->readByte(x);
-        uint8_t hi = (uint8_t)x / 32; // is it safe???
-        uint8_t lo = (uint8_t)x % 32;
+        uint8_t hi = (uint8_t)x / 16; // is it safe???
+        uint8_t lo = (uint8_t)x % 16;
         finger[i*2] = (hi > 9) ? hi + 'A' - 10 : hi + '0';
-        finger[i*2] = (lo > 9) ? lo + 'A' - 10 : lo + '0';
+        finger[i*2+1] = (lo > 9) ? lo + 'A' - 10 : lo + '0';
       }
       tmp = ThriftFactory::get(finger);
       if (tmp != 0)
@@ -162,6 +163,8 @@ uint8_t guess_type(const TAny &val)
   if (val.type() == typeid(std::string))
     return T_STRING;
   if (val.type() == typeid(ThriftBase*))
+    return T_STRUCT;
+  if (val.type() == typeid(const ThriftBase*))
     return T_STRUCT;
   fprintf(stderr, "sorry, i can't handle %s type\n", val.type().name());
   throw "can't guess type";
