@@ -23,9 +23,11 @@ class TAny {
   TAny(int64_t val) : value_(val) {}
   TAny(const std::string &val) : value_(val) {}
   TAny(const ThriftBase *val) : value_(val) {}
-  TAny(const TAny &val) : value_(val) {}
+  TAny(const TAny &val) : value_(val.value_) {}
   virtual ~TAny() {/* fill it*/ };
 
+  template<typename T>
+  friend T any_cast(TAny &hs);
   friend bool operator == (const TAny&, const TAny&);
   TAny & operator = (const TAny &rhs);
   bool operator != (const TAny &rhs) {
@@ -37,8 +39,19 @@ class TAny {
   uint32_t write(facebook::thrift::protocol::TProtocol *oprot) const;
 };
 
+uint8_t guess_type(const TAny &val);
+template<typename T>
+T any_cast(TAny &hs)
+{
+  /*printf("type: %d\n", guess_type(hs));
+  printf("true: %d; xxx: %d\n", 32==32, typeid(T) == hs.type());
+  T *x = boost::any_cast<T *>(hs.value_);*/
+  return boost::any_cast<T>(hs.value_);
+}
+
 typedef ThriftBase* (*StructCreator)();
-// i've check out boost::singleton_default: it's thread safe if thread runs inside main
+// i've check out boost::singleton_default: it's thread safe if thread runs
+// inside main
 // i belive that thread in thrift will work only in main().
 class ThriftFactory_ {
  private:

@@ -1,12 +1,8 @@
 #include <TAny.h>
 #include <protocol/TProtocol.h>
 
-using namespace facebook::thrift;
-using namespace facebook::thrift::protocol;
-
-uint8_t guess_type(const TAny &val);
-
 namespace facebook { namespace thrift {
+using namespace facebook::thrift::protocol;
 bool operator == (const TAny &lhs, const TAny &rhs)
 {
   if (lhs.type() != rhs.type())
@@ -52,8 +48,6 @@ TAny & TAny::operator = (const TAny &rhs)
   value_ = rhs.value_;
   return *this;
 }
-}}
-
 
 uint32_t TAny::write(TProtocol *oprot) const {
   int8_t type = guess_type(*this);
@@ -172,3 +166,5 @@ uint8_t guess_type(const TAny &val)
   fprintf(stderr, "sorry, i can't handle %s type\n", val.type().name());
   throw "can't guess type";
 }
+
+}}
