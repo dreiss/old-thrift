@@ -8,6 +8,7 @@
 #include "anytest_types.h"
 
 using facebook::thrift::any_cast;
+using facebook::thrift::struct_cast;
 using facebook::thrift::TAny;
 using facebook::thrift::ThriftBase;
 using facebook::thrift::transport::TMemoryBuffer;
@@ -41,10 +42,9 @@ int main() {
     delete b;
 
     a.tt = new Test();
-    ((Test *)any_cast<ThriftBase*>(a.tt))->tt = 5;
+    struct_cast<Test*>(a.tt)->tt = 5;
     b = zipzap(a);
-    ThriftBase *xx = any_cast<ThriftBase*>(b->tt);
-    TAny x = ((Test *)xx)->tt;
+    TAny x = struct_cast<Test*>(b->tt)->tt;
     printf("read from buffer %d\n", any_cast<int>(x));
     return 0;
 }

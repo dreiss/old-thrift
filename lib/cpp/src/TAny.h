@@ -28,6 +28,7 @@ class TAny {
 
   template<typename T>
   friend T any_cast(TAny &hs);
+
   friend bool operator == (const TAny&, const TAny&);
   TAny & operator = (const TAny &rhs);
   bool operator != (const TAny &rhs) {
@@ -40,6 +41,7 @@ class TAny {
 };
 
 uint8_t guess_type(const TAny &val);
+
 template<typename T>
 T any_cast(TAny &hs)
 {
@@ -47,6 +49,12 @@ T any_cast(TAny &hs)
   printf("true: %d; xxx: %d\n", 32==32, typeid(T) == hs.type());
   T *x = boost::any_cast<T *>(hs.value_);*/
   return boost::any_cast<T>(hs.value_);
+}
+
+template<typename T>
+T struct_cast(TAny &hs)
+{
+  return dynamic_cast<T>(any_cast<ThriftBase *>(hs));
 }
 
 typedef ThriftBase* (*StructCreator)();
