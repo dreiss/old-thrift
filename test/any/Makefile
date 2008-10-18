@@ -40,7 +40,7 @@ all: main
 	LD_LIBRARY_PATH=${thrift_home}/lib/cpp/.libs ./main
 
 gen-cpp/anytest_types.cpp: anytest.thrift
-	$(THRIFT) --cpp $<
+	$(THRIFT) --gen cpp:any $<
 
 .cpp.o:
 	g++ $(DCFL) -c -o $@ $<

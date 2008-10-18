@@ -821,7 +821,7 @@ void t_cpp_generator::generate_struct_definition(ofstream& out,
     // implemented by the application developer if they wish to use it.  (They
     // will get a link error if they try to use it without an implementation.)
     out <<
-      indent() << virt << "bool operator < (const "
+      indent() << "bool operator < (const "
                << tstruct->get_name() << " & ) const;" << endl << endl;
   }
 

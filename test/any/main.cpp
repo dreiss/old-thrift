@@ -29,5 +29,6 @@ int main() {
 
     b.read(binaryProtcol2.get());
     printf("read from buffer %d\n", any_cast<int>(b.tt));
+    assert(a == b);
     return 0;
 }
