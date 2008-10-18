@@ -22,6 +22,7 @@ class TType:
   LIST   = 15
   UTF8   = 16
   UTF16  = 17
+  ANY    = 20
 
 class TMessageType:
   CALL  = 1
@@ -107,3 +108,26 @@ class TApplicationException(TException):
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
     oprot.writeStructEnd()
+
+class __StructFactory:
+  def __init__(self):
+    import threading
+    self.__lock = threading.Lock()
+    self.__mapping = {}
+
+  def register(self, class_):
+    # keep python2.4 support
+    try:
+      self.__lock.acquire()
+      self.__mapping[class_.binary_fingerprint] = class_
+    finally:
+      self.__lock.release()
+
+  def get(self, md5):
+    try:
+      self.__lock.acquire()
+      return self.__mapping.get(md5)
+    finally:
+      self.__lock.release()
+
+StructFactory = __StructFactory()

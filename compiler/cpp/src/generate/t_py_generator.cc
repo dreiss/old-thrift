@@ -135,6 +135,11 @@ class t_py_generator : public t_generator {
                                           t_list*     tlist,
                                           std::string iter);
 
+  void generate_struct_fingerprint       (std::ofstream &out,
+                                          t_struct* tstruct);
+
+  void generate_factory_register         (std::ofstream& out,
+                                          t_struct *tstruct);
   /**
    * Helper rendering functions
    */
@@ -481,6 +486,7 @@ void t_py_generator::generate_xception(t_struct* txception) {
 void t_py_generator::generate_py_struct(t_struct* tstruct,
                                         bool is_exception) {
   generate_py_struct_definition(f_types_, tstruct, is_exception);
+  generate_factory_register(f_types_, tstruct);
 }
 
 /**
@@ -524,6 +530,7 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
 
   out << endl;
 
+  generate_struct_fingerprint(out, tstruct);
   /*
      Here we generate the structure specification for the fastbinary codec.
      These specifications have the following structure:
@@ -1442,8 +1449,11 @@ void t_py_generator::generate_deserialize_field(ofstream &out,
       case t_base_type::TYPE_DOUBLE:
         out << "readDouble();";
         break;
+      case t_base_type::TYPE_ANY:
+        out << "readAny();";
+        break;
       default:
-        throw "compiler error: no PHP name for base type " + t_base_type::t_base_name(tbase);
+        throw "compiler error: no python name for base type " + t_base_type::t_base_name(tbase);
       }
     } else if (type->is_enum()) {
       out << "readI32();";
@@ -1636,8 +1646,11 @@ void t_py_generator::generate_serialize_field(ofstream &out,
       case t_base_type::TYPE_DOUBLE:
         out << "writeDouble(" << name << ")";
         break;
+      case t_base_type::TYPE_ANY:
+        out << "writeAny(" << name << ")";
+        break;
       default:
-        throw "compiler error: no PHP name for base type " + t_base_type::t_base_name(tbase);
+        throw "compiler error: no python name for base type " + t_base_type::t_base_name(tbase);
       }
     } else if (type->is_enum()) {
       out << "writeI32(" << name << ")";
@@ -1757,6 +1770,34 @@ void t_py_generator::generate_serialize_list_element(ofstream &out,
 }
 
 /**
+ * Write finger print for structure.
+ */
+void t_py_generator::generate_struct_fingerprint(std::ofstream &out,
+                                                 t_struct* tstruct) {
+  if (tstruct->has_fingerprint()) {
+    out << 
+      indent() << "ascii_fingerprint = '" << tstruct->get_ascii_fingerprint() 
+        << "'" << endl <<
+      indent() << "binary_fingerprint = '";
+    for (int i = 0; i < t_type::fingerprint_len; i++) {
+      out << "\\x" << t_struct::byte_to_hex(tstruct->get_binary_fingerprint()[i]);
+    }
+    out << "'" << endl;
+  }
+}
+
+/**
+ * Register class in factory
+ */
+void t_py_generator::generate_factory_register(ofstream& out,
+                                                t_struct* tstruct) {
+  if (tstruct->has_fingerprint()) {
+    out << "StructFactory.register(" << tstruct->get_name() << ")" << endl;
+    out << endl;
+  }
+}
+
+/**
  * Declares a field, which may include initialization as necessary.
  *
  * @param ttype The type
@@ -1843,6 +1884,8 @@ string t_py_generator::type_to_enum(t_type* type) {
       return "TType.I64";
     case t_base_type::TYPE_DOUBLE:
       return "TType.DOUBLE";
+    case t_base_type::TYPE_ANY:
+      return "TType.ANY";
     }
   } else if (type->is_enum()) {
     return "TType.I32";
