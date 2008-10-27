@@ -44,7 +44,6 @@ class t_java_generator : public t_oop_generator {
     out_dir_base_ = (bean_style_ ? "gen-javabean" : "gen-java");
   }
 
-
   /**
    * Init and close methods
    */
@@ -79,6 +78,9 @@ class t_java_generator : public t_oop_generator {
   void generate_java_struct_result_writer(std::ofstream& out, t_struct* tstruct);
   void generate_java_struct_writer(std::ofstream& out, t_struct* tstruct);
   void generate_java_struct_tostring(std::ofstream& out, t_struct* tstruct);
+  void generate_reflection_setters(std::ostringstream& out, t_type* type, std::string field_name, std::string cap_name);
+  void generate_reflection_getters(std::ostringstream& out, t_type* type, std::string field_name, std::string cap_name);
+  void generate_generic_field_getters_setters(std::ofstream& out, t_struct* tstruct);
   void generate_java_bean_boilerplate(std::ofstream& out, t_struct* tstruct);
 
   void generate_function_helpers(t_function* tfunction);
@@ -581,6 +583,8 @@ void t_java_generator::generate_java_struct_definition(ofstream &out,
       indent(out) << "public ";
     }
     out << declare_field(*m_iter, false) << endl;
+
+    indent(out) << "public static final int " << upcase_string((*m_iter)->get_name()) << " = " << (*m_iter)->get_key() << ";" << endl;
   }
 
   // Inner Isset class
@@ -635,7 +639,13 @@ void t_java_generator::generate_java_struct_definition(ofstream &out,
     for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
       indent(out) << "this." << (*m_iter)->get_name() << " = " <<
         (*m_iter)->get_name() << ";" << endl;
-      indent(out) << "this.__isset." << (*m_iter)->get_name() << " = true;" << endl;
+      indent(out) << "this.__isset." << (*m_iter)->get_name() << " = ";
+      if (type_can_be_null((*m_iter)->get_type())) {
+        out << "(" << (*m_iter)->get_name() << " != null)";
+      } else {
+        out << "true";
+      }
+      out << ";" << endl;
     }
     indent_down();
     indent(out) << "}" << endl << endl;
@@ -643,6 +653,7 @@ void t_java_generator::generate_java_struct_definition(ofstream &out,
 
   if (bean_style_) {
     generate_java_bean_boilerplate(out, tstruct);
+    generate_generic_field_getters_setters(out, tstruct);
   }
 
   generate_java_struct_equality(out, tstruct);
@@ -838,7 +849,7 @@ void t_java_generator::generate_java_struct_reader(ofstream& out,
       // Generate deserialization code for known cases
       for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
         indent(out) <<
-          "case " << (*f_iter)->get_key() << ":" << endl;
+          "case " << upcase_string((*f_iter)->get_name()) << ":" << endl;
         indent_up();
         indent(out) <<
           "if (field.type == " << type_to_enum((*f_iter)->get_type()) << ") {" << endl;
@@ -916,7 +927,7 @@ void t_java_generator::generate_java_struct_writer(ofstream& out,
     out <<
       indent() << "field.name = \"" << (*f_iter)->get_name() << "\";" << endl <<
       indent() << "field.type = " << type_to_enum((*f_iter)->get_type()) << ";" << endl <<
-      indent() << "field.id = " << (*f_iter)->get_key() << ";" << endl <<
+      indent() << "field.id = " << upcase_string((*f_iter)->get_name()) << ";" << endl <<
       indent() << "oprot.writeFieldBegin(field);" << endl;
 
     // Write field contents
@@ -996,7 +1007,7 @@ void t_java_generator::generate_java_struct_result_writer(ofstream& out,
     out <<
       indent() << "field.name = \"" << (*f_iter)->get_name() << "\";" << endl <<
       indent() << "field.type = " << type_to_enum((*f_iter)->get_type()) << ";" << endl <<
-      indent() << "field.id = " << (*f_iter)->get_key() << ";" << endl <<
+      indent() << "field.id = " << upcase_string((*f_iter)->get_name()) << ";" << endl <<
       indent() << "oprot.writeFieldBegin(field);" << endl;
 
     // Write field contents
@@ -1026,6 +1037,93 @@ void t_java_generator::generate_java_struct_result_writer(ofstream& out,
     endl;
 }
 
+void t_java_generator::generate_reflection_getters(ostringstream& out, t_type* type, string field_name, string cap_name) {
+  indent(out) << "case " << upcase_string(field_name) << ":" << endl;
+  indent_up();
+
+  if (type->is_base_type() && !type->is_string()) {
+    t_base_type* base_type = (t_base_type*)type;
+
+    indent(out) << "return new " << type_name(type, true, false) << "(" << (base_type->is_bool() ? "is" : "get") << cap_name << "());" << endl << endl;
+  } else {
+    indent(out) << "return get" << cap_name << "();" << endl << endl;
+  }
+
+  indent_down();
+}
+
+void t_java_generator::generate_reflection_setters(ostringstream& out, t_type* type, string field_name, string cap_name) {
+  indent(out) << "case " << upcase_string(field_name) << ":" << endl;
+  indent_up();
+
+  indent(out) << "set" << cap_name << "((" << type_name(type, true, false) << ")value);" << endl;
+  indent(out) << "break;" << endl << endl;
+
+  indent_down();
+}
+
+void t_java_generator::generate_generic_field_getters_setters(std::ofstream& out, t_struct* tstruct) {
+
+  std::ostringstream getter_stream;
+  std::ostringstream setter_stream;
+
+  // build up the bodies of both the getter and setter at once
+  const vector<t_field*>& fields = tstruct->get_members();
+  vector<t_field*>::const_iterator f_iter;
+  for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
+    t_field* field = *f_iter;
+    t_type* type = get_true_type(field->get_type());
+    std::string field_name = field->get_name();
+    std::string cap_name = field_name;
+    if (nocamel_style_) {
+      cap_name = "_" + cap_name;
+    } else {
+      cap_name[0] = toupper(cap_name[0]);
+    }
+
+    indent_up();
+    generate_reflection_setters(setter_stream, type, field_name, cap_name);
+    generate_reflection_getters(getter_stream, type, field_name, cap_name);
+    indent_down();
+  }
+
+
+  // create the setter
+  indent(out) << "public void setFieldValue(int fieldID, Object value) {" << endl;
+  indent_up();
+
+  indent(out) << "switch (fieldID) {" << endl;
+
+  out << setter_stream.str();
+
+  indent(out) << "default:" << endl;
+  indent(out) << "  throw new IllegalArgumentException(\"Field \" + fieldID + \" doesn't exist!\");" << endl;
+
+  indent(out) << "}" << endl;
+
+  indent_down();
+  indent(out) << "}" << endl << endl;
+
+  // create the getter
+  indent(out) << "public Object getFieldValue(int fieldID) {" << endl;
+  indent_up();
+
+  indent(out) << "switch (fieldID) {" << endl;
+
+  out << getter_stream.str();
+
+  indent(out) << "default:" << endl;
+  indent(out) << "  throw new IllegalArgumentException(\"Field \" + fieldID + \" doesn't exist!\");" << endl;
+
+  indent(out) << "}" << endl;
+
+  indent_down();
+
+  indent(out) << "}" << endl << endl;
+}
+
+
+
 /**
  * Generates a set of Java Bean boilerplate functions (setters, getters, etc.)
  * for the given struct.
@@ -1049,7 +1147,14 @@ void t_java_generator::generate_java_bean_boilerplate(ofstream& out,
 
     if (type->is_container()) {
       // Method to return the size of the collection
-      indent(out) << "public int get" << cap_name << "Size() {" << endl;
+      indent(out) << "public int get" << cap_name;
+      if (nocamel_style_) {
+        out << "_size";
+      } else {
+        out << "Size";
+      }
+      out << "() {" << endl;
+
       indent_up();
       indent(out) << "return (this." << field_name << " == null) ? 0 : " <<
         "this." << field_name << ".size();" << endl;
@@ -1068,7 +1173,13 @@ void t_java_generator::generate_java_bean_boilerplate(ofstream& out,
 
       // Iterator getter for sets and lists
       indent(out) << "public java.util.Iterator<" <<
-        type_name(element_type, true, false) <<  "> get" << cap_name << "Iterator() {" << endl;
+        type_name(element_type, true, false) <<  "> get" << cap_name;
+      if (nocamel_style_) {
+        out << "_iterator() {" << endl;
+      } else {
+        out << "Iterator() {" << endl;
+      }
+
       indent_up();
       indent(out) << "return (this." << field_name << " == null) ? null : " <<
         "this." << field_name << ".iterator();" << endl;
@@ -1076,9 +1187,14 @@ void t_java_generator::generate_java_bean_boilerplate(ofstream& out,
       indent(out) << "}" << endl << endl;
 
       // Add to set or list, create if the set/list is null
-      indent(out) << "public void addTo" << cap_name << "(" <<
-        type_name(element_type) <<
-        " elem) {" << endl;
+      indent(out);
+      if (nocamel_style_) {
+        out << "public void add_to";
+      } else {
+        out << "public void addTo";
+      }
+      out << cap_name << "(" << type_name(element_type) << " elem) {" << endl;
+
       indent_up();
       indent(out) << "if (this." << field_name << " == null) {" << endl;
       indent_up();
@@ -1095,9 +1211,16 @@ void t_java_generator::generate_java_bean_boilerplate(ofstream& out,
       // Put to map
       t_type* key_type = ((t_map*)type)->get_key_type();
       t_type* val_type = ((t_map*)type)->get_val_type();
-      indent(out) << "public void putTo" << cap_name << "(" <<
-        type_name(key_type) << " key, " <<
-        type_name(val_type) << " val) {" << endl;
+
+      indent(out);
+      if (nocamel_style_) {
+        out << "public void put_to";
+      } else {
+        out << "public void putTo";
+      }
+      out << cap_name << "(" << type_name(key_type) << " key, "
+        << type_name(val_type) << " val) {" << endl;
+
       indent_up();
       indent(out) << "if (this." << field_name << " == null) {" << endl;
       indent_up();
@@ -1131,7 +1254,13 @@ void t_java_generator::generate_java_bean_boilerplate(ofstream& out,
     indent_up();
     indent(out) << "this." << field_name << " = " << field_name << ";" <<
       endl;
-    indent(out) << "this.__isset." << field_name << " = true;" << endl;
+    // if the type isn't nullable, then the setter can't have been an unset in disguise.
+    if ((type->is_base_type() && !type->is_string()) || type->is_enum() ) {
+      indent(out) << "this.__isset." << field_name << " = true;" << endl;
+    } else {
+      indent(out) << "this.__isset." << field_name << " = (" << field_name << " != null);" << endl;
+    }
+
     indent_down();
     indent(out) << "}" << endl << endl;
 
@@ -1160,18 +1289,25 @@ void t_java_generator::generate_java_struct_tostring(ofstream& out,
 
   out <<
     indent() << "StringBuilder sb = new StringBuilder(\"" << tstruct->get_name() << "(\");" << endl;
+  out << indent() << "boolean first = true;" << endl << endl;
 
   const vector<t_field*>& fields = tstruct->get_members();
   vector<t_field*>::const_iterator f_iter;
-  bool first = true;
   for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
-    if (first) {
-      first = false;
-      indent(out) << "sb.append(\"" << (*f_iter)->get_name() << ":\");" << endl;
-    } else {
-      indent(out) << "sb.append(\"," << (*f_iter)->get_name() << ":\");" << endl;
+    if((*f_iter)->get_req() == t_field::T_OPTIONAL) {
+      indent(out) << "if (__isset." << (*f_iter)->get_name() << ") {" << endl;
+      indent_up();
     }
+
+    indent(out) << "if (!first) sb.append(\", \");" << endl;
+    indent(out) << "sb.append(\"" << (*f_iter)->get_name() << ":\");" << endl;
     indent(out) << "sb.append(this." << (*f_iter)->get_name() << ");" << endl;
+    indent(out) << "first = false;" << endl;
+
+    if((*f_iter)->get_req() == t_field::T_OPTIONAL) {
+      indent_down();
+      indent(out) << "}" << endl;
+    }
   }
   out <<
     indent() << "sb.append(\")\");" << endl <<

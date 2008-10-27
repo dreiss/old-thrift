@@ -10,6 +10,8 @@
 #include "globals.h"
 #include "t_generator.h"
 
+#include <algorithm>
+
 /**
  * Class with utility methods shared across common object oriented languages.
  * Specifically, most of this stuff is for C++/Java.
@@ -33,6 +35,11 @@ class t_oop_generator : public t_generator {
   void scope_down(std::ostream& out) {
     indent_down();
     indent(out) << "}" << std::endl;
+  }
+
+  std::string upcase_string(std::string original) {
+    std::transform(original.begin(), original.end(), original.begin(), (int(*)(int)) toupper);
+    return original;
   }
 
   /**
