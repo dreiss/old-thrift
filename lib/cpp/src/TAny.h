@@ -21,6 +21,8 @@ class TAny {
   TAny(int16_t val) : value_(val) {}
   TAny(int32_t val) : value_(val) {}
   TAny(int64_t val) : value_(val) {}
+  TAny(double val) : value_(val) {}
+  TAny(bool val) : value_(val) {}
   TAny(const std::string &val) : value_(val) {}
   TAny(ThriftBase *val) : value_(val) {}
   TAny(const TAny &val) : value_(val.value_) {}

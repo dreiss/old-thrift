@@ -42,6 +42,11 @@ int main() {
     assert(a == *b);
     printf("read from buffer %d\n", any_cast<int>(b->tt));
     delete b;
+    a.tt = 41.14;
+    b = zugzug(a);
+    assert(a == *b);
+    printf("read from buffer %0.2f\n", any_cast<double>(b->tt));
+    delete b;
 
     a.tt = new Test();
     struct_cast<Test*>(a.tt)->tt = 5;

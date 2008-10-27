@@ -11,6 +11,8 @@ bool operator == (const TAny &lhs, const TAny &rhs)
     return boost::any_cast<int8_t>(lhs.value_) == boost::any_cast<int8_t>(rhs.value_);
   if (lhs.type() == typeid(bool))
     return boost::any_cast<bool>(lhs.value_) == boost::any_cast<bool>(rhs.value_);
+  if (lhs.type() == typeid(double))
+    return boost::any_cast<double>(lhs.value_) == boost::any_cast<double>(rhs.value_);
   if (lhs.type() == typeid(int16_t))
     return boost::any_cast<int16_t>(lhs.value_) == boost::any_cast<int16_t>(rhs.value_);
   if (lhs.type() == typeid(int32_t))
@@ -154,6 +156,8 @@ uint8_t guess_type(const TAny &val)
     return T_BYTE;
   if (val.type() == typeid(bool))
     return T_BOOL;
+  if (val.type() == typeid(double))
+    return T_DOUBLE;
   if (val.type() == typeid(int16_t))
     return T_I16;
   if (val.type() == typeid(int32_t))
