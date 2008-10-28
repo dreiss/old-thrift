@@ -1,4 +1,5 @@
 #include <TAny.h>
+#include <boost/any.hpp>
 #include <protocol/TProtocol.h>
 
 namespace facebook { namespace thrift {
@@ -55,7 +56,6 @@ uint32_t TAny::write(TProtocol *oprot) const {
   int8_t type = guess_type(*this);
   uint32_t result = oprot->writeByte(type);
   ThriftBase *t_struct;
-  printf("guessed type is %d\n", type);
   switch (type) {
     case T_BYTE:
       return result + oprot->writeByte(boost::any_cast<int8_t>(value_));

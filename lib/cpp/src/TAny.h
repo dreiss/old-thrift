@@ -1,12 +1,12 @@
 #ifndef _THRIFT_ANY_H_
 #define _THRIFT_ANY_H_
 
-#include <boost/any.hpp>
-#include <boost/pool/detail/singleton.hpp>
 #include <map>
 #include <string>
 #include <Thrift.h>
 #include <concurrency/Monitor.h>
+#include <boost/any.hpp>
+#include <boost/pool/detail/singleton.hpp>
 
 namespace facebook { namespace thrift {
 class TAny;
@@ -31,6 +31,9 @@ class TAny {
   template<typename T>
   friend T any_cast(TAny &hs);
 
+  template<typename T>
+  friend T any_cast(const TAny &hs);
+
   friend bool operator == (const TAny&, const TAny&);
   TAny & operator = (const TAny &rhs);
   bool operator != (const TAny &rhs) {
@@ -47,9 +50,12 @@ uint8_t guess_type(const TAny &val);
 template<typename T>
 T any_cast(TAny &hs)
 {
-  /*printf("type: %d\n", guess_type(hs));
-  printf("true: %d; xxx: %d\n", 32==32, typeid(T) == hs.type());
-  T *x = boost::any_cast<T *>(hs.value_);*/
+  return boost::any_cast<T>(hs.value_);
+}
+
+template<typename T>
+T any_cast(const TAny &hs)
+{
   return boost::any_cast<T>(hs.value_);
 }
 
