@@ -80,7 +80,6 @@ void TConnection::init(int socket, short eventFlags, TNonblockingServer* s) {
   writeBufferPos_ = 0;
 
   socketState_ = SOCKET_RECV;
-  appState_ = APP_INIT;
 
   taskHandle_ = -1;
 
