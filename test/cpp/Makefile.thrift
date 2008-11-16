@@ -15,7 +15,6 @@ ifndef boost_home
 #boost_home=../../../../../thirdparty/boost_1_33_1
 boost_home=/usr/local/include/boost-1_33_1
 endif #boost_home
-target: all
 
 include_paths = $(thrift_home)/lib/cpp/src \
 		$(boost_home)
@@ -43,17 +42,23 @@ debug: server-debug client-debug
 stubs: ../ThriftTest.thrift
 	$(THRIFT) --cpp ../ThriftTest.thrift
 
-server-debug: stubs
-	g++ -o TestServer $(DCFL) src/TestServer.cpp ./gen-cpp/ThriftTest.cpp ./gen-cpp/ThriftTest_types.cpp
+.cpp.o:
+	g++ -c -o $@ $(CCFL) $<
+
+gen-cpp/ThriftTest.o: stubs
+gen-cpp/ThriftTest_types.o: stubs
+
+server-debug: stubs src/TestServer.o ./gen-cpp/ThriftTest.o ./gen-cpp/ThriftTest_types.o
+	g++ -o TestServer $(DCFL) $^
 
 client-debug: stubs
 	g++ -o TestClient $(DCFL) src/TestClient.cpp ./gen-cpp/ThriftTest.cpp ./gen-cpp/ThriftTest_types.cpp
 
-server: stubs
-	g++ -o TestServer $(CFL) src/TestServer.cpp ./gen-cpp/ThriftTest.cpp ./gen-cpp/ThriftTest_types.cpp
+server: src/TestServer.o ./gen-cpp/ThriftTest.o ./gen-cpp/ThriftTest_types.o
+	g++ -o TestServer $(CFL) $^
 
-client: stubs
-	g++ -o TestClient $(CFL) src/TestClient.cpp ./gen-cpp/ThriftTest.cpp ./gen-cpp/ThriftTest_types.cpp
+client: src/TestClient.o ./gen-cpp/ThriftTest.o ./gen-cpp/ThriftTest_types.o
+	g++ -o TestClient $(CFL) $^
 
 small:
 	$(THRIFT) -cpp ../SmallTest.thrift
