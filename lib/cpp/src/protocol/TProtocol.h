@@ -9,6 +9,7 @@
 
 #include <transport/TTransport.h>
 #include <protocol/TProtocolException.h>
+#include <concurrency/Mutex.h>
 
 #include <boost/shared_ptr.hpp>
 
@@ -164,6 +165,19 @@ class TProtocol {
   /**
    * Reading functions
    */
+
+  /**
+   * I don't know the reason why where is only one version of
+   * writeMessageBegin, but for async calls I need to determine 
+   * if server returns a reply with predefined seqid and client, 
+   * when seqid should be incremented automatically.
+   */
+  virtual uint32_t readMessageBegin(std::string& name,
+                                    TMessageType& messageType)
+  {
+    int32_t seqid = get_new_seqid();
+    return readMessageBegin(name, messageType, seqid);
+  }
 
   virtual uint32_t readMessageBegin(std::string& name,
                                     TMessageType& messageType,
@@ -328,16 +342,17 @@ class TProtocol {
   }
 
  protected:
-  TProtocol(boost::shared_ptr<TTransport> ptrans):
-    ptrans_(ptrans) {
-    trans_ = ptrans.get();
-  }
+  TProtocol(boost::shared_ptr<TTransport> ptrans);
 
   boost::shared_ptr<TTransport> ptrans_;
   TTransport* trans_;
 
+  // XXX think about moving it to transport
+  int32_t get_new_seqid();
  private:
   TProtocol() {}
+  thrift::concurrency::Mutex mutex_;
+  int32_t seqid_;
 };
 
 /**
