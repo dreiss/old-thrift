@@ -47,6 +47,8 @@
 /ltmain.sh
 /missing
 /stamp-h1
+TestClient
+TestServer
 /test/.deps
 /test/.libs
 /test/*.o
@@ -62,7 +64,12 @@
 /test/Makefile.in
 /test/OptionalRequiredTest
 /test/ReflectionTest
+/test/async/gen-cpp
+/test/async/src/*.o
+/test/cpp/gen-cpp
+/test/cpp/src/*.o
 /test/gen-cpp
+/test/gen-py
 /test/java/Makefile
 /test/java/Makefile.am
 /test/java/Makefile.in
