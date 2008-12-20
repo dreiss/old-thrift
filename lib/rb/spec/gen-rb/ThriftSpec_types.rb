@@ -15,6 +15,9 @@ module SpecNamespace
       FIELDS = {
         GREETING => {:type => Thrift::Types::STRING, :name => 'greeting', :default => 'hello world'}
       }
+      def validate
+      end
+
     end
 
     class Foo
@@ -47,6 +50,9 @@ module SpecNamespace
         ]), :element => {:type => Thrift::Types::I16}},
         OPT_STRING => {:type => Thrift::Types::STRING, :name => 'opt_string', :optional => true}
       }
+      def validate
+      end
+
     end
 
     class BoolStruct
@@ -57,6 +63,9 @@ module SpecNamespace
       FIELDS = {
         YESNO => {:type => Thrift::Types::BOOL, :name => 'yesno', :default => true}
       }
+      def validate
+      end
+
     end
 
     class SimpleList
@@ -87,6 +96,24 @@ module SpecNamespace
         SETS => {:type => Thrift::Types::LIST, :name => 'sets', :element => {:type => Thrift::Types::SET, :element => {:type => Thrift::Types::I16}}},
         HELLOS => {:type => Thrift::Types::LIST, :name => 'hellos', :element => {:type => Thrift::Types::STRUCT, :class => Hello}}
       }
+      def validate
+      end
+
+    end
+
+    class Xception < Thrift::Exception
+      include Thrift::Struct
+      MESSAGE = 1
+      CODE = 2
+
+      Thrift::Struct.field_accessor self, :message, :code
+      FIELDS = {
+        MESSAGE => {:type => Thrift::Types::STRING, :name => 'message'},
+        CODE => {:type => Thrift::Types::I32, :name => 'code', :default => 1}
+      }
+      def validate
+      end
+
     end
 
   end

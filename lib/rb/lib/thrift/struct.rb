@@ -95,9 +95,11 @@ module Thrift
         end
         iprot.read_struct_end
       end
+      validate
     end
 
     def write(oprot)
+      validate
       if oprot.respond_to?(:encode_binary)
         # TODO(kevinclark): Clean this so I don't have to access the transport.
         oprot.trans.write oprot.encode_binary(self)
