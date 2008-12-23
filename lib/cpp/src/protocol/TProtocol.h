@@ -172,11 +172,11 @@ class TProtocol {
    * if server returns a reply with predefined seqid and client, 
    * when seqid should be incremented automatically.
    */
-  virtual uint32_t readMessageBegin(std::string& name,
-                                    TMessageType& messageType)
+  virtual uint32_t writeMessageBegin(const std::string& name,
+                                    TMessageType messageType)
   {
     int32_t seqid = get_new_seqid();
-    return readMessageBegin(name, messageType, seqid);
+    return writeMessageBegin(name, messageType, seqid);
   }
 
   virtual uint32_t readMessageBegin(std::string& name,
