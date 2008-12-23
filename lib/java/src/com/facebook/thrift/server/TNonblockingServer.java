@@ -14,6 +14,7 @@ import com.facebook.thrift.transport.TFramedTransport;
 import com.facebook.thrift.transport.TNonblockingTransport;
 import com.facebook.thrift.transport.TTransportException;
 import com.facebook.thrift.transport.TTransportFactory;
+import com.facebook.thrift.TByteArrayOutputStream;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -58,6 +59,20 @@ public class TNonblockingServer extends TServer {
   private volatile boolean stopped_;
 
   private SelectThread selectThread_;
+
+  /**
+   * The maximum amount of memory we will allocate to client IO buffers at a
+   * time. Without this limit, the server will gladly allocate client buffers
+   * right into an out of memory exception, rather than waiting.
+   */
+  private final long MAX_READ_BUFFER_BYTES;
+
+  protected final Options options_;
+
+  /**
+   * How many bytes are currently allocated to read buffers.
+   */
+  private long readBufferBytesAllocated = 0;
 
   /**
    * Create server with given processor and server transport, using
@@ -125,9 +140,25 @@ public class TNonblockingServer extends TServer {
                             TFramedTransport.Factory outputTransportFactory,
                             TProtocolFactory inputProtocolFactory,
                             TProtocolFactory outputProtocolFactory) {
+    this(processorFactory, serverTransport,
+          inputTransportFactory, outputTransportFactory,
+          inputProtocolFactory, outputProtocolFactory,
+          new Options());
+  }
+
+  public TNonblockingServer(TProcessorFactory processorFactory,
+                            TNonblockingServerTransport serverTransport,
+                            TFramedTransport.Factory inputTransportFactory,
+                            TFramedTransport.Factory outputTransportFactory,
+                            TProtocolFactory inputProtocolFactory,
+                            TProtocolFactory outputProtocolFactory,
+                            Options options) {
     super(processorFactory, serverTransport,
           inputTransportFactory, outputTransportFactory,
           inputProtocolFactory, outputProtocolFactory);
+    options_ = options;
+    options_.validate();
+    MAX_READ_BUFFER_BYTES = options.maxReadBufferBytes;
   }
 
   /**
@@ -318,6 +349,8 @@ public class TNonblockingServer extends TServer {
           } else if (key.isWritable()) {
             // deal with writes
             handleWrite(key);
+          } else {
+            LOGGER.log(Level.WARNING, "Unexpected state in select! " + key.interestOps());
           }
         }
       } catch (IOException e) {
@@ -343,9 +376,10 @@ public class TNonblockingServer extends TServer {
      */
     private void handleAccept() throws IOException {
       SelectionKey clientKey = null;
+      TNonblockingTransport client = null;
       try {
         // accept the connection
-        TNonblockingTransport client = (TNonblockingTransport)serverTransport.accept();
+        client = (TNonblockingTransport)serverTransport.accept();
         clientKey = client.registerSelector(selector, SelectionKey.OP_READ);
 
         // add this key to the map
@@ -353,9 +387,10 @@ public class TNonblockingServer extends TServer {
         clientKey.attach(frameBuffer);
       } catch (TTransportException tte) {
         // something went wrong accepting.
-        cleanupSelectionkey(clientKey);
         LOGGER.log(Level.WARNING, "Exception trying to accept!", tte);
         tte.printStackTrace();
+        if (clientKey != null) cleanupSelectionkey(clientKey);
+        if (client != null) client.close();
       }
     }
 
@@ -442,7 +477,7 @@ public class TNonblockingServer extends TServer {
     // the ByteBuffer we'll be using to write and read, depending on the state
     private ByteBuffer buffer_;
 
-    private ByteArrayOutputStream response_;
+    private TByteArrayOutputStream response_;
 
     public FrameBuffer( final TNonblockingTransport trans,
                         final SelectionKey selectionKey) {
@@ -475,6 +510,24 @@ public class TNonblockingServer extends TServer {
               + ". Are you using TFramedTransport on the client side?");
             return false;
           }
+
+          // if this frame will always be too large for this server, log the
+          // error and close the connection.
+          if (frameSize + 4 > MAX_READ_BUFFER_BYTES) {
+            LOGGER.severe("Read a frame size of " + frameSize
+              + ", which is bigger than the maximum allowable buffer size for ALL connections.");
+            return false;
+          }
+
+          // if this frame will push us over the memory limit, then return.
+          // with luck, more memory will free up the next time around.
+          if (readBufferBytesAllocated + frameSize + 4 > MAX_READ_BUFFER_BYTES) {
+            return true;
+          }
+
+          // incremement the amount of memory allocated to read buffers
+          readBufferBytesAllocated += frameSize + 4;
+
           // reallocate the readbuffer as a frame-sized buffer
           buffer_ = ByteBuffer.allocate(frameSize + 4);
           // put the frame size at the head of the buffer
@@ -564,6 +617,11 @@ public class TNonblockingServer extends TServer {
      * Shut the connection down.
      */
     public void close() {
+      // if we're being closed due to an error, we might have allocated a
+      // buffer that we need to subtract for our memory accounting.
+      if (state_ == READING_FRAME || state_ == READ_FRAME_COMPLETE) {
+        readBufferBytesAllocated -= buffer_.array().length;
+      }
       trans_.close();
     }
 
@@ -582,14 +640,18 @@ public class TNonblockingServer extends TServer {
      * trying to write and instead go back to reading.
      */
     public void responseReady() {
-      // capture the data we want to write as a byte array.
-      byte[] bytes = response_.toByteArray();
+      // the read buffer is definitely no longer in use, so we will decrement
+      // our read buffer count. we do this here as well as in close because
+      // we'd like to free this read memory up as quickly as possible for other
+      // clients.
+      readBufferBytesAllocated -= buffer_.array().length;
 
-      if (bytes.length <= 0) {
+      if (response_.len() == 0) {
         // go straight to reading again. this was probably an async method
         state_ = AWAITING_REGISTER_READ;
+        buffer_ = null;
       } else {
-        buffer_ = ByteBuffer.wrap(bytes);
+        buffer_ = ByteBuffer.wrap(response_.get(), 0, response_.len());
 
         // set state that we're waiting to be switched to write. we do this
         // asynchronously through requestSelectInterestChange() because there is a
@@ -636,7 +698,7 @@ public class TNonblockingServer extends TServer {
      * Get the transport that should be used by the invoker for responding.
      */
     private TTransport getOutputTransport() {
-      response_ = new ByteArrayOutputStream();
+      response_ = new TByteArrayOutputStream();
       return outputTransportFactory_.getTransport(new TIOStreamTransport(response_));
     }
 
@@ -686,4 +748,16 @@ public class TNonblockingServer extends TServer {
     }
   } // FrameBuffer
 
+
+  public static class Options {
+    public long maxReadBufferBytes = Long.MAX_VALUE;
+
+    public Options() {}
+
+    public void validate() {
+      if (maxReadBufferBytes <= 1024) {
+        throw new IllegalArgumentException("You must allocate at least 1KB to the read buffer.");
+      }
+    }
+  }
 }

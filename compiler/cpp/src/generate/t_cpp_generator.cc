@@ -560,8 +560,10 @@ string t_cpp_generator::render_const_value(ofstream& out, string name, t_type* t
     case t_base_type::TYPE_BYTE:
     case t_base_type::TYPE_I16:
     case t_base_type::TYPE_I32:
-    case t_base_type::TYPE_I64:
       render << value->get_integer();
+      break;
+    case t_base_type::TYPE_I64:
+      render << value->get_integer() << "LL";
       break;
     case t_base_type::TYPE_DOUBLE:
       if (value->get_type() == t_const_value::CV_INTEGER) {
@@ -823,7 +825,7 @@ void t_cpp_generator::generate_struct_fingerprint(ofstream& out,
         tstruct->get_ascii_fingerprint() << "\";" << endl <<
       indent() << stat << "const uint8_t " << nspace <<
         "binary_fingerprint[" << t_type::fingerprint_len << "]" << comment << "= {";
-    char* comma = "";
+    const char* comma = "";
     for (int i = 0; i < t_type::fingerprint_len; i++) {
       out << comma << "0x" << t_struct::byte_to_hex(tstruct->get_binary_fingerprint()[i]);
       comma = ",";
@@ -2099,7 +2101,7 @@ void t_cpp_generator::generate_process_function(t_service* tservice,
 
   if (!tfunction->is_async()) {
     for (x_iter = xceptions.begin(); x_iter != xceptions.end(); ++x_iter) {
-      f_service_ << " catch (" << (*x_iter)->get_type()->get_name() << " &" << (*x_iter)->get_name() << ") {" << endl;
+      f_service_ << " catch (" << type_name((*x_iter)->get_type()) << " &" << (*x_iter)->get_name() << ") {" << endl;
       if (!tfunction->is_async()) {
         indent_up();
         f_service_ <<

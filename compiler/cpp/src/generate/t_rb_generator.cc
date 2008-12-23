@@ -62,11 +62,11 @@ class t_rb_generator : public t_oop_generator {
    */
 
   void generate_rb_struct(std::ofstream& out, t_struct* tstruct, bool is_exception);
-  void generate_rb_struct_reader(std::ofstream& out, t_struct* tstruct);
-  void generate_rb_struct_writer(std::ofstream& out, t_struct* tstruct);
+  void generate_rb_struct_required_validator(std::ofstream& out, t_struct* tstruct);
   void generate_rb_function_helpers(t_function* tfunction);
   void generate_rb_simple_constructor(std::ofstream& out, t_struct* tstruct);
   void generate_rb_simple_exception_constructor(std::ofstream& out, t_struct* tstruct);
+  void generate_field_constants (std::ofstream& out, t_struct* tstruct);
   void generate_accessors   (std::ofstream& out, t_struct* tstruct);
   void generate_field_defns (std::ofstream& out, t_struct* tstruct);
   void generate_field_data  (std::ofstream& out, t_type* field_type, const std::string& field_name, t_const_value* field_value, bool optional);
@@ -134,6 +134,9 @@ class t_rb_generator : public t_oop_generator {
   void generate_serialize_list_element   (std::ofstream &out,
                                           t_list*     tlist,
                                           std::string iter);
+
+  void generate_rdoc                     (std::ofstream& out, 
+                                          t_doc* tdoc);
 
   /**
    * Helper rendering functions
@@ -442,11 +445,12 @@ void t_rb_generator::generate_xception(t_struct* txception) {
  * Generates a ruby struct
  */
 void t_rb_generator::generate_rb_struct(std::ofstream& out, t_struct* tstruct, bool is_exception = false) {
+  generate_rdoc(out, tstruct);
   indent(out) << "class " << type_name(tstruct);
   if (is_exception) {
-    out << " < StandardError";
+    out << " < Thrift::Exception";
   }
-  out  << endl;
+  out << endl;
 
   indent_up();
   indent(out) << "include Thrift::Struct" << endl;
@@ -455,9 +459,11 @@ void t_rb_generator::generate_rb_struct(std::ofstream& out, t_struct* tstruct, b
     generate_rb_simple_exception_constructor(out, tstruct);
   }
 
+  generate_field_constants(out, tstruct);
   generate_accessors(out, tstruct);
   generate_field_defns(out, tstruct);
-
+  generate_rb_struct_required_validator(out, tstruct);
+  
   indent_down();
   indent(out) << "end" << endl << endl;
 }
@@ -485,6 +491,19 @@ void t_rb_generator::generate_rb_simple_exception_constructor(std::ofstream& out
   }
 }
 
+void t_rb_generator::generate_field_constants(std::ofstream& out, t_struct* tstruct) {
+  const vector<t_field*>& fields = tstruct->get_members();
+  vector<t_field*>::const_iterator f_iter;
+
+  for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
+    std::string field_name = (*f_iter)->get_name();
+    std::string cap_field_name = upcase_string(field_name);
+    
+    indent(out) << cap_field_name << " = " << (*f_iter)->get_key() << endl;
+  }
+  out << endl;
+}
+
 void t_rb_generator::generate_accessors(std::ofstream& out, t_struct* tstruct) {
   const vector<t_field*>& members = tstruct->get_members();
   vector<t_field*>::const_iterator m_iter;
@@ -509,8 +528,11 @@ void t_rb_generator::generate_field_defns(std::ofstream& out, t_struct* tstruct)
       out << "," << endl;
     }
 
+    // generate the field docstrings within the FIELDS constant. no real better place...
+    generate_rdoc(out, *f_iter);
+
     indent(out) <<
-      (*f_iter)->get_key() << " => ";
+      upcase_string((*f_iter)->get_name()) << " => ";
 
     generate_field_data(out, (*f_iter)->get_type(), (*f_iter)->get_name(), (*f_iter)->get_value(), 
       (*f_iter)->get_req() == t_field::T_OPTIONAL);
@@ -997,5 +1019,38 @@ string t_rb_generator::type_to_enum(t_type* type) {
   throw "INVALID TYPE IN type_to_enum: " + type->get_name();
 }
 
+
+void t_rb_generator::generate_rdoc(std::ofstream& out, t_doc* tdoc) {
+  if (tdoc->has_doc()) {
+    generate_docstring_comment(out,
+      "", "# ", tdoc->get_doc(), "");
+  }
+}
+
+void t_rb_generator::generate_rb_struct_required_validator(std::ofstream& out, 
+                                                           t_struct* tstruct) {
+  indent(out) << "def validate" << endl;
+  indent_up();
+  
+  const vector<t_field*>& fields = tstruct->get_members();
+  vector<t_field*>::const_iterator f_iter;
+
+  for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
+    t_field* field = (*f_iter);
+    if (field->get_req() == t_field::T_REQUIRED) {
+      indent(out) << "raise Thrift::ProtocolException.new(Thrift::ProtocolException::UNKNOWN, 'Required field " << field->get_name() << " is unset!')";
+      if (field->get_type()->is_bool()) {
+        out << " if @" << field->get_name() << ".nil?";
+      } else {
+        out << " unless @" << field->get_name();
+      }
+      out << endl;
+    }
+  }  
+  
+  indent_down();
+  indent(out) << "end" << endl << endl;
+  
+}
 
 THRIFT_REGISTER_GENERATOR(rb, "Ruby", "");
