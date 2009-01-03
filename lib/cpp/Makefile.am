@@ -37,7 +37,9 @@ libthrift_la_SOURCES = src/Thrift.cpp \
                        src/transport/TTransportException.cpp \
                        src/transport/TFDTransport.cpp \
                        src/transport/TFileTransport.cpp \
+                       src/transport/THttpTransport.cpp \
                        src/transport/THttpClient.cpp \
+                       src/transport/THttpServer.cpp \
                        src/transport/TSocket.cpp \
                        src/transport/TSocketPool.cpp \
                        src/transport/TServerSocket.cpp \
@@ -97,7 +99,9 @@ include_transport_HEADERS = \
                          src/transport/TFileTransport.h \
                          src/transport/TServerSocket.h \
                          src/transport/TServerTransport.h \
+                         src/transport/THttpTransport.h \
                          src/transport/THttpClient.h \
+                         src/transport/THttpServer.h \
                          src/transport/TSocket.h \
                          src/transport/TSocketPool.h \
                          src/transport/TTransport.h \
