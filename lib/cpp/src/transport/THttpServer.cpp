@@ -73,7 +73,7 @@ void THttpServer::flush() {
   std::ostringstream h;
   h <<
     "HTTP/1.1 200 Ok" << CRLF <<
-    "Date: Fri, 02 Jan 2009 19:09:44 GMT" << CRLF <<
+    "Date: " << getTimeRFC1123() << CRLF <<
     "Server: Thrift/0.1" << CRLF <<
     "Content-Type: application/x-thrift" << CRLF <<
     "Content-Length: " << len << CRLF <<
@@ -90,6 +90,21 @@ void THttpServer::flush() {
   // Reset the buffer and header variables
   writeBuffer_.resetBuffer();
   readHeaders_ = true;
+}
+
+std::string THttpServer::getTimeRFC1123()
+{
+  static const char* Days[] = {"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
+  static const char* Months[] = {"Jan","Feb","Mar", "Apr", "May", "Jun", "Jul","Aug", "Sep", "Oct","Nov","Dec"};
+  char buff[128];
+  time_t t = time(NULL);
+  tm* broken_t = gmtime(&t);
+
+  sprintf(buff,"%s, %d %s %d %d:%d:%d GMT",
+          Days[broken_t->tm_wday], broken_t->tm_mday, Months[broken_t->tm_mon],
+          broken_t->tm_year + 1900,
+          broken_t->tm_hour,broken_t->tm_min,broken_t->tm_sec);
+  return std::string(buff);
 }
 
 }}} // facebook::thrift::transport

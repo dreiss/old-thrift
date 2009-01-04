@@ -29,6 +29,7 @@ class THttpServer : public THttpTransport {
   void readHeaders();
   virtual void parseHeader(char* header);
   virtual bool parseStatusLine(char* status);
+  std::string getTimeRFC1123();
 
 };
 
