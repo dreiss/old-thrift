@@ -94,7 +94,7 @@ class t_cpp_generator : public t_oop_generator {
   void generate_service_client    (t_service* tservice);
   void generate_service_processor (t_service* tservice);
   void generate_service_skeleton  (t_service* tservice);
-  void generate_process_function  (t_service* tservice, t_function* tfunction);
+  void generate_process_function  (t_service* tservice, t_function* tfunction, bool specialized=false);
   void generate_function_helpers  (t_service* tservice, t_function* tfunction);
 
   void generate_service_limited_reflector(t_service* tservice);
@@ -1988,8 +1988,16 @@ void t_cpp_generator::generate_service_processor(t_service* tservice) {
     extends_processor = ", public " + extends + "Processor";
   }
 
+  string template_header, template_suffix, typename_str;
+  if (gen_templates_) {
+    template_header = "template <class Protocol_>\n";
+    template_suffix = "<Protocol_>";
+    typename_str = "typename ";
+  }
+
   // Generate the header portion
   f_header_ <<
+    template_header <<
     "class " << service_name_ << "Processor : " <<
     "virtual public facebook::thrift::TProcessor" <<
     extends_processor << " {" << endl;
@@ -2013,6 +2021,10 @@ void t_cpp_generator::generate_service_processor(t_service* tservice) {
   for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
     indent(f_header_) <<
       "void process_" << (*f_iter)->get_name() << "(int32_t seqid, facebook::thrift::protocol::TProtocol* iprot, facebook::thrift::protocol::TProtocol* oprot);" << endl;
+    if (gen_templates_) {
+      indent(f_header_) <<
+        "void process_" << (*f_iter)->get_name() << "(int32_t seqid, Protocol_* iprot, Protocol_* oprot);" << endl;
+    }
   }
   indent_down();
 
@@ -2054,11 +2066,13 @@ void t_cpp_generator::generate_service_processor(t_service* tservice) {
     "};" << endl << endl;
 
   // Generate the server implementation
-  f_service_ <<
-    "bool " << service_name_ << "Processor::process(boost::shared_ptr<facebook::thrift::protocol::TProtocol> piprot, boost::shared_ptr<facebook::thrift::protocol::TProtocol> poprot) {" << endl;
+  std::ofstream& out = (gen_templates_ ? f_service_tcc_ : f_service_);
+  out <<
+    template_header <<
+    "bool " << service_name_ << "Processor" << template_suffix << "::process(boost::shared_ptr<facebook::thrift::protocol::TProtocol> piprot, boost::shared_ptr<facebook::thrift::protocol::TProtocol> poprot) {" << endl;
   indent_up();
 
-  f_service_ <<
+  out <<
     endl <<
     indent() << "facebook::thrift::protocol::TProtocol* iprot = piprot.get();" << endl <<
     indent() << "facebook::thrift::protocol::TProtocol* oprot = poprot.get();" << endl <<
@@ -2085,21 +2099,22 @@ void t_cpp_generator::generate_service_processor(t_service* tservice) {
     endl;
 
   indent_down();
-  f_service_ <<
+  out <<
     indent() << "}" << endl <<
     endl;
 
-  f_service_ <<
-    "bool " << service_name_ << "Processor::process_fn(facebook::thrift::protocol::TProtocol* iprot, facebook::thrift::protocol::TProtocol* oprot, std::string& fname, int32_t seqid) {" << endl;
+  out <<
+    template_header <<
+    "bool " << service_name_ << "Processor" << template_suffix << "::process_fn(facebook::thrift::protocol::TProtocol* iprot, facebook::thrift::protocol::TProtocol* oprot, std::string& fname, int32_t seqid) {" << endl;
   indent_up();
 
   // HOT: member function pointer map
-  f_service_ <<
-    indent() << "std::map<std::string, void (" << service_name_ << "Processor::*)(int32_t, facebook::thrift::protocol::TProtocol*, facebook::thrift::protocol::TProtocol*)>::iterator pfn;" << endl <<
+  out <<
+    indent() << typename_str << "std::map<std::string, void (" << service_name_ << "Processor::*)(int32_t, facebook::thrift::protocol::TProtocol*, facebook::thrift::protocol::TProtocol*)>::iterator pfn;" << endl <<
     indent() << "pfn = processMap_.find(fname);" << endl <<
     indent() << "if (pfn == processMap_.end()) {" << endl;
   if (extends.empty()) {
-    f_service_ <<
+    out <<
       indent() << "  iprot->skip(facebook::thrift::protocol::T_STRUCT);" << endl <<
       indent() << "  iprot->readMessageEnd();" << endl <<
       indent() << "  iprot->getTransport()->readEnd();" << endl <<
@@ -2111,22 +2126,25 @@ void t_cpp_generator::generate_service_processor(t_service* tservice) {
       indent() << "  oprot->getTransport()->writeEnd();" << endl <<
       indent() << "  return true;" << endl;
   } else {
-    f_service_ <<
+    out <<
       indent() << "  return " << extends << "Processor::process_fn(iprot, oprot, fname, seqid);" << endl;
   }
-  f_service_ <<
+  out <<
     indent() << "}" << endl <<
     indent() << "(this->*(pfn->second))(seqid, iprot, oprot);" << endl <<
     indent() << "return true;" << endl;
 
   indent_down();
-  f_service_ <<
+  out <<
     "}" << endl <<
     endl;
 
   // Generate the process subfunctions
   for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
-    generate_process_function(tservice, *f_iter);
+    generate_process_function(tservice, *f_iter, false);
+    if (gen_templates_) {
+      generate_process_function(tservice, *f_iter, true);
+    }
   }
 }
 
@@ -2172,18 +2190,37 @@ void t_cpp_generator::generate_function_helpers(t_service* tservice,
  * @param tfunction The function to write a dispatcher for
  */
 void t_cpp_generator::generate_process_function(t_service* tservice,
-                                                t_function* tfunction) {
+                                                t_function* tfunction,
+                                                bool specialized) {
+  std::ofstream& out = (gen_templates_ ? f_service_tcc_ : f_service_);
+
+  string prot_type = (specialized ? "Protocol_" : "facebook::thrift::protocol::TProtocol");
+
   // Open function
-  f_service_ <<
-    "void " << tservice->get_name() << "Processor::" <<
+  if (gen_templates_) {
+    out <<
+      indent() << "template <class Protocol_>" << endl;
+  }
+  out <<
+    "void " << tservice->get_name() << "Processor" <<
+    (gen_templates_ ? "<Protocol_>" : "") << "::" <<
     "process_" << tfunction->get_name() <<
-    "(int32_t seqid, facebook::thrift::protocol::TProtocol* iprot, facebook::thrift::protocol::TProtocol* oprot)" << endl;
-  scope_up(f_service_);
+    "(int32_t seqid, " << prot_type << "* iprot, " << prot_type << "* oprot)" << endl;
+  scope_up(out);
+
+  if (gen_templates_ && !specialized) {
+    out <<
+      "Protocol_* iprot_ = dynamic_cast<Protocol_>(iprot);" << endl <<
+      "Protocol_* oprot_ = dynamic_cast<Protocol_>(oprot);" << endl <<
+      "if (iprot_ && oprot_) {" << endl <<
+      "  return process_" << tfunction->get_name() << "(seqid, iprot_, oprot_);" << endl <<
+      "}" << endl << endl;
+  }
 
   string argsname = tservice->get_name() + "_" + tfunction->get_name() + "_args";
   string resultname = tservice->get_name() + "_" + tfunction->get_name() + "_result";
 
-  f_service_ <<
+  out <<
     indent() << argsname << " args;" << endl <<
     indent() << "args.read(iprot);" << endl <<
     indent() << "iprot->readMessageEnd();" << endl <<
@@ -2196,12 +2233,12 @@ void t_cpp_generator::generate_process_function(t_service* tservice,
 
   // Declare result
   if (!tfunction->is_async()) {
-    f_service_ <<
+    out <<
       indent() << resultname << " result;" << endl;
   }
 
   // Try block for functions with exceptions
-  f_service_ <<
+  out <<
     indent() << "try {" << endl;
   indent_up();
 
@@ -2211,58 +2248,58 @@ void t_cpp_generator::generate_process_function(t_service* tservice,
   vector<t_field*>::const_iterator f_iter;
 
   bool first = true;
-  f_service_ << indent();
+  out << indent();
   if (!tfunction->is_async() && !tfunction->get_returntype()->is_void()) {
     if (is_complex_type(tfunction->get_returntype())) {
       first = false;
-      f_service_ << "iface_->" << tfunction->get_name() << "(result.success";
+      out << "iface_->" << tfunction->get_name() << "(result.success";
     } else {
-      f_service_ << "result.success = iface_->" << tfunction->get_name() << "(";
+      out << "result.success = iface_->" << tfunction->get_name() << "(";
     }
   } else {
-    f_service_ <<
+    out <<
       "iface_->" << tfunction->get_name() << "(";
   }
   for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
     if (first) {
       first = false;
     } else {
-      f_service_ << ", ";
+      out << ", ";
     }
-    f_service_ << "args." << (*f_iter)->get_name();
+    out << "args." << (*f_iter)->get_name();
   }
-  f_service_ << ");" << endl;
+  out << ");" << endl;
 
   // Set isset on success field
   if (!tfunction->is_async() && !tfunction->get_returntype()->is_void()) {
-    f_service_ <<
+    out <<
       indent() << "result.__isset.success = true;" << endl;
   }
 
   indent_down();
-  f_service_ << indent() << "}";
+  out << indent() << "}";
 
   if (!tfunction->is_async()) {
     for (x_iter = xceptions.begin(); x_iter != xceptions.end(); ++x_iter) {
-      f_service_ << " catch (" << type_name((*x_iter)->get_type()) << " &" << (*x_iter)->get_name() << ") {" << endl;
+      out << " catch (" << type_name((*x_iter)->get_type()) << " &" << (*x_iter)->get_name() << ") {" << endl;
       if (!tfunction->is_async()) {
         indent_up();
-        f_service_ <<
+        out <<
           indent() << "result." << (*x_iter)->get_name() << " = " << (*x_iter)->get_name() << ";" << endl <<
           indent() << "result.__isset." << (*x_iter)->get_name() << " = true;" << endl;
         indent_down();
-        f_service_ << indent() << "}";
+        out << indent() << "}";
       } else {
-        f_service_ << "}";
+        out << "}";
       }
     }
   }
 
-  f_service_ << " catch (const std::exception& e) {" << endl;
+  out << " catch (const std::exception& e) {" << endl;
 
   if (!tfunction->is_async()) {
     indent_up();
-    f_service_ <<
+    out <<
       indent() << "facebook::thrift::TApplicationException x(e.what());" << endl <<
       indent() << "oprot->writeMessageBegin(\"" << tfunction->get_name() << "\", facebook::thrift::protocol::T_EXCEPTION, seqid);" << endl <<
       indent() << "x.write(oprot);" << endl <<
@@ -2272,20 +2309,20 @@ void t_cpp_generator::generate_process_function(t_service* tservice,
       indent() << "return;" << endl;
     indent_down();
   }
-  f_service_ << indent() << "}" << endl;
+  out << indent() << "}" << endl;
 
   // Shortcut out here for async functions
   if (tfunction->is_async()) {
-    f_service_ <<
+    out <<
       indent() << "return;" << endl;
     indent_down();
-    f_service_ << "}" << endl <<
+    out << "}" << endl <<
       endl;
     return;
   }
 
   // Serialize the result into a struct
-  f_service_ <<
+  out <<
     endl <<
     indent() << "oprot->writeMessageBegin(\"" << tfunction->get_name() << "\", facebook::thrift::protocol::T_REPLY, seqid);" << endl <<
     indent() << "result.write(oprot);" << endl <<
@@ -2294,8 +2331,8 @@ void t_cpp_generator::generate_process_function(t_service* tservice,
     indent() << "oprot->getTransport()->writeEnd();" << endl;
 
   // Close function
-  scope_down(f_service_);
-  f_service_ << endl;
+  scope_down(out);
+  out << endl;
 }
 
 /**
