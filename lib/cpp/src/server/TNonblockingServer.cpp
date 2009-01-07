@@ -5,6 +5,7 @@
 // http://developers.facebook.com/thrift/
 
 #include "TNonblockingServer.h"
+#include <concurrency/Exception.h>
 
 #include <iostream>
 #include <sys/socket.h>
@@ -19,6 +20,7 @@ namespace facebook { namespace thrift { namespace server {
 
 using namespace facebook::thrift::protocol;
 using namespace facebook::thrift::transport;
+using namespace facebook::thrift::concurrency;
 using namespace std;
 
 class TConnection::Task: public Runnable {
@@ -50,12 +52,10 @@ class TConnection::Task: public Runnable {
     // Signal completion back to the libevent thread via a socketpair
     int8_t b = 0;
     if (-1 == send(taskHandle_, &b, sizeof(int8_t), 0)) {
-      string errStr = "TNonblockingServer::Task: send "  + TOutput::strerror_s(errno);
-      GlobalOutput(errStr.c_str());
+      GlobalOutput.perror("TNonblockingServer::Task: send ", errno);
     }
     if (-1 == ::close(taskHandle_)) {
-      string errStr = "TNonblockingServer::Task: close, possible resource leak "  + TOutput::strerror_s(errno);
-      GlobalOutput(errStr.c_str());
+      GlobalOutput.perror("TNonblockingServer::Task: close, possible resource leak ", errno);
     }
   }
 
@@ -141,8 +141,7 @@ void TConnection::workSocket() {
       }
 
       if (errno != ECONNRESET) {
-        string errStr = "TConnection::workSocket() recv -1 "  + TOutput::strerror_s(errno);
-        GlobalOutput(errStr.c_str());
+        GlobalOutput.perror("TConnection::workSocket() recv -1 ", errno);
       }
     }
 
@@ -178,8 +177,7 @@ void TConnection::workSocket() {
         return;
       }
       if (errno != EPIPE) {
-        string errStr = "TConnection::workSocket() send -1 "  + TOutput::strerror_s(errno);
-        GlobalOutput(errStr.c_str());
+        GlobalOutput.perror("TConnection::workSocket() send -1 ", errno);
       }
       close();
       return;
@@ -198,7 +196,7 @@ void TConnection::workSocket() {
     return;
 
   default:
-    fprintf(stderr, "Shit Got Ill. Socket State %d\n", socketState_);
+    GlobalOutput.printf("Shit Got Ill. Socket State %d", socketState_);
     assert(0);
   }
 }
@@ -220,13 +218,16 @@ void TConnection::transition() {
     // and get back some data from the dispatch function
     inputTransport_->resetBuffer(readBuffer_, readBufferPos_);
     outputTransport_->resetBuffer();
+    // Prepend four bytes of blank space to the buffer so we can
+    // write the frame size there later.
+    outputTransport_->getWritePtr(4);
+    outputTransport_->wroteBytes(4);
 
     if (server_->isThreadPoolProcessing()) {
       // We are setting up a Task to do this work and we will wait on it
       int sv[2];
       if (-1 == socketpair(AF_LOCAL, SOCK_STREAM, 0, sv)) {
-        string errStr = "TConnection::socketpair() failed "  + TOutput::strerror_s(errno);
-        GlobalOutput(errStr.c_str());
+        GlobalOutput.perror("TConnection::socketpair() failed ", errno);
         // Now we will fall through to the APP_WAIT_TASK block with no response
       } else {
         // Create task and dispatch to the thread manager
@@ -253,7 +254,13 @@ void TConnection::transition() {
           GlobalOutput("TNonblockingServer::serve(): coult not event_add");
           return;
         }
-        server_->addTask(task);
+        try {
+          server_->addTask(task);
+        } catch (IllegalStateException & ise) {
+          // The ThreadManager is not ready to handle any more tasks (it's probably shutting down).
+          GlobalOutput.printf("IllegalStateException: Server::process() %s", ise.what());
+          close();
+        }
 
         // Set this connection idle so that libevent doesn't process more
         // data on it while we're still waiting for the threadmanager to
@@ -266,15 +273,15 @@ void TConnection::transition() {
         // Invoke the processor
         server_->getProcessor()->process(inputProtocol_, outputProtocol_);
       } catch (TTransportException &ttx) {
-        fprintf(stderr, "TTransportException: Server::process() %s\n", ttx.what());
+        GlobalOutput.printf("TTransportException: Server::process() %s", ttx.what());
         close();
         return;
       } catch (TException &x) {
-        fprintf(stderr, "TException: Server::process() %s\n", x.what());
+        GlobalOutput.printf("TException: Server::process() %s", x.what());
         close();
         return;
       } catch (...) {
-        fprintf(stderr, "Server::process() unknown exception\n");
+        GlobalOutput.printf("Server::process() unknown exception");
         close();
         return;
       }
@@ -293,24 +300,19 @@ void TConnection::transition() {
 
     // If the function call generated return data, then move into the send
     // state and get going
-    if (writeBufferSize_ > 0) {
+    // 4 bytes were reserved for frame size
+    if (writeBufferSize_ > 4) {
 
       // Move into write state
       writeBufferPos_ = 0;
       socketState_ = SOCKET_SEND;
 
-      if (server_->getFrameResponses()) {
-        // Put the frame size into the write buffer
-        appState_ = APP_SEND_FRAME_SIZE;
-        frameSize_ = (int32_t)htonl(writeBufferSize_);
-        writeBuffer_ = (uint8_t*)&frameSize_;
-        writeBufferSize_ = 4;
-      } else {
-        // Go straight into sending the result, do not frame it
-        appState_ = APP_SEND_RESULT;
-      }
+      // Put the frame size into the write buffer
+      int32_t frameSize = (int32_t)htonl(writeBufferSize_ - 4);
+      memcpy(writeBuffer_, &frameSize, 4);
 
       // Socket into write mode
+      appState_ = APP_SEND_RESULT;
       setWrite();
 
       // Try to work the socket immediately
@@ -322,21 +324,6 @@ void TConnection::transition() {
     // In this case, the request was asynchronous and we should fall through
     // right back into the read frame header state
     goto LABEL_APP_INIT;
-
-  case APP_SEND_FRAME_SIZE:
-
-    // Refetch the result of the operation since we put the frame size into
-    // writeBuffer_
-    outputTransport_->getBuffer(&writeBuffer_, &writeBufferSize_);
-    writeBufferPos_ = 0;
-
-    // Now in send result state
-    appState_ = APP_SEND_RESULT;
-
-    // Go to work on the socket right away, probably still writeable
-    // workSocket();
-
-    return;
 
   case APP_SEND_RESULT:
 
@@ -372,7 +359,7 @@ void TConnection::transition() {
     sz = (int32_t)ntohl(sz);
 
     if (sz <= 0) {
-      fprintf(stderr, "TConnection:transition() Negative frame size %d, remote side not using TFramedTransport?", sz);
+      GlobalOutput.printf("TConnection:transition() Negative frame size %d, remote side not using TFramedTransport?", sz);
       close();
       return;
     }
@@ -390,7 +377,7 @@ void TConnection::transition() {
     return;
 
   default:
-    fprintf(stderr, "Totally Fucked. Application State %d\n", appState_);
+    GlobalOutput.printf("Totally Fucked. Application State %d", appState_);
     assert(0);
   }
 }
@@ -524,8 +511,7 @@ void TNonblockingServer::handleEvent(int fd, short which) {
     int flags;
     if ((flags = fcntl(clientSocket, F_GETFL, 0)) < 0 ||
         fcntl(clientSocket, F_SETFL, flags | O_NONBLOCK) < 0) {
-      string errStr = "thriftServerEventHandler: set O_NONBLOCK (fcntl) "  + TOutput::strerror_s(errno);
-      GlobalOutput(errStr.c_str());
+      GlobalOutput.perror("thriftServerEventHandler: set O_NONBLOCK (fcntl) ", errno);
       close(clientSocket);
       return;
     }
@@ -536,7 +522,7 @@ void TNonblockingServer::handleEvent(int fd, short which) {
 
     // Fail fast if we could not create a TConnection object
     if (clientConnection == NULL) {
-      fprintf(stderr, "thriftServerEventHandler: failed TConnection factory");
+      GlobalOutput.printf("thriftServerEventHandler: failed TConnection factory");
       close(clientSocket);
       return;
     }
@@ -548,8 +534,7 @@ void TNonblockingServer::handleEvent(int fd, short which) {
   // Done looping accept, now we have to make sure the error is due to
   // blocking. Any other error is a problem
   if (errno != EAGAIN && errno != EWOULDBLOCK) {
-    string errStr = "thriftServerEventHandler: accept() "  + TOutput::strerror_s(errno);
-    GlobalOutput(errStr.c_str());
+    GlobalOutput.perror("thriftServerEventHandler: accept() ", errno);
   }
 }
 
@@ -589,6 +574,14 @@ void TNonblockingServer::listenSocket() {
     freeaddrinfo(res0);
     throw TException("TNonblockingServer::serve() socket() -1");
   }
+
+  #ifdef IPV6_V6ONLY
+  int zero = 0;
+  if (-1 == setsockopt(s, IPPROTO_IPV6, IPV6_V6ONLY, &zero, sizeof(zero))) {
+    GlobalOutput("TServerSocket::listen() IPV6_V6ONLY");
+  }
+  #endif // #ifdef IPV6_V6ONLY
+
 
   int one = 1;
 
@@ -654,8 +647,7 @@ void TNonblockingServer::registerEvents(event_base* base) {
   eventBase_ = base;
 
   // Print some libevent stats
-  fprintf(stderr,
-          "libevent %s method %s\n",
+  GlobalOutput.printf("libevent %s method %s",
           event_get_version(),
           event_get_method());
 

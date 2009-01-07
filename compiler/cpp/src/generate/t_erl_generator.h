@@ -13,10 +13,10 @@
  *
  * @author
  */
-class t_erl_generator : public t_oop_generator {
+class t_erl_generator : public t_generator {
  public:
   t_erl_generator(t_program* program) :
-    t_oop_generator(program)
+    t_generator(program)
   {
     program_name_[0] = tolower(program_name_[0]);
     service_name_[0] = tolower(service_name_[0]);
@@ -49,8 +49,7 @@ class t_erl_generator : public t_oop_generator {
 
   void generate_erl_struct(t_struct* tstruct, bool is_exception);
   void generate_erl_struct_definition(std::ostream& out, std::ostream& hrl_out, t_struct* tstruct, bool is_xception=false, bool is_result=false);
-  void generate_erl_struct_reader(std::ostream& out, t_struct* tstruct);
-  void generate_erl_struct_writer(std::ostream& out, t_struct* tstruct);
+  void generate_erl_struct_info(std::ostream& out, t_struct* tstruct);
   void generate_erl_function_helpers(t_function* tfunction);
 
   /**
@@ -59,63 +58,7 @@ class t_erl_generator : public t_oop_generator {
 
   void generate_service_helpers   (t_service*  tservice);
   void generate_service_interface (t_service* tservice);
-  void generate_service_client    (t_service* tservice);
-  void generate_service_server    (t_service* tservice);
-  void generate_process_function  (t_service* tservice, t_function* tfunction);
-
-  /**
-   * Serialization constructs
-   */
-
-  void generate_deserialize_field        (std::ostream &out,
-                                          t_field*    tfield,
-                                          std::string prefix="",
-                                          bool inclass=false);
-
-  void generate_deserialize_struct       (std::ostream &out,
-                                          t_struct*   tstruct,
-                                          std::string prefix="");
-
-  void generate_deserialize_container    (std::ostream &out,
-                                          t_type*     ttype,
-                                          std::string prefix="");
-
-  void generate_deserialize_set_element  (std::ostream &out,
-                                          t_set*      tset,
-                                          std::string prefix="");
-
-  void generate_deserialize_map_element  (std::ostream &out,
-                                          t_map*      tmap,
-                                          std::string prefix="");
-
-  void generate_deserialize_list_element (std::ostream &out,
-                                          t_list*     tlist,
-                                          std::string prefix="");
-
-  void generate_serialize_field          (std::ostream &out,
-                                          t_field*    tfield,
-                                          std::string prefix="");
-
-  void generate_serialize_struct         (std::ostream &out,
-                                          t_struct*   tstruct,
-                                          std::string prefix="");
-
-  void generate_serialize_container      (std::ostream &out,
-                                          t_type*     ttype,
-                                          std::string prefix="");
-
-  void generate_serialize_map_element    (std::ostream &out,
-                                          t_map*      tmap,
-                                          std::string kiter,
-                                          std::string viter);
-
-  void generate_serialize_set_element    (std::ostream &out,
-                                          t_set*      tmap,
-                                          std::string iter);
-
-  void generate_serialize_list_element   (std::ostream &out,
-                                          t_list*     tlist,
-                                          std::string iter);
+  void generate_function_info     (t_service* tservice, t_function* tfunction);
 
   /**
    * Helper rendering functions
@@ -126,10 +69,14 @@ class t_erl_generator : public t_oop_generator {
   std::string render_includes();
   std::string declare_field(t_field* tfield);
   std::string type_name(t_type* ttype);
+
   std::string function_signature(t_function* tfunction, std::string prefix="");
+
 
   std::string argument_list(t_struct* tstruct);
   std::string type_to_enum(t_type* ttype);
+  std::string generate_type_term(t_type* ttype, bool expand_structs);
+  std::string type_module(t_type* ttype);
 
   std::string capitalize(std::string in) {
     in[0] = toupper(in[0]);
@@ -139,14 +86,6 @@ class t_erl_generator : public t_oop_generator {
   std::string uncapitalize(std::string in) {
     in[0] = tolower(in[0]);
     return in;
-  }
-
-  std::string atomize(std::string in) {
-    if (isupper(in[0])) {
-      return "'" + in + "'";
-    } else {
-      return in;
-    }
   }
 
  private:

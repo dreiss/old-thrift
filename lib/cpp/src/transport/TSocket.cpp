@@ -5,6 +5,8 @@
 // http://developers.facebook.com/thrift/
 
 #include <config.h>
+#include <cstring>
+#include <sstream>
 #include <sys/socket.h>
 #include <sys/poll.h>
 #include <sys/types.h>
@@ -15,7 +17,6 @@
 #include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <sstream>
 
 #include "concurrency/Monitor.h"
 #include "TSocket.h"
@@ -95,8 +96,7 @@ bool TSocket::peek() {
   int r = recv(socket_, &buf, 1, MSG_PEEK);
   if (r == -1) {
     int errno_copy = errno;
-    string errStr = "TSocket::peek() recv() " + getSocketInfo() + TOutput::strerror_s(errno_copy);
-    GlobalOutput(errStr.c_str());
+    GlobalOutput.perror("TSocket::peek() recv() " + getSocketInfo(), errno_copy);
     throw TTransportException(TTransportException::UNKNOWN, "recv()", errno_copy);
   }
   return (r > 0);
@@ -110,8 +110,7 @@ void TSocket::openConnection(struct addrinfo *res) {
   socket_ = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
   if (socket_ == -1) {
     int errno_copy = errno;
-    string errStr = "TSocket::open() socket() " + getSocketInfo() + TOutput::strerror_s(errno_copy);
-    GlobalOutput(errStr.c_str());
+    GlobalOutput.perror("TSocket::open() socket() " + getSocketInfo(), errno_copy);
     throw TTransportException(TTransportException::NOT_OPEN, "socket()", errno_copy);
   }
 
@@ -136,15 +135,13 @@ void TSocket::openConnection(struct addrinfo *res) {
   if (connTimeout_ > 0) {
     if (-1 == fcntl(socket_, F_SETFL, flags | O_NONBLOCK)) {
       int errno_copy = errno;
-      string errStr = "TSocket::open() fcntl() " + getSocketInfo() + TOutput::strerror_s(errno_copy);
-      GlobalOutput(errStr.c_str());
+      GlobalOutput.perror("TSocket::open() fcntl() " + getSocketInfo(), errno_copy);
       throw TTransportException(TTransportException::NOT_OPEN, "fcntl() failed", errno_copy);
     }
   } else {
     if (-1 == fcntl(socket_, F_SETFL, flags & ~O_NONBLOCK)) {
       int errno_copy = errno;
-      string errStr = "TSocket::open() fcntl " + getSocketInfo() + TOutput::strerror_s(errno_copy);
-      GlobalOutput(errStr.c_str());
+      GlobalOutput.perror("TSocket::open() fcntl " + getSocketInfo(), errno_copy);
       throw TTransportException(TTransportException::NOT_OPEN, "fcntl() failed", errno_copy);
     }
   }
@@ -159,14 +156,13 @@ void TSocket::openConnection(struct addrinfo *res) {
 
   if (errno != EINPROGRESS) {
     int errno_copy = errno;
-    string errStr = "TSocket::open() connect() " + getSocketInfo() + TOutput::strerror_s(errno_copy);
-    GlobalOutput(errStr.c_str());
+    GlobalOutput.perror("TSocket::open() connect() " + getSocketInfo(), errno_copy);
     throw TTransportException(TTransportException::NOT_OPEN, "connect() failed", errno_copy);
   }
 
 
   struct pollfd fds[1];
-  memset(fds, 0 , sizeof(fds));
+  std::memset(fds, 0 , sizeof(fds));
   fds[0].fd = socket_;
   fds[0].events = POLLOUT;
   ret = poll(fds, 1, connTimeout_);
@@ -179,16 +175,14 @@ void TSocket::openConnection(struct addrinfo *res) {
     int ret2 = getsockopt(socket_, SOL_SOCKET, SO_ERROR, (void *)&val, &lon);
     if (ret2 == -1) {
       int errno_copy = errno;
-      string errStr = "TSocket::open() getsockopt() " + getSocketInfo() + TOutput::strerror_s(errno_copy);
-      GlobalOutput(errStr.c_str());
+      GlobalOutput.perror("TSocket::open() getsockopt() " + getSocketInfo(), errno_copy);
       throw TTransportException(TTransportException::NOT_OPEN, "getsockopt()", errno_copy);
     }
     // no errors on socket, go to town
     if (val == 0) {
       goto done;
     }
-    string errStr = "TSocket::open() error on socket (after poll) " + getSocketInfo() + TOutput::strerror_s(val);
-    GlobalOutput(errStr.c_str());
+    GlobalOutput.perror("TSocket::open() error on socket (after poll) " + getSocketInfo(), val);
     throw TTransportException(TTransportException::NOT_OPEN, "socket open() error", val);
   } else if (ret == 0) {
     // socket timed out
@@ -198,8 +192,7 @@ void TSocket::openConnection(struct addrinfo *res) {
   } else {
     // error on poll()
     int errno_copy = errno;
-    string errStr = "TSocket::open() poll() " + getSocketInfo() + TOutput::strerror_s(errno_copy);
-    GlobalOutput(errStr.c_str());
+    GlobalOutput.perror("TSocket::open() poll() " + getSocketInfo(), errno_copy);
     throw TTransportException(TTransportException::NOT_OPEN, "poll() failed", errno_copy);
   }
 
@@ -223,7 +216,7 @@ void TSocket::open() {
   res0 = NULL;
   int error;
   char port[sizeof("65536")];
-  memset(&hints, 0, sizeof(hints));
+  std::memset(&hints, 0, sizeof(hints));
   hints.ai_family = PF_UNSPEC;
   hints.ai_socktype = SOCK_STREAM;
   hints.ai_flags = AI_PASSIVE | AI_ADDRCONFIG;
@@ -322,8 +315,8 @@ uint32_t TSocket::read(uint8_t* buf, uint32_t len) {
     }
 
     // Now it's not a try again case, but a real probblez
-    string errStr = "TSocket::read() recv() " + getSocketInfo() + TOutput::strerror_s(errno);
-    GlobalOutput(errStr.c_str());
+    int errno_copy = errno;  // Copy errno because we're allocating memory.
+    GlobalOutput.perror("TSocket::read() recv() " + getSocketInfo(), errno_copy);
 
     // If we disconnect with no linger time
     if (errno == ECONNRESET) {
@@ -341,7 +334,8 @@ uint32_t TSocket::read(uint8_t* buf, uint32_t len) {
     }
 
     // Some other error, whatevz
-    throw TTransportException(TTransportException::UNKNOWN, "Unknown", errno);
+    errno_copy = errno;
+    throw TTransportException(TTransportException::UNKNOWN, "Unknown", errno_copy);
   }
 
   // The remote host has closed the socket
@@ -376,8 +370,7 @@ void TSocket::write(const uint8_t* buf, uint32_t len) {
     // Fail on a send error
     if (b < 0) {
       int errno_copy = errno;
-      string errStr = "TSocket::write() send() " + getSocketInfo() + TOutput::strerror_s(errno_copy);
-      GlobalOutput(errStr.c_str());
+      GlobalOutput.perror("TSocket::write() send() " + getSocketInfo(), errno_copy);
 
       if (errno == EPIPE || errno == ECONNRESET || errno == ENOTCONN) {
         close();
@@ -421,9 +414,8 @@ void TSocket::setLinger(bool on, int linger) {
   struct linger l = {(lingerOn_ ? 1 : 0), lingerVal_};
   int ret = setsockopt(socket_, SOL_SOCKET, SO_LINGER, &l, sizeof(l));
   if (ret == -1) {
-    int errno_copy = errno;
-    string errStr = "TSocket::setLinger() setsockopt() " + getSocketInfo() + TOutput::strerror_s(errno_copy);
-    GlobalOutput(errStr.c_str());
+    int errno_copy = errno;  // Copy errno because we're allocating memory.
+    GlobalOutput.perror("TSocket::setLinger() setsockopt() " + getSocketInfo(), errno_copy);
   }
 }
 
@@ -437,9 +429,8 @@ void TSocket::setNoDelay(bool noDelay) {
   int v = noDelay_ ? 1 : 0;
   int ret = setsockopt(socket_, IPPROTO_TCP, TCP_NODELAY, &v, sizeof(v));
   if (ret == -1) {
-    int errno_copy = errno;
-    string errStr = "TSocket::setNoDelay() setsockopt() " + getSocketInfo() + TOutput::strerror_s(errno_copy);
-    GlobalOutput(errStr.c_str());
+    int errno_copy = errno;  // Copy errno because we're allocating memory.
+    GlobalOutput.perror("TSocket::setNoDelay() setsockopt() " + getSocketInfo(), errno_copy);
   }
 }
 
@@ -467,9 +458,8 @@ void TSocket::setRecvTimeout(int ms) {
   struct timeval r = recvTimeval_;
   int ret = setsockopt(socket_, SOL_SOCKET, SO_RCVTIMEO, &r, sizeof(r));
   if (ret == -1) {
-    int errno_copy = errno;
-    string errStr = "TSocket::setRecvTimeout() setsockopt() " + getSocketInfo() + TOutput::strerror_s(errno_copy);
-    GlobalOutput(errStr.c_str());
+    int errno_copy = errno;  // Copy errno because we're allocating memory.
+    GlobalOutput.perror("TSocket::setRecvTimeout() setsockopt() " + getSocketInfo(), errno_copy);
   }
 }
 
@@ -490,9 +480,8 @@ void TSocket::setSendTimeout(int ms) {
                       (int)((sendTimeout_%1000)*1000)};
   int ret = setsockopt(socket_, SOL_SOCKET, SO_SNDTIMEO, &s, sizeof(s));
   if (ret == -1) {
-    int errno_copy = errno;
-    string errStr = "TSocket::setSendTimeout() setsockopt() " + getSocketInfo() + TOutput::strerror_s(errno_copy);
-    GlobalOutput(errStr.c_str());
+    int errno_copy = errno;  // Copy errno because we're allocating memory.
+    GlobalOutput.perror("TSocket::setSendTimeout() setsockopt() " + getSocketInfo(), errno_copy);
   }
 }
 

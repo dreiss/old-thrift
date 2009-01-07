@@ -1,15 +1,9 @@
 -module(server).
 
--include("thrift.hrl").
--include("transport/tSocket.hrl").
--include("protocol/tBinaryProtocol.hrl").
-
--include("server/tErlServer.hrl").
--include("transport/tErlAcceptor.hrl").
-
 -include("calculator_thrift.hrl").
 
--export([start/0, start/1, stop/1, ping/0, add/2, calculate/2, getStruct/1, zip/0]).
+-export([start/0, start/1, handle_function/2,
+         stop/1, ping/0, add/2, calculate/2, getStruct/1, zip/0]).
 
 debug(Format, Data) ->
     error_logger:info_msg(Format, Data).
@@ -50,27 +44,20 @@ zip() ->
 %%
 
 start() ->
-    start(9090).
+    start(9999).
 
 start(Port) ->
-    thrift:start(),
-
     Handler   = ?MODULE,
-    Processor = calculator_thrift,
-
-    TF = tBufferedTransportFactory:new(),
-    PF = tBinaryProtocolFactory:new(),
-
-    ServerTransport = tErlAcceptor,
-    ServerFlavor    = tErlServer,
-
-    Server = oop:start_new(ServerFlavor, [Port, Handler, Processor, ServerTransport, TF, PF]),
-
-    case ?R0(Server, effectful_serve) of
-	ok    -> Server;
-	Error -> Error
-    end.
+    thrift_socket_server:start([{handler, Handler},
+                                {service, calculator_thrift},
+                                {port, Port},
+                                {name, tutorial_server}]).
 
 stop(Server) ->
-    ?C0(Server, stop),
-    ok.
+    thrift_socket_server:stop(Server).
+
+handle_function(Function, Args) when is_atom(Function), is_tuple(Args) ->
+    case apply(?MODULE, Function, tuple_to_list(Args)) of
+        ok -> ok;
+        Reply -> {reply, Reply}
+    end.

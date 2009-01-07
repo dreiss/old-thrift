@@ -1,0 +1,76 @@
+require 'rubygems'
+require 'rake'
+require 'spec/rake/spectask'
+
+THRIFT = '../../compiler/cpp/thrift'
+
+task :default => [:'gen-rb', :spec, :test]
+
+Spec::Rake::SpecTask.new do |t|
+  t.spec_files = FileList['spec/**/*_spec.rb']
+  t.spec_opts = ['--color']
+end
+
+Spec::Rake::SpecTask.new(:'spec:rcov') do |t|
+  t.spec_files = FileList['spec/**/*_spec.rb']
+  t.spec_opts = ['--color']
+  t.rcov = true
+  t.rcov_opts = ['--exclude', '^spec,/gems/']
+end
+
+desc 'Run the compiler tests (requires full thrift checkout)'
+task :test do
+  # ensure this is a full thrift checkout and not a tarball of the ruby libs
+  cmd = 'head -1 ../../README 2>/dev/null | grep Thrift >/dev/null 2>/dev/null'
+  system(cmd) or fail "rake test requires a full thrift checkout"
+  sh 'make', '-C', File.dirname(__FILE__) + "/../../test/rb", "check"
+end
+
+desc 'Compile the .thrift files for the specs'
+task :'gen-rb' => [:'gen-rb:spec', :'gen-rb:benchmark']
+
+namespace :'gen-rb' do
+  task :'spec' do
+    dir = File.dirname(__FILE__) + '/spec'
+    sh THRIFT, '--gen', 'rb', '-o', dir, "#{dir}/ThriftSpec.thrift"
+  end
+
+  task :'benchmark' do
+    dir = File.dirname(__FILE__) + '/benchmark'
+    sh THRIFT, '--gen', 'rb', '-o', dir, "#{dir}/Benchmark.thrift"
+  end
+end
+
+desc 'Run benchmarking of NonblockingServer'
+task :benchmark do
+  ruby 'benchmark/benchmark.rb'
+end
+
+
+begin
+  require 'echoe'
+
+  Echoe.new('thrift') do |p|
+    p.author = ['Kevin Ballard', 'Kevin Clark', 'Mark Slee']
+    p.email = ['kevin@sb.org', 'kevin.clark@gmail.com', 'mcslee@facebook.com']
+    p.summary = "Ruby libraries for Thrift (a language-agnostic RPC system)"
+    p.url = "http://incubator.apache.org/thrift/"
+    p.include_rakefile = true
+  end
+
+  task :install => [:check_site_lib]
+
+  require 'rbconfig'
+  task :check_site_lib do
+    if File.exist?(File.join(Config::CONFIG['sitelibdir'], 'thrift.rb'))
+      fail "thrift is already installed in site_ruby"
+    end
+  end
+rescue LoadError
+  [:install, :package].each do |t|
+    desc "Stub for #{t}"
+    task t do
+      fail "The Echoe gem is required for this task"
+    end
+  end
+end

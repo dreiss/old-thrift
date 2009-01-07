@@ -49,9 +49,6 @@ class TNonblockingServer : public TServer {
   // Port server runs on
   int port_;
 
-  // Whether to frame responses
-  bool frameResponses_;
-
   // For processing via thread pool, may be NULL
   boost::shared_ptr<ThreadManager> threadManager_;
 
@@ -83,7 +80,6 @@ class TNonblockingServer : public TServer {
     TServer(processor),
     serverSocket_(-1),
     port_(port),
-    frameResponses_(true),
     threadPoolProcessing_(false),
     eventBase_(NULL),
     numTConnections_(0) {}
@@ -95,7 +91,6 @@ class TNonblockingServer : public TServer {
     TServer(processor),
     serverSocket_(-1),
     port_(port),
-    frameResponses_(true),
     threadManager_(threadManager),
     eventBase_(NULL),
     numTConnections_(0) {
@@ -116,7 +111,6 @@ class TNonblockingServer : public TServer {
     TServer(processor),
     serverSocket_(0),
     port_(port),
-    frameResponses_(true),
     threadManager_(threadManager),
     eventBase_(NULL),
     numTConnections_(0) {
@@ -144,14 +138,6 @@ class TNonblockingServer : public TServer {
 
   void addTask(boost::shared_ptr<Runnable> task) {
     threadManager_->add(task);
-  }
-
-  void setFrameResponses(bool frameResponses) {
-    frameResponses_ = frameResponses;
-  }
-
-  bool getFrameResponses() const {
-    return frameResponses_;
   }
 
   event_base* getEventBase() const {
@@ -211,7 +197,6 @@ enum TAppState {
   APP_READ_FRAME_SIZE,
   APP_READ_REQUEST,
   APP_WAIT_TASK,
-  APP_SEND_FRAME_SIZE,
   APP_SEND_RESULT
 };
 
@@ -262,9 +247,6 @@ class TConnection {
 
   // How far through writing are we?
   uint32_t writeBufferPos_;
-
-  // Frame size
-  int32_t frameSize_;
 
   // Task handle
   int taskHandle_;
@@ -352,8 +334,7 @@ class TConnection {
   static void taskHandler(int fd, short /* which */, void* v) {
     assert(fd == ((TConnection*)v)->taskHandle_);
     if (-1 == ::close(((TConnection*)v)->taskHandle_)) {
-      std::string errStr = "TConnection::taskHandler close handle failed, resource leak " + TOutput::strerror_s(errno);
-      GlobalOutput(errStr.c_str());
+      GlobalOutput.perror("TConnection::taskHandler close handle failed, resource leak ", errno);
     }
     ((TConnection*)v)->transition();
   }

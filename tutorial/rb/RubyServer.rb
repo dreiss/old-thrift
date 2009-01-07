@@ -1,9 +1,10 @@
 #!/usr/bin/env ruby
 
 $:.push('../gen-rb')
+$:.unshift '../../lib/rb/lib'
 
-require 'thrift/transport/tsocket'
-require 'thrift/protocol/tbinaryprotocol'
+require 'thrift'
+require 'thrift/protocol/binaryprotocol'
 require 'thrift/server/tserver'
 
 require 'Calculator'
@@ -68,9 +69,9 @@ end
 
 handler = CalculatorHandler.new()
 processor = Calculator::Processor.new(handler)
-transport = TServerSocket.new(9090)
-transportFactory = TBufferedTransportFactory.new()
-server = TSimpleServer.new(processor, transport, transportFactory)
+transport = Thrift::ServerSocket.new(9090)
+transportFactory = Thrift::BufferedTransportFactory.new()
+server = Thrift::SimpleServer.new(processor, transport, transportFactory)
 
 puts "Starting the server..."
 server.serve()

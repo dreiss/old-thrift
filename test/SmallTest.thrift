@@ -1,4 +1,6 @@
 
+namespace rb TestNamespace
+
 struct Goodbyez {
   1: i32 val = 325;
 }
@@ -7,6 +9,10 @@ senum Thinger {
   "ASDFKJ",
   "r32)*F#@",
   "ASDFLJASDF"
+}
+
+struct BoolPasser {
+  1: bool value = 1
 }
 
 struct Hello {

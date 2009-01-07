@@ -13,7 +13,11 @@
  * @author Mark Slee <mcslee@facebook.com>
  */
 
+#define __STDC_LIMIT_MACROS
+#define __STDC_FORMAT_MACROS
 #include <stdio.h>
+#include <inttypes.h>
+#include <limits.h>
 #include "main.h"
 #include "globals.h"
 #include "parse/t_program.h"
@@ -35,7 +39,7 @@ int g_arglist = 0;
  */
 %union {
   char*          id;
-  int            iconst;
+  int64_t        iconst;
   double         dconst;
   bool           tbool;
   t_doc*         tdoc;
@@ -52,6 +56,7 @@ int g_arglist = 0;
   t_field*       tfield;
   char*          dtext;
   t_field::e_req ereq;
+  t_annotation*  tannot;
 }
 
 /**
@@ -138,6 +143,7 @@ int g_arglist = 0;
 
 %type<ttype>     BaseType
 %type<ttype>     ContainerType
+%type<ttype>     SimpleContainerType
 %type<ttype>     MapType
 %type<ttype>     SetType
 %type<ttype>     ListType
@@ -147,6 +153,10 @@ int g_arglist = 0;
 
 %type<ttypedef>  Typedef
 %type<ttype>     DefinitionType
+
+%type<ttype>     TypeAnnotations
+%type<ttype>     TypeAnnotationList
+%type<tannot>    TypeAnnotation
 
 %type<tfield>    Field
 %type<iconst>    FieldIdentifier
@@ -496,6 +506,9 @@ EnumDef:
       if ($4 < 0) {
         pwarning(1, "Negative value supplied for enum %s.\n", $2);
       }
+      if ($4 > INT_MAX) {
+        pwarning(1, "64-bit value supplied for enum %s.\n", $2);
+      }
       $$ = new t_enum_value($2, $4);
       if ($1 != NULL) {
         $$->set_doc($1);
@@ -569,6 +582,9 @@ ConstValue:
       pdebug("ConstValue => tok_int_constant");
       $$ = new t_const_value();
       $$->set_integer($1);
+      if ($1 < INT32_MIN || $1 > INT32_MAX) {
+        pwarning(1, "64-bit constant \"%"PRIi64"\" may not work in all languages.\n", $1);
+      }
     }
 | tok_dub_constant
     {
@@ -648,12 +664,16 @@ ConstMapContents:
     }
 
 Struct:
-  tok_struct tok_identifier XsdAll '{' FieldList '}'
+  tok_struct tok_identifier XsdAll '{' FieldList '}' TypeAnnotations
     {
       pdebug("Struct -> tok_struct tok_identifier { FieldList }");
-      $5->set_name($2);
       $5->set_xsd_all($3);
       $$ = $5;
+      $$->set_name($2);
+      if ($7 != NULL) {
+        $$->annotations_ = $7->annotations_;
+        delete $7;
+      }
       y_field_val = -1;
     }
 
@@ -987,20 +1007,30 @@ BaseType:
       $$ = g_type_double;
     }
 
-ContainerType:
+ContainerType: SimpleContainerType TypeAnnotations
+    {
+      pdebug("ContainerType -> SimpleContainerType TypeAnnotations");
+      $$ = $1;
+      if ($2 != NULL) {
+        $$->annotations_ = $2->annotations_;
+        delete $2;
+      }
+    }
+
+SimpleContainerType:
   MapType
     {
-      pdebug("ContainerType -> MapType");
+      pdebug("SimpleContainerType -> MapType");
       $$ = $1;
     }
 | SetType
     {
-      pdebug("ContainerType -> SetType");
+      pdebug("SimpleContainerType -> SetType");
       $$ = $1;
     }
 | ListType
     {
-      pdebug("ContainerType -> ListType");
+      pdebug("SimpleContainerType -> ListType");
       $$ = $1;
     }
 
@@ -1042,6 +1072,40 @@ CppType:
 |
     {
       $$ = NULL;
+    }
+
+TypeAnnotations:
+  '(' TypeAnnotationList ')'
+    {
+      pdebug("TypeAnnotations -> ( TypeAnnotationList )");
+      $$ = $2;
+    }
+|
+    {
+      $$ = NULL;
+    }
+
+TypeAnnotationList:
+  TypeAnnotationList TypeAnnotation
+    {
+      pdebug("TypeAnnotationList -> TypeAnnotationList , TypeAnnotation");
+      $$ = $1;
+      $$->annotations_[$2->key] = $2->val;
+      delete $2;
+    }
+|
+    {
+      /* Just use a dummy structure to hold the annotations. */
+      $$ = new t_struct(g_program);
+    }
+
+TypeAnnotation:
+  tok_identifier '=' tok_literal CommaOrSemicolonOptional
+    {
+      pdebug("TypeAnnotation -> tok_identifier = tok_literal");
+      $$ = new t_annotation;
+      $$->key = $1;
+      $$->val = $3;
     }
 
 %%

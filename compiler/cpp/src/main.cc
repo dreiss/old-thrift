@@ -24,10 +24,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <limits.h>
 
 #ifdef MINGW
 # include <windows.h> /* for GetFullPathName */
-# include <limits.h>
 #endif
 
 // Careful: must include globals first for extern definitions
@@ -39,6 +39,8 @@
 #include "generate/t_php_generator.h"
 #include "generate/t_xsd_generator.h"
 #include "generate/t_erl_generator.h"
+
+#include "version.h"
 
 using namespace std;
 
@@ -189,7 +191,7 @@ char *saferealpath(const char *path, char *resolved_path) {
  *
  * @param fmt C format string followed by additional arguments
  */
-void yyerror(char* fmt, ...) {
+void yyerror(const char* fmt, ...) {
   va_list args;
   fprintf(stderr,
           "[ERROR:%s:%d] (last token was '%s')\n",
@@ -209,7 +211,7 @@ void yyerror(char* fmt, ...) {
  *
  * @param fmt C format string followed by additional arguments
  */
-void pdebug(char* fmt, ...) {
+void pdebug(const char* fmt, ...) {
   if (g_debug == 0) {
     return;
   }
@@ -226,7 +228,7 @@ void pdebug(char* fmt, ...) {
  *
  * @param fmt C format string followed by additional arguments
  */
-void pverbose(char* fmt, ...) {
+void pverbose(const char* fmt, ...) {
   if (g_verbose == 0) {
     return;
   }
@@ -241,7 +243,7 @@ void pverbose(char* fmt, ...) {
  *
  * @param fmt C format string followed by additional arguments
  */
-void pwarning(int level, char* fmt, ...) {
+void pwarning(int level, const char* fmt, ...) {
   if (g_warn < level) {
     return;
   }
@@ -589,11 +591,19 @@ void generate_all_fingerprints(t_program* program) {
 }
 
 /**
+ * Prints the version number
+ */
+void version() {
+  printf("Thrift version %s-%s\n", THRIFT_VERSION, THRIFT_REVISION);
+}
+
+/**
  * Diplays the usage message and then exits with an error code.
  */
 void usage() {
   fprintf(stderr, "Usage: thrift [options] file\n");
   fprintf(stderr, "Options:\n");
+  fprintf(stderr, "  -version    Print the compiler version\n");
   fprintf(stderr, "  -php        Generate PHP output files\n");
   fprintf(stderr, "  -phpi       Generate PHP inlined files\n");
   fprintf(stderr, "  -phps       Generate PHP server stubs (with -php)\n");
@@ -937,7 +947,10 @@ int main(int argc, char** argv) {
         ++arg;
       }
 
-      if (strcmp(arg, "-debug") == 0) {
+      if (strcmp(arg, "-version") == 0) {
+        version();
+        exit(1);
+      } else if (strcmp(arg, "-debug") == 0) {
         g_debug = 1;
       } else if (strcmp(arg, "-nowarn") == 0) {
         g_warn = 0;
@@ -950,7 +963,7 @@ int main(int argc, char** argv) {
       } else if (strcmp(arg, "-gen") == 0) {
         arg = argv[++i];
         if (arg == NULL) {
-          fprintf(stderr, "!!! Missing generator specification");
+          fprintf(stderr, "!!! Missing generator specification\n");
           usage();
         }
         generator_strings.push_back(arg);
@@ -1011,14 +1024,14 @@ int main(int argc, char** argv) {
         arg = argv[++i];
 
         if (arg == NULL) {
-          fprintf(stderr, "!!! Missing Include directory");
+          fprintf(stderr, "!!! Missing Include directory\n");
           usage();
         }
         g_incl_searchpath.push_back(arg);
       } else if (strcmp(arg, "-o") == 0) {
         arg = argv[++i];
         if (arg == NULL) {
-          fprintf(stderr, "-o: missing output directory");
+          fprintf(stderr, "-o: missing output directory\n");
           usage();
         }
         out_path = arg;
@@ -1049,6 +1062,12 @@ int main(int argc, char** argv) {
       // Tokenize more
       arg = strtok(NULL, " ");
     }
+  }
+
+  // if you're asking for version, you have a right not to pass a file
+  if (strcmp(argv[argc-1], "-version") == 0) {
+    version();
+    exit(1);
   }
 
   // TODO(dreiss): Delete these when everyone is using the new hotness.
@@ -1112,6 +1131,10 @@ int main(int argc, char** argv) {
 
   // Real-pathify it
   char rp[PATH_MAX];
+  if (argv[i] == NULL) {
+    fprintf(stderr, "!!! Missing file name\n");
+    usage();
+  }
   if (saferealpath(argv[i], rp) == NULL) {
     failure("Could not open input file with realpath: %s", argv[i]);
   }

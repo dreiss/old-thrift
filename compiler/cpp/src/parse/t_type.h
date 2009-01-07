@@ -8,6 +8,7 @@
 #define T_TYPE_H
 
 #include <string>
+#include <map>
 #include <cstring>
 #include "t_doc.h"
 
@@ -70,10 +71,10 @@ class t_type : public t_doc {
   // Call this before trying get_*_fingerprint().
   virtual void generate_fingerprint() {
     std::string material = get_fingerprint_material();
-    MD5_CTX ctx;
-    MD5Init(&ctx);
-    MD5Update(&ctx, (unsigned char*)(material.data()), material.size());
-    MD5Final(fingerprint_, &ctx);
+    md5_state_t ctx;
+    md5_init(&ctx);
+    md5_append(&ctx, (md5_byte_t*)(material.data()), (int)material.size());
+    md5_finish(&ctx, (md5_byte_t*)fingerprint_);
   }
 
   bool has_fingerprint() const {
@@ -114,6 +115,7 @@ class t_type : public t_doc {
     return rv;
   }
 
+  std::map<std::string, std::string> annotations_;
 
  protected:
   t_type() :
@@ -146,6 +148,16 @@ class t_type : public t_doc {
   std::string name_;
 
   uint8_t fingerprint_[fingerprint_len];
+};
+
+
+/**
+ * Placeholder struct for returning the key and value of an annotation
+ * during parsing.
+ */
+struct t_annotation {
+  std::string key;
+  std::string val;
 };
 
 #endif

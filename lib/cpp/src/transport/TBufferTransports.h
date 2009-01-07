@@ -4,9 +4,10 @@
 // See accompanying file LICENSE or visit the Thrift site at:
 // http://developers.facebook.com/thrift/
 
-#ifndef _THRIFT_TRANSPORT_TDOUBLEBUFFERS_H_
-#define _THRIFT_TRANSPORT_TDOUBLEBUFFERS_H_ 1
+#ifndef _THRIFT_TRANSPORT_TBUFFERTRANSPORTS_H_
+#define _THRIFT_TRANSPORT_TBUFFERTRANSPORTS_H_ 1
 
+#include <cstring>
 #include "boost/scoped_array.hpp"
 
 #include <transport/TTransport.h>
@@ -49,7 +50,7 @@ class TBufferBase : public TVirtualTransport<TBufferBase> {
   uint32_t read(uint8_t* buf, uint32_t len) {
     uint8_t* new_rBase = rBase_ + len;
     if (TDB_LIKELY(new_rBase <= rBound_)) {
-      memcpy(buf, rBase_, len);
+      std::memcpy(buf, rBase_, len);
       rBase_ = new_rBase;
       return len;
     }
@@ -80,7 +81,7 @@ class TBufferBase : public TVirtualTransport<TBufferBase> {
   void write(const uint8_t* buf, uint32_t len) {
     uint8_t* new_wBase = wBase_ + len;
     if (TDB_LIKELY(new_wBase <= wBound_)) {
-      memcpy(wBase_, buf, len);
+      std::memcpy(wBase_, buf, len);
       wBase_ = new_wBase;
       return;
     }
@@ -118,7 +119,7 @@ class TBufferBase : public TVirtualTransport<TBufferBase> {
   /// Slow path read.
   virtual uint32_t readSlow(uint8_t* buf, uint32_t len) = 0;
 
-  /// Slow path read.
+  /// Slow path write.
   virtual void writeSlow(const uint8_t* buf, uint32_t len) = 0;
 
   /**
@@ -148,7 +149,7 @@ class TBufferBase : public TVirtualTransport<TBufferBase> {
     rBound_ = buf+len;
   }
 
-  /// Convenience mutator for setting the read buffer.
+  /// Convenience mutator for setting the write buffer.
   void setWriteBuffer(uint8_t* buf, uint32_t len) {
     wBase_ = buf;
     wBound_ = buf+len;
@@ -207,7 +208,7 @@ class TBufferedTransport : public TBufferBase {
   TBufferedTransport(boost::shared_ptr<TTransport> transport, uint32_t rsz, uint32_t wsz)
     : transport_(transport)
     , rBufSize_(rsz)
-    , wBufSize_(rsz)
+    , wBufSize_(wsz)
     , rBuf_(new uint8_t[rBufSize_])
     , wBuf_(new uint8_t[wBufSize_])
   {
@@ -465,10 +466,10 @@ class TMemoryBuffer : public TBufferBase {
    *   and will be responsible for freeing it.
    *   The membory must have been allocated with malloc.
    */
-  enum MemoryPolicy {
-    OBSERVE = 1,
-    COPY = 2,
-    TAKE_OWNERSHIP = 3,
+  enum MemoryPolicy
+  { OBSERVE = 1
+  , COPY = 2
+  , TAKE_OWNERSHIP = 3
   };
 
   /**
@@ -674,4 +675,4 @@ class TMemoryBuffer : public TBufferBase {
 
 }}} // facebook::thrift::transport
 
-#endif // #ifndef _THRIFT_TRANSPORT_TDOUBLEBUFFERS_H_
+#endif // #ifndef _THRIFT_TRANSPORT_TBUFFERTRANSPORTS_H_

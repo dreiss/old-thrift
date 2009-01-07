@@ -1,17 +1,18 @@
 #!/usr/bin/env ruby
 
 $:.push('../gen-rb')
+$:.unshift '../../lib/rb/lib'
 
-require 'thrift/transport/tsocket.rb'
-require 'thrift/protocol/tbinaryprotocol.rb'
+require 'thrift'
+require 'thrift/protocol/binaryprotocol'
 
 require 'Calculator'
 
 begin
   port = ARGV[0] || 9090
 
-  transport = TBufferedTransport.new(TSocket.new('localhost', port))
-  protocol = TBinaryProtocol.new(transport)
+  transport = Thrift::BufferedTransport.new(Thrift::Socket.new('localhost', port))
+  protocol = Thrift::BinaryProtocol.new(transport)
   client = Calculator::Client.new(protocol)
 
   transport.open()
@@ -51,6 +52,6 @@ begin
 
   transport.close()
 
-rescue TException => tx
-  print 'TException: ', tx.message, "\n"
+rescue Thrift::Exception => tx
+  print 'Thrift::Exception: ', tx.message, "\n"
 end

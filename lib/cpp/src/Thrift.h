@@ -21,7 +21,6 @@
 #include <set>
 #include <vector>
 #include <exception>
-#include <string>
 
 #include "TLogging.h"
 
@@ -38,6 +37,17 @@ class TOutput {
   inline void operator()(const char *message){
     f_(message);
   }
+
+  // It is important to have a const char* overload here instead of
+  // just the string version, otherwise errno could be corrupted
+  // if there is some problem allocating memory when constructing
+  // the string.
+  void perror(const char *message, int errno_copy);
+  inline void perror(const std::string &message, int errno_copy) {
+    perror(message.c_str(), errno_copy);
+  }
+
+  void printf(const char *message, ...);
 
   inline static void errorTimeWrapper(const char* msg) {
     time_t now;

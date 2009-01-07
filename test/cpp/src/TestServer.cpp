@@ -222,12 +222,17 @@ class TestHandler : public ThriftTestIf {
     hello.i64_thing = (int64_t)arg2;
   }
 
-  void testException(const std::string &arg) throw(Xception) {
+  void testException(const std::string &arg)
+    throw(Xception, facebook::thrift::TException)
+  {
     printf("testException(%s)\n", arg.c_str());
     if (arg.compare("Xception") == 0) {
       Xception e;
       e.errorCode = 1001;
       e.message = "This is an Xception";
+      throw e;
+    } else if (arg.compare("ApplicationException") == 0) {
+      facebook::thrift::TException e;
       throw e;
     } else {
       Xtruct result;
@@ -269,7 +274,6 @@ int main(int argc, char **argv) {
   string serverType = "simple";
   string protocolType = "binary";
   size_t workerCount = 4;
-  bool frameOutput = true;
 
   ostringstream usage;
 
@@ -302,10 +306,6 @@ int main(int argc, char **argv) {
 
     if (!args["port"].empty()) {
       port = atoi(args["port"].c_str());
-    }
-
-    if (!args["noframe"].empty()) {
-      frameOutput = false;
     }
 
     if (!args["server-type"].empty()) {
@@ -395,18 +395,9 @@ int main(int argc, char **argv) {
     threadedServer.serve();
 
   } else if (serverType == "nonblocking") {
-
     TNonblockingServer nonblockingServer(testProcessor, port);
-    nonblockingServer.setFrameResponses(frameOutput);
-    if (frameOutput) {
-      printf("Using framed output mode\n");
-    } else {
-      printf("Using non-framed output mode\n");
-    }
-
     printf("Starting the nonblocking server on port %d...\n", port);
     nonblockingServer.serve();
-
   }
 
   printf("done.\n");

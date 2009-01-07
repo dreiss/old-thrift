@@ -614,11 +614,10 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
   // Printing utilities so that on the command line thrift
   // structs look pretty like dictionaries
   out <<
-    indent() << "def __str__(self): " << endl <<
-    indent() << "  return str(self.__dict__)" << endl <<
-    endl <<
-    indent() << "def __repr__(self): " << endl <<
-    indent() << "  return repr(self.__dict__)" << endl <<
+    indent() << "def __repr__(self):" << endl <<
+    indent() << "  L = ['%s=%r' % (key, value)" << endl <<
+    indent() << "    for key, value in self.__dict__.iteritems()]" << endl <<
+    indent() << "  return '%s(%s)' % (self.__class__.__name__, ', '.join(L))" << endl <<
     endl;
 
   // Equality and inequality methods that compare by value
@@ -1355,7 +1354,7 @@ void t_py_generator::generate_process_function(t_service* tservice,
     indent_down();
     for (x_iter = xceptions.begin(); x_iter != xceptions.end(); ++x_iter) {
       f_service_ <<
-        indent() << "except " << (*x_iter)->get_type()->get_name() << ", " << (*x_iter)->get_name() << ":" << endl;
+        indent() << "except " << type_name((*x_iter)->get_type()) << ", " << (*x_iter)->get_name() << ":" << endl;
       if (!tfunction->is_async()) {
         indent_up();
         f_service_ <<

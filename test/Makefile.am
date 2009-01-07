@@ -1,7 +1,15 @@
-SUBDIRS = py
+SUBDIRS =
 
-if ENABLE_JAVA
+if WITH_JAVA
 SUBDIRS += java
+endif
+
+if WITH_PYTHON
+SUBDIRS += py
+endif
+
+if WITH_RUBY
+SUBDIRS += rb
 endif
 
 noinst_LTLIBRARIES = libtestgencpp.la
@@ -17,7 +25,7 @@ libtestgencpp_la_SOURCES = \
 	gen-cpp/ThriftTest.cpp \
 	gen-cpp/ThriftTest_types.cpp
 
-libtestgencpp_la_LIBADD = $(top_srcdir)/lib/cpp/libthrift.la
+libtestgencpp_la_LIBADD = $(top_builddir)/lib/cpp/libthrift.la
 
 noinst_PROGRAMS = Benchmark
 
@@ -53,7 +61,7 @@ TFDTransportTest_SOURCES = \
 	TFDTransportTest.cpp
 
 TFDTransportTest_LDADD = \
-	$(top_srcdir)/lib/cpp/libthrift.la
+	$(top_builddir)/lib/cpp/libthrift.la
 
 
 #
@@ -63,7 +71,7 @@ TPipedTransportTest_SOURCES = \
 	TPipedTransportTest.cpp
 
 TPipedTransportTest_LDADD = \
-	$(top_srcdir)/lib/cpp/libthrift.la
+	$(top_builddir)/lib/cpp/libthrift.la
 
 #
 # DebugProtoTest
@@ -109,7 +117,7 @@ SpecializationTest_LDADD = libtestgencpp.la
 #
 # Common thrift code generation rules
 #
-THRIFT = $(top_srcdir)/compiler/cpp/thrift
+THRIFT = $(top_builddir)/compiler/cpp/thrift
 
 gen-cpp/DebugProtoTest_types.cpp gen-cpp/PartiallyReflectable.cpp: DebugProtoTest.thrift
 	$(THRIFT) --gen cpp:dense,reflection_limited,templates $<

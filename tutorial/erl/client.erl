@@ -1,73 +1,55 @@
 -module(client).
 
--include("thrift.hrl").
--include("transport/tSocket.hrl").
--include("protocol/tBinaryProtocol.hrl").
-
 -include("calculator_thrift.hrl").
 
--export([go/0]).
+-export([t/0]).
 
 p(X) ->
     io:format("~p~n", [X]),
     ok.
 
 t() ->
-    thrift:start(),
-    Host = "dev020",
     Port = 9999,
+    
+    {ok, Client} = thrift_client:start_link("127.0.0.1",
+                                            Port,
+                                            calculator_thrift),
+
+    thrift_client:call(Client, ping, []),
+    io:format("ping~n", []),
+
+    {ok, Sum} = thrift_client:call(Client, add,  [1, 1]),
+    io:format("1+1=~p~n", [Sum]),
+
+    {ok, Sum1} = thrift_client:call(Client, add, [1, 4]),
+    io:format("1+4=~p~n", [Sum1]),
+
+    Work = #work{op=?tutorial_SUBTRACT,
+                 num1=15,
+                 num2=10},
+    {ok, Diff} = thrift_client:call(Client, calculate, [1, Work]),
+    io:format("15-10=~p~n", [Diff]),
+
+    {ok, Log} = thrift_client:call(Client, getStruct, [1]),
+    io:format("Log: ~p~n", [Log]),
 
     try
-        _Sock = oop:start_new(tSocket, [Host, Port]),
-        Trans = oop:start_new(tBufferedTransport, [_Sock]),
-        Prot  = oop:start_new(tBinaryProtocol, [Trans]),
+        Work1 = #work{op=?tutorial_DIVIDE,
+                      num1=1,
+                      num2=0},
+        {ok, _Quot} = thrift_client:call(Client, calculate, [2, Work1]),
 
-        ?R0(Trans, effectful_open),
-
-        Client = calculator_thrift:new(Prot),
-
-        calculator_thrift:ping(Client),
-        io:format("ping~n", []),
-
-        Sum = calculator_thrift:add(Client, 1, 1),
-        io:format("1+1=~p~n", [Sum]),
-
-        Sum1 = calculator_thrift:add(Client, 1, 4),
-        io:format("1+4=~p~n", [Sum1]),
-
-        Work = #work{op=?tutorial_SUBTRACT,
-                     num1=15,
-                     num2=10},
-        Diff = calculator_thrift:calculate(Client, 1, Work),
-        io:format("15-10=~p~n", [Diff]),
-
-        %% xxx inheritance doesn't work
-        %% Log = sharedService_thrift:getStruct(Client, 1),
-        %% io:format("Log: ~p~n", [Log]),
-
-        %% xxx neither do exceptions :(
-        try
-            Work1 = #work{op=?tutorial_DIVIDE,
-                          num1=1,
-                          num2=0},
-            _Quot = (calculator_thrift:calculate(Client, 1, Work1)),
-
-            io:format("LAME: exception handling is broken~n", [])
-        catch
-            Z ->
-                p(Z)
-        %%   rescue InvalidOperation => io
-        %%     print "InvalidOperation: ", io.why, "\n"
-        %%   end
-        end,
-
-        calculator_thrift:zip(Client),
-        io:format("zip~n", []),
-
-        ?R0(Trans, effectful_close)
-
+        io:format("LAME: exception handling is broken~n", [])
     catch
-        Y ->
-            p(Y)
+        Z ->
+            io:format("Got exception where expecting - the " ++
+                      "following is NOT a problem!!!~n"),
+            p(Z)
     end,
+
+
+    {ok, ok} = thrift_client:call(Client, zip, []),
+    io:format("zip~n", []),
+
+    ok = thrift_client:close(Client),
     ok.

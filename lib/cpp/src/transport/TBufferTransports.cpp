@@ -101,7 +101,7 @@ const uint8_t* TBufferedTransport::borrowSlow(uint8_t* buf, uint32_t* len) {
   // The number of bytes of data we have already.
   uint32_t have = rBound_ - rBase_;
   // The number of additional bytes we need from the underlying transport.
-  uint32_t need = *len - have;
+  int32_t need = *len - have;
   // The space from the start of the buffer to the end of our data.
   uint32_t offset = rBound_ - rBuf_.get();
   assert(need > 0);
@@ -135,8 +135,11 @@ void TBufferedTransport::flush_virt()  {
   // Write out any data waiting in the write buffer.
   uint32_t have_bytes = wBase_ - wBuf_.get();
   if (have_bytes > 0) {
-    transport_->write(wBuf_.get(), have_bytes);
+    // Note that we reset wBase_ prior to the underlying write
+    // to ensure we're in a sane state (i.e. internal buffer cleaned)
+    // if the underlying write throws up an exception
     wBase_ = wBuf_.get();
+    transport_->write(wBuf_.get(), have_bytes);
   }
 
   // Flush the underlying transport.
@@ -230,15 +233,16 @@ void TFramedTransport::flush_virt()  {
   sz_nbo = (int32_t)htonl((uint32_t)(sz_hbo));
   memcpy(wBuf_.get(), (uint8_t*)&sz_nbo, sizeof(sz_nbo));
 
-  // Write size and frame body.
-  transport_->write(wBuf_.get(), sizeof(sz_nbo)+sz_hbo);
+  if (sz_hbo > 0) {
+    // Note that we reset wBase_ (with a pad for the frame size)
+    // prior to the underlying write to ensure we're in a sane state
+    // (i.e. internal buffer cleaned) if the underlying write throws
+    // up an exception
+    wBase_ = wBuf_.get() + sizeof(sz_nbo);
 
-  // Reset our pointers.
-  wBase_ = wBuf_.get();
-
-  // Pad the buffer so we can insert the size later.
-  uint32_t pad = 0;
-  this->write((uint8_t*)&pad, sizeof(pad));
+    // Write size and frame body.
+    transport_->write(wBuf_.get(), sizeof(sz_nbo)+sz_hbo);
+  }
 
   // Flush the underlying transport.
   transport_->flush();

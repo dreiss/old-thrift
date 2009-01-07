@@ -6,6 +6,9 @@ all clean docs:
 		(cd $$dir; ${MAKE} $@); \
 	done
 
+install: all
+	echo 'No install target, sorry.'
+
 check: all
 
 distclean: clean

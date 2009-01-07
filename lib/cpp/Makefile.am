@@ -16,8 +16,8 @@ lib_LTLIBRARIES += libthriftz.la
 pkgconfig_DATA += thrift-z.pc
 endif
 
-common_cxxflags = -Wall -Isrc $(BOOST_CPPFLAGS)
-common_ldflags = -Wall $(BOOST_LDFLAGS)
+AM_CXXFLAGS = -Wall
+AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(srcdir)/src
 
 # Define the source files for the module
 
@@ -29,6 +29,7 @@ libthrift_la_SOURCES = src/Thrift.cpp \
                        src/concurrency/ThreadManager.cpp \
                        src/concurrency/TimerManager.cpp \
                        src/protocol/TProtocol.cpp \
+                       src/concurrency/Util.cpp \
                        src/protocol/TBinaryProtocol.tcc \
                        src/protocol/TDebugProtocol.cpp \
                        src/protocol/TDenseProtocol.cpp \
@@ -55,19 +56,13 @@ libthriftz_la_SOURCES = src/transport/TZlibTransport.cpp
 
 
 # Flags for the various libraries
-
-libthrift_la_CXXFLAGS =  $(common_cxxflags)
-
-libthriftnb_la_CXXFLAGS =  $(common_cxxflags)
-libthriftnb_la_CPPFLAGS =  $(LIBEVENT_CPPFLAGS)
-
-libthriftz_la_CXXFLAGS =  $(common_cxxflags)
-libthriftz_la_CPPFLAGS =  $(ZLIB_CPPFLAGS)
+libthriftnb_la_CPPFLAGS = $(AM_CPPFLAGS) $(LIBEVENT_CPPFLAGS)
+libthriftz_la_CPPFLAGS  = $(AM_CPPFLAGS) $(ZLIB_CPPFLAGS)
 
 
 include_thriftdir = $(includedir)/thrift
 include_thrift_HEADERS = \
-                         $(top_srcdir)/config.h \
+                         $(top_builddir)/config.h \
                          src/Thrift.h \
                          src/TReflectionLocal.h \
                          src/reflection_limited_types.h \
@@ -133,9 +128,6 @@ concurrency_test_SOURCES = src/concurrency/test/Tests.cpp \
                            src/concurrency/test/TimerManagerTests.h
 
 concurrency_test_LDADD = libthrift.la
-
-concurrency_test_CXXFLAGS =  $(common_cxxflags)
-concurrency_test_LDFLAGS =  $(common_ldflags)
 
 EXTRA_DIST = \
              README \

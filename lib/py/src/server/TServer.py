@@ -1,12 +1,12 @@
-#!/usr/bin/env python
-#
 # Copyright (c) 2006- Facebook
 # Distributed under the Thrift Software License
 #
 # See accompanying file LICENSE or visit the Thrift site at:
 # http://developers.facebook.com/thrift/
 
+import logging
 import sys
+import os
 import traceback
 import threading
 import Queue
@@ -71,7 +71,7 @@ class TSimpleServer(TServer):
       except TTransport.TTransportException, tx:
         pass
       except Exception, x:
-        print '%s, %s, %s' % (type(x), x, traceback.format_exc())
+        logging.exception(x)
 
       itrans.close()
       otrans.close()
@@ -93,7 +93,7 @@ class TThreadedServer(TServer):
       except KeyboardInterrupt:
         raise
       except Exception, x:
-        print '%s, %s, %s,' % (type(x), x, traceback.format_exc())
+        logging.exception(x)
 
   def handle(self, client):
     itrans = self.inputTransportFactory.getTransport(client)
@@ -106,7 +106,7 @@ class TThreadedServer(TServer):
     except TTransport.TTransportException, tx:
       pass
     except Exception, x:
-      print '%s, %s, %s' % (type(x), x, traceback.format_exc())
+      logging.exception(x)
 
     itrans.close()
     otrans.close()
@@ -131,7 +131,7 @@ class TThreadPoolServer(TServer):
         client = self.clients.get()
         self.serveClient(client)
       except Exception, x:
-        print '%s, %s, %s' % (type(x), x, traceback.format_exc())
+        logging.exception(x)
 
   def serveClient(self, client):
     """Process input/output from a client for as long as possible"""
@@ -145,7 +145,7 @@ class TThreadPoolServer(TServer):
     except TTransport.TTransportException, tx:
       pass
     except Exception, x:
-      print '%s, %s, %s' % (type(x), x, traceback.format_exc())
+      logging.exception(x)
 
     itrans.close()
     otrans.close()
@@ -157,7 +157,7 @@ class TThreadPoolServer(TServer):
         t = threading.Thread(target = self.serveThread)
         t.start()
       except Exception, x:
-        print '%s, %s, %s,' % (type(x), x, traceback.format_exc())
+        logging.exception(x)
 
     # Pump the socket for clients
     self.serverTransport.listen()
@@ -166,4 +166,92 @@ class TThreadPoolServer(TServer):
         client = self.serverTransport.accept()
         self.clients.put(client)
       except Exception, x:
-        print '%s, %s, %s' % (type(x), x, traceback.format_exc())
+        logging.exception(x)
+
+
+class TForkingServer(TServer):
+
+  """A Thrift server that forks a new process for each request"""
+  """
+  This is more scalable than the threaded server as it does not cause
+  GIL contention.
+
+  Note that this has different semantics from the threading server.
+  Specifically, updates to shared variables will no longer be shared.
+  It will also not work on windows.
+
+  This code is heavily inspired by SocketServer.ForkingMixIn in the
+  Python stdlib.
+  """
+
+  def __init__(self, *args):
+    TServer.__init__(self, *args)
+    self.children = []
+
+  def serve(self):
+    def try_close(file):
+      try:
+        file.close()
+      except IOError, e:
+        logging.warning(e, exc_info=True)
+
+
+    self.serverTransport.listen()
+    while True:
+      client = self.serverTransport.accept()
+      try:
+        pid = os.fork()
+
+        if pid: # parent
+          # add before collect, otherwise you race w/ waitpid
+          self.children.append(pid)
+          self.collect_children()
+
+          # Parent must close socket or the connection may not get
+          # closed promptly
+          itrans = self.inputTransportFactory.getTransport(client)
+          otrans = self.outputTransportFactory.getTransport(client)
+          try_close(itrans)
+          try_close(otrans)
+        else:
+          itrans = self.inputTransportFactory.getTransport(client)
+          otrans = self.outputTransportFactory.getTransport(client)
+
+          iprot = self.inputProtocolFactory.getProtocol(itrans)
+          oprot = self.outputProtocolFactory.getProtocol(otrans)
+
+          ecode = 0
+          try:
+            try:
+              while True:
+                self.processor.process(iprot, oprot)
+            except TTransport.TTransportException, tx:
+              pass
+            except Exception, e:
+              logging.exception(e)
+              ecode = 1
+          finally:
+            try_close(itrans)
+            try_close(otrans)
+
+          os._exit(ecode)
+
+      except TTransport.TTransportException, tx:
+        pass
+      except Exception, x:
+        logging.exception(x)
+
+
+  def collect_children(self):
+    while self.children:
+      try:
+        pid, status = os.waitpid(0, os.WNOHANG)
+      except os.error:
+        pid = None
+
+      if pid:
+        self.children.remove(pid)
+      else:
+        break
+
+

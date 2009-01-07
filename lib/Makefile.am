@@ -1,25 +1,33 @@
 SUBDIRS = \
-  cpp \
-  py
+  cpp
 
-if ENABLE_MONO
+if WITH_MONO
 SUBDIRS += csharp
 endif
 
-if ENABLE_JAVA
+if WITH_JAVA
 SUBDIRS += java
 endif
 
-if ENABLE_ERLANG
+if WITH_PYTHON
+SUBDIRS += py
+endif
+
+if WITH_ERLANG
 SUBDIRS += erl
 endif
 
+if WITH_RUBY
+SUBDIRS += rb
+endif
+
+# All of the libs that don't use Automake need to go in here
+# so they will end up in our release tarballs.
 EXTRA_DIST = \
   cocoa \
-  erl   \
   hs    \
   ocaml \
   perl  \
   php   \
-  rb    \
+  erl   \
   st

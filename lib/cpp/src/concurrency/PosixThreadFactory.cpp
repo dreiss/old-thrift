@@ -7,6 +7,10 @@
 #include "PosixThreadFactory.h"
 #include "Exception.h"
 
+#if GOOGLE_PERFTOOLS_REGISTER_THREAD
+#  include <google/profiler.h>
+#endif
+
 #include <assert.h>
 #include <pthread.h>
 
@@ -135,9 +139,8 @@ class PthreadThread: public Thread {
     }
   }
 
-  id_t getId() {
-    // TODO(dreiss): Stop using C-style casts.
-    return (id_t)pthread_;
+  Thread::id_t getId() {
+    return (Thread::id_t)pthread_;
   }
 
   shared_ptr<Runnable> runnable() const { return Thread::runnable(); }
@@ -161,6 +164,10 @@ void* PthreadThread::threadMain(void* arg) {
   if (thread->state_ != starting) {
     return (void*)0;
   }
+
+#if GOOGLE_PERFTOOLS_REGISTER_THREAD
+  ProfilerRegisterThread();
+#endif
 
   thread->state_ = starting;
   thread->runnable()->run();

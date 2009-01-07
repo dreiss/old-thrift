@@ -25,8 +25,8 @@ INSTALL_DST = $(ERLANG_OTP)/lib/$(APP_NAME)-$(VSN)
 # ----------------------------------------------------
 
 
-MODULES = $(shell find . -name \*.erl | sed s:^\\./:: | sed s/\\.erl//)
-MODULES_STRING_LIST = $(shell find . -name \*.erl | sed s:^\\./:\": | sed s/\\.erl/\",/)
+MODULES = $(shell find . -name \*.erl | sed 's:^\./::' | sed 's/\.erl//')
+MODULES_STRING_LIST = $(shell find . -name \*.erl | sed 's:^\./:":' | sed 's/\.erl/",/')
 
 HRL_FILES=
 INTERNAL_HRL_FILES= $(APP_NAME).hrl
@@ -53,7 +53,7 @@ WEB_TARGET=/var/yaws/www/$(APP_NAME)
 
 ERL_FLAGS +=
 ERL_INCLUDE = -I../include -I../../fslib/include -I../../system_status/include
-ERL_COMPILE_FLAGS += $(ERL_INCLUDE)
+ERL_COMPILE_FLAGS += $(ERL_INCLUDE) +native
 
 # ----------------------------------------------------
 # Targets
@@ -92,7 +92,6 @@ $(APP_TARGET): $(APP_SRC) ../vsn.mk $(BEAMS)
 	sed -e 's/%MODULES%\(.*\),/\1/' \
 		$<".tmp" > $@
 	rm $<".tmp"
-
 
 $(APPUP_TARGET): $(APPUP_SRC) ../vsn.mk
 	sed -e 's;%VSN%;$(VSN);' $< > $@

@@ -632,6 +632,22 @@ void t_php_generator::generate_php_struct_writer(ofstream& out,
       indent() << "if ($this->" << (*f_iter)->get_name() << " !== null) {" << endl;
     indent_up();
 
+    t_type* type = get_true_type((*f_iter)->get_type());
+    string expect;
+    if (type->is_container()) {
+      expect = "array";
+    } else if (type->is_struct()) {
+      expect = "object";
+    }
+    if (!expect.empty()) {
+      out <<
+        indent() << "if (!is_" << expect << "($this->" << (*f_iter)->get_name() << ")) {" << endl;
+      indent_up();
+      out <<
+        indent() << "throw new TProtocolException('Bad type in structure.', TProtocolException::INVALID_DATA);" << endl;
+      scope_down(out);
+    }
+
     // Write field header
     if (binary_inline_) {
       out <<
@@ -1818,34 +1834,34 @@ void t_php_generator::generate_serialize_container(ofstream &out,
     }
   }
 
+  scope_up(out);
+
+  if (ttype->is_map()) {
+    string kiter = tmp("kiter");
+    string viter = tmp("viter");
+    indent(out) <<
+      "foreach ($" << prefix << " as " <<
+      "$" << kiter << " => $" << viter << ")" << endl;
     scope_up(out);
-
-    if (ttype->is_map()) {
-      string kiter = tmp("kiter");
-      string viter = tmp("viter");
-      indent(out) <<
-        "foreach ($" << prefix << " as " <<
-        "$" << kiter << " => $" << viter << ")" << endl;
-      scope_up(out);
-      generate_serialize_map_element(out, (t_map*)ttype, kiter, viter);
-      scope_down(out);
-    } else if (ttype->is_set()) {
-      string iter = tmp("iter");
-      indent(out) <<
-        "foreach ($" << prefix << " as $" << iter << " => $true)" << endl;
-      scope_up(out);
-      generate_serialize_set_element(out, (t_set*)ttype, iter);
-      scope_down(out);
-    } else if (ttype->is_list()) {
-      string iter = tmp("iter");
-      indent(out) <<
-        "foreach ($" << prefix << " as $" << iter << ")" << endl;
-      scope_up(out);
-      generate_serialize_list_element(out, (t_list*)ttype, iter);
-      scope_down(out);
-    }
-
+    generate_serialize_map_element(out, (t_map*)ttype, kiter, viter);
     scope_down(out);
+  } else if (ttype->is_set()) {
+    string iter = tmp("iter");
+    indent(out) <<
+      "foreach ($" << prefix << " as $" << iter << " => $true)" << endl;
+    scope_up(out);
+    generate_serialize_set_element(out, (t_set*)ttype, iter);
+    scope_down(out);
+  } else if (ttype->is_list()) {
+    string iter = tmp("iter");
+    indent(out) <<
+      "foreach ($" << prefix << " as $" << iter << ")" << endl;
+    scope_up(out);
+    generate_serialize_list_element(out, (t_list*)ttype, iter);
+    scope_down(out);
+  }
+
+  scope_down(out);
 
   if (!binary_inline_) {
     if (ttype->is_map()) {

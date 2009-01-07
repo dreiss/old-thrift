@@ -22,6 +22,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 /**
@@ -31,6 +33,8 @@ import java.util.concurrent.TimeUnit;
  * @author Mark Slee <mcslee@facebook.com>
  */
 public class TThreadPoolServer extends TServer {
+
+  private static final Logger LOGGER = Logger.getLogger(TThreadPoolServer.class.getName());
 
   // Executor service for handling client connections
   private ExecutorService executorService_;
@@ -156,7 +160,7 @@ public class TThreadPoolServer extends TServer {
     try {
       serverTransport_.listen();
     } catch (TTransportException ttx) {
-      ttx.printStackTrace();
+      LOGGER.log(Level.SEVERE, "Error occurred during listening.", ttx);
       return;
     }
 
@@ -170,17 +174,28 @@ public class TThreadPoolServer extends TServer {
       } catch (TTransportException ttx) {
         if (!stopped_) {
           ++failureCount;
-          ttx.printStackTrace();
+          LOGGER.log(Level.WARNING, "Transport error occurred during acceptance of message.", ttx);
         }
       }
     }
 
     executorService_.shutdown();
-    try {
-      executorService_.awaitTermination(options_.stopTimeoutVal,
-                                        options_.stopTimeoutUnit);
-    } catch (InterruptedException ix) {
-      // Ignore and more on
+
+    // Loop until awaitTermination finally does return without a interrupted
+    // exception. If we don't do this, then we'll shut down prematurely. We want
+    // to let the executorService clear it's task queue, closing client sockets
+    // appropriately.
+    long timeoutMS = options_.stopTimeoutUnit.toMillis(options_.stopTimeoutVal);
+    long now = System.currentTimeMillis();
+    while (timeoutMS >= 0) {
+      try {
+        executorService_.awaitTermination(timeoutMS, TimeUnit.MILLISECONDS);
+        break;
+      } catch (InterruptedException ix) {
+        long newnow = System.currentTimeMillis();
+        timeoutMS -= (newnow - now);
+        now = newnow;
+      }
     }
   }
 
@@ -220,13 +235,15 @@ public class TThreadPoolServer extends TServer {
         outputTransport = outputTransportFactory_.getTransport(client_);
         inputProtocol = inputProtocolFactory_.getProtocol(inputTransport);
         outputProtocol = outputProtocolFactory_.getProtocol(outputTransport);
-        while (processor.process(inputProtocol, outputProtocol)) {}
+        // we check stopped_ first to make sure we're not supposed to be shutting
+        // down. this is necessary for graceful shutdown.
+        while (!stopped_ && processor.process(inputProtocol, outputProtocol)) {}
       } catch (TTransportException ttx) {
         // Assume the client died and continue silently
       } catch (TException tx) {
-        tx.printStackTrace();
+        LOGGER.log(Level.SEVERE, "Thrift error occurred during processing of message.", tx);
       } catch (Exception x) {
-        x.printStackTrace();
+        LOGGER.log(Level.SEVERE, "Error occurred during processing of message.", x);
       }
 
       if (inputTransport != null) {

@@ -12,8 +12,11 @@ AC_ARG_VAR([PY_PREFIX], [Prefix for installing Python modules.
                          Default = "/usr"])
 AS_IF([test "x$PY_PREFIX" = x], [PY_PREFIX="/usr"])
 
-AM_PATH_PYTHON(2.4,, :)
-
+AC_ARG_VAR([JAVA_PREFIX], [Prefix for installing the Java lib jar.
+                           (Normal --prefix is ignored for Java because
+                           Java has different conevntions.)
+                           Default = "/usr/local/lib"])
+AS_IF([test "x$JAVA_PREFIX" = x], [JAVA_PREFIX="/usr/local/lib"])
 
 AC_PROG_CC
 AC_PROG_CPP
@@ -40,7 +43,7 @@ AX_THRIFT_LIB(csharp, [C#], yes)
 if test "$with_csharp" = "yes";  then
   PKG_CHECK_MODULES(MONO, mono >= 1.2.6, have_mono=yes, have_mono=no)
 fi
-AM_CONDITIONAL(ENABLE_MONO, [test "$have_mono" = "yes"])
+AM_CONDITIONAL(WITH_MONO, [test "$have_mono" = "yes"])
 
 AX_THRIFT_LIB(java, [Java], yes)
 if test "$with_java" = "yes";  then
@@ -48,14 +51,26 @@ if test "$with_java" = "yes";  then
   AX_PROG_JAVAC
   AX_PROG_JAVA
 fi
-AM_CONDITIONAL([ENABLE_JAVA],
+AM_CONDITIONAL([WITH_JAVA],
                [test -n "$ANT" -a -n "$JAVA" -a -n "$JAVAC"])
 
 AX_THRIFT_LIB(erlang, [Erlang], yes)
 if test "$with_erlang" = "yes";  then
   AC_PATH_PROG([ERLC], [erlc])
 fi
-AM_CONDITIONAL(ENABLE_ERLANG, [test -n "$ERLC"])
+AM_CONDITIONAL(WITH_ERLANG, [test -n "$ERLC"])
+
+AX_THRIFT_LIB(py, [Python], yes)
+if test "$with_py" = "yes";  then
+  AM_PATH_PYTHON(2.4,, :)
+fi
+AM_CONDITIONAL(WITH_PYTHON, [test -n "$PYTHON" -a "$PYTHON" != ":"])
+
+AX_THRIFT_LIB(ruby, [Ruby], yes)
+if test "$with_ruby" = "yes"; then
+  AC_PATH_PROG([RUBY], [ruby])
+fi
+AM_CONDITIONAL(WITH_RUBY, [test -n "$RUBY"])
 
 AC_C_CONST
 AC_C_INLINE
@@ -95,6 +110,7 @@ AC_TYPE_UINT16_T
 AC_TYPE_UINT32_T
 AC_TYPE_UINT64_T
 AC_TYPE_UINT8_T
+AC_CHECK_TYPES([ptrdiff_t], [], [exit 1])
 
 AC_STRUCT_TM
 
@@ -146,6 +162,8 @@ AX_THRIFT_GEN(ocaml, [OCaml], yes)
 AM_CONDITIONAL([THRIFT_GEN_ocaml], [test "$ax_thrift_gen_ocaml" = "yes"])
 AX_THRIFT_GEN(hs, [Haskell], yes)
 AM_CONDITIONAL([THRIFT_GEN_hs], [test "$ax_thrift_gen_hs" = "yes"])
+AX_THRIFT_GEN(html, [HTML], yes)
+AM_CONDITIONAL([THRIFT_GEN_html], [test "$ax_thrift_gen_html" = "yes"])
 
 AC_CONFIG_HEADERS(config.h:config.hin)
 
@@ -160,10 +178,12 @@ AC_CONFIG_FILES([
   lib/csharp/Makefile
   lib/java/Makefile
   lib/py/Makefile
+  lib/rb/Makefile
   if/Makefile
   test/Makefile
   test/py/Makefile
   test/java/Makefile
+  test/rb/Makefile
 ])
 
 AC_OUTPUT
