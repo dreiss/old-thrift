@@ -158,19 +158,8 @@ class TPipedTransport : virtual public TTransport {
     return dstTrans_;
   }
 
-  // Stupid virtual inheritance.
-  virtual bool isOpen_virt() {
-    return isOpen();
-  }
-  virtual bool peek_virt() {
-    return peek();
-  }
-  virtual void open_virt() {
-    open();
-  }
-  virtual void close_virt() {
-    close();
-  }
+  // Can't use TVirtualTransport here.  Something about
+  // virtual inheritance.
   virtual uint32_t read_virt(uint8_t* buf, uint32_t len) {
     return read(buf, len);
   }
@@ -179,12 +168,6 @@ class TPipedTransport : virtual public TTransport {
   }
   virtual void write_virt(const uint8_t* buf, uint32_t len) {
     write(buf, len);
-  }
-  virtual void writeEnd_virt() {
-    writeEnd();
-  }
-  virtual void flush_virt() {
-    flush();
   }
 
  protected:

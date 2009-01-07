@@ -54,10 +54,7 @@ class TTransport {
   /**
    * Whether this transport is open.
    */
-  bool isOpen() {
-    return isOpen_virt();
-  }
-  virtual bool isOpen_virt() {
+  virtual bool isOpen() {
     return false;
   }
 
@@ -69,10 +66,7 @@ class TTransport {
    * This is used by a server to check if it should listen for another
    * request.
    */
-  bool peek() {
-    return peek_virt();
-  }
-  virtual bool peek_virt() {
+  virtual bool peek() {
     return isOpen();
   }
 
@@ -82,20 +76,14 @@ class TTransport {
    * @return bool Whether the transport was successfully opened
    * @throws TTransportException if opening failed
    */
-  void open() {
-    open_virt();
-  }
-  virtual void open_virt() {
+  virtual void open() {
     throw TTransportException(TTransportException::NOT_OPEN, "Cannot open base TTransport.");
   }
 
   /**
    * Closes the transport.
    */
-  void close() {
-    close_virt();
-  }
-  virtual void close_virt() {
+  virtual void close() {
     throw TTransportException(TTransportException::NOT_OPEN, "Cannot close base TTransport.");
   }
 
@@ -135,10 +123,7 @@ class TTransport {
    * e.g. logging the request to a file
    *
    */
-  void readEnd() {
-    readEnd_virt();
-  }
-  virtual void readEnd_virt() {
+  virtual void readEnd() {
     // default behaviour is to do nothing
     return;
   }
@@ -162,10 +147,7 @@ class TTransport {
    * at the end of a request.
    *
    */
-  void writeEnd() {
-    return writeEnd_virt();
-  }
-  virtual void writeEnd_virt() {
+  virtual void writeEnd() {
     // default behaviour is to do nothing
     return;
   }
@@ -176,10 +158,7 @@ class TTransport {
    *
    * @throws TTransportException if an error occurs
    */
-  void flush() {
-    flush_virt();
-  }
-  virtual void flush_virt() {}
+  virtual void flush() {}
 
   /**
    * Attempts to return a pointer to \c len bytes, possibly copied into \c buf.

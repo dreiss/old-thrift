@@ -131,7 +131,7 @@ const uint8_t* TBufferedTransport::borrowSlow(uint8_t* buf, uint32_t* len) {
   return rBase_;
 }
 
-void TBufferedTransport::flush_virt()  {
+void TBufferedTransport::flush()  {
   // Write out any data waiting in the write buffer.
   uint32_t have_bytes = wBase_ - wBuf_.get();
   if (have_bytes > 0) {
@@ -224,7 +224,7 @@ void TFramedTransport::writeSlow(const uint8_t* buf, uint32_t len) {
   wBase_ += len;
 }
 
-void TFramedTransport::flush_virt()  {
+void TFramedTransport::flush()  {
   int32_t sz_hbo, sz_nbo;
   assert(wBufSize_ > sizeof(sz_nbo));
 

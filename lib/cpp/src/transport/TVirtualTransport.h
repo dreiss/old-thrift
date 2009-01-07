@@ -19,22 +19,6 @@ namespace facebook { namespace thrift { namespace transport {
 template <class Transport_>
 class TVirtualTransport : public TTransport {
  public:
-  virtual bool isOpen_virt() {
-    return static_cast<Transport_*>(this)->isOpen();
-  }
-
-  virtual bool peek_virt() {
-    return static_cast<Transport_*>(this)->peek();
-  }
-
-  virtual void open_virt() {
-    static_cast<Transport_*>(this)->open();
-  }
-
-  virtual void close_virt() {
-    static_cast<Transport_*>(this)->close();
-  }
-
   virtual uint32_t read_virt(uint8_t* buf, uint32_t len) {
     return static_cast<Transport_*>(this)->read(buf, len);
   }
@@ -47,20 +31,8 @@ class TVirtualTransport : public TTransport {
     return facebook::thrift::transport::readAll(*static_cast<Transport_*>(this), buf, len);
   }
 
-  virtual void readEnd_virt() {
-    return static_cast<Transport_*>(this)->readEnd();
-  }
-
   virtual void write_virt(const uint8_t* buf, uint32_t len) {
     static_cast<Transport_*>(this)->write(buf, len);
-  }
-
-  virtual void writeEnd_virt() {
-    static_cast<Transport_*>(this)->writeEnd();
-  }
-
-  virtual void flush_virt() {
-    static_cast<Transport_*>(this)->flush();
   }
 
   virtual const uint8_t* borrow_virt(uint8_t* buf, uint32_t* len) {
@@ -71,27 +43,12 @@ class TVirtualTransport : public TTransport {
     static_cast<Transport_*>(this)->consume(len);
   }
 
-  bool isOpen() {
-    return false;
-  }
-  bool peek() {
-    return isOpen_virt();
-  }
-  void open() {
-    throw TTransportException(TTransportException::NOT_OPEN, "Cannot open base TTransport.");
-  }
-  void close() {
-    throw TTransportException(TTransportException::NOT_OPEN, "Cannot close base TTransport.");
-  }
   uint32_t read(uint8_t* buf, uint32_t len) {
     throw TTransportException(TTransportException::NOT_OPEN, "Base TTransport cannot read.");
   }
   void write(const uint8_t* buf, uint32_t len) {
     throw TTransportException(TTransportException::NOT_OPEN, "Base TTransport cannot write.");
   }
-  void readEnd() {}
-  void writeEnd() {}
-  virtual void flush() {}
   const uint8_t* borrow(uint8_t* buf, uint32_t* len) {
     return NULL;
   }
