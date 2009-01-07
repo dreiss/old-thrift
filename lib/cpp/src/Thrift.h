@@ -100,4 +100,6 @@ struct TypeSpec;
 
 }} // facebook::thrift
 
+#include "TApplicationException.h"
+
 #endif // #ifndef _THRIFT_THRIFT_H_

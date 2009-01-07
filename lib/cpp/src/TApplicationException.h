@@ -8,9 +8,13 @@
 #define _THRIFT_TAPPLICATIONEXCEPTION_H_ 1
 
 #include <Thrift.h>
-#include <protocol/TProtocol.h>
+
 
 namespace facebook { namespace thrift {
+
+namespace protocol {
+  class TProtocol;
+}
 
 class TApplicationException : public TException {
  public:
