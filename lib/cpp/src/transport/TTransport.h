@@ -96,6 +96,7 @@ class TTransport {
    * @throws TTransportException If an error occurs
    */
   uint32_t read(uint8_t* buf, uint32_t len) {
+    going_virtual();
     return read_virt(buf, len);
   }
   virtual uint32_t read_virt(uint8_t* /* buf */, uint32_t /* len */) {
@@ -111,6 +112,7 @@ class TTransport {
    * @throws TTransportException If insufficient data was read
    */
   uint32_t readAll(uint8_t* buf, uint32_t len) {
+    going_virtual();
     return readAll_virt(buf, len);
   }
   virtual uint32_t readAll_virt(uint8_t* buf, uint32_t len) {
@@ -135,6 +137,7 @@ class TTransport {
    * @throws TTransportException if an error occurs
    */
   void write(const uint8_t* buf, uint32_t len) {
+    going_virtual();
     write_virt(buf, len);
   }
   virtual void write_virt(const uint8_t* /* buf */, uint32_t /* len */) {
@@ -185,6 +188,7 @@ class TTransport {
    * @throws TTransportException if an error occurs
    */
   const uint8_t* borrow(uint8_t* buf, uint32_t* len) {
+    going_virtual();
     return borrow_virt(buf, len);
   }
   virtual const uint8_t* borrow_virt(uint8_t* /* buf */, uint32_t* /* len */) {
@@ -201,6 +205,7 @@ class TTransport {
    * @throws TTransportException If an error occurs
    */
   void consume(uint32_t len) {
+    going_virtual();
     consume_virt(len);
   }
   virtual void consume_virt(uint32_t /* len */) {

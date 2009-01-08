@@ -340,11 +340,11 @@ int main(int argc, char **argv) {
   }
 
   // Dispatcher
-  shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
+  shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactoryT<TBufferBase>());
 
   shared_ptr<TestHandler> testHandler(new TestHandler());
 
-  shared_ptr<ThriftTestProcessor> testProcessor(new ThriftTestProcessor(testHandler));
+  shared_ptr<TProcessor> testProcessor(new ThriftTestProcessor< TBinaryProtocolT<TBufferBase> >(testHandler));
 
   // Transport
   shared_ptr<TServerSocket> serverSocket(new TServerSocket(port));

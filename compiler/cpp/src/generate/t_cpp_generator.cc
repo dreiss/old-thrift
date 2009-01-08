@@ -2210,11 +2210,11 @@ void t_cpp_generator::generate_process_function(t_service* tservice,
 
   if (gen_templates_ && !specialized) {
     out <<
-      "Protocol_* iprot_ = dynamic_cast<Protocol_>(iprot);" << endl <<
-      "Protocol_* oprot_ = dynamic_cast<Protocol_>(oprot);" << endl <<
-      "if (iprot_ && oprot_) {" << endl <<
-      "  return process_" << tfunction->get_name() << "(seqid, iprot_, oprot_);" << endl <<
-      "}" << endl << endl;
+      indent() << "Protocol_* iprot_ = dynamic_cast<Protocol_*>(iprot);" << endl <<
+      indent() << "Protocol_* oprot_ = dynamic_cast<Protocol_*>(oprot);" << endl <<
+      indent() << "if (iprot_ && oprot_) {" << endl <<
+      indent() << "  return process_" << tfunction->get_name() << "(seqid, iprot_, oprot_);" << endl <<
+      indent() << "}" << endl << endl;
   }
 
   string argsname = tservice->get_name() + "_" + tfunction->get_name() + "_args";

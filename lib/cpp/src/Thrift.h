@@ -24,6 +24,8 @@
 
 #include "TLogging.h"
 
+void going_virtual();
+
 namespace facebook { namespace thrift {
 
 class TOutput {

@@ -41,7 +41,7 @@ all: server client
 debug: server-debug client-debug
 
 stubs: ../ThriftTest.thrift
-	$(THRIFT) --cpp ../ThriftTest.thrift
+	$(THRIFT) --gen cpp:templates ../ThriftTest.thrift
 
 server-debug: stubs
 	g++ -o TestServer $(DCFL) src/TestServer.cpp ./gen-cpp/ThriftTest.cpp ./gen-cpp/ThriftTest_types.cpp

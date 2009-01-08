@@ -205,21 +205,22 @@ typedef TBinaryProtocolT<TTransport> TBinaryProtocol;
 /**
  * Constructs binary protocol handlers
  */
-class TBinaryProtocolFactory : public TProtocolFactory {
+template <class Transport_>
+class TBinaryProtocolFactoryT : public TProtocolFactory {
  public:
-  TBinaryProtocolFactory() :
+  TBinaryProtocolFactoryT() :
     string_limit_(0),
     container_limit_(0),
     strict_read_(false),
     strict_write_(true) {}
 
-  TBinaryProtocolFactory(int32_t string_limit, int32_t container_limit, bool strict_read, bool strict_write) :
+  TBinaryProtocolFactoryT(int32_t string_limit, int32_t container_limit, bool strict_read, bool strict_write) :
     string_limit_(string_limit),
     container_limit_(container_limit),
     strict_read_(strict_read),
     strict_write_(strict_write) {}
 
-  virtual ~TBinaryProtocolFactory() {}
+  virtual ~TBinaryProtocolFactoryT() {}
 
   void setStringSizeLimit(int32_t string_limit) {
     string_limit_ = string_limit;
@@ -235,7 +236,13 @@ class TBinaryProtocolFactory : public TProtocolFactory {
   }
 
   boost::shared_ptr<TProtocol> getProtocol(boost::shared_ptr<TTransport> trans) {
-    return boost::shared_ptr<TProtocol>(new TBinaryProtocol(trans, string_limit_, container_limit_, strict_read_, strict_write_));
+    // XXX read docs
+    boost::shared_ptr<Transport_> trans_ = boost::dynamic_pointer_cast<Transport_>(trans);
+    if (trans_) {
+      return boost::shared_ptr<TProtocol>(new TBinaryProtocolT<Transport_>(trans_, string_limit_, container_limit_, strict_read_, strict_write_));
+    } else {
+      return boost::shared_ptr<TProtocol>(new TBinaryProtocol(trans, string_limit_, container_limit_, strict_read_, strict_write_));
+    }
   }
 
  private:
@@ -245,6 +252,8 @@ class TBinaryProtocolFactory : public TProtocolFactory {
   bool strict_write_;
 
 };
+
+typedef TBinaryProtocolFactoryT<TTransport> TBinaryProtocolFactory;
 
 }}}
 

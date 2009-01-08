@@ -12,6 +12,11 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+void going_virtual() {
+  static int c = 0;
+  printf("Going virtual %d\n", ++c);
+}
+
 namespace facebook { namespace thrift {
 
 TOutput GlobalOutput;
