@@ -1,10 +1,11 @@
 #include <concurrency/ThreadManager.h>
 #include <concurrency/PosixThreadFactory.h>
-#include <protocol/TBinaryProtocol.h>
+#include <protocol/TJSONProtocol.h>
 #include <server/TSimpleServer.h>
 #include <server/TThreadPoolServer.h>
 #include <server/TThreadedServer.h>
 #include <transport/TServerSocket.h>
+#include <transport/THttpServer.h>
 #include <transport/TTransportUtils.h>
 
 #include <iostream>
@@ -94,11 +95,11 @@ protected:
 
 int main(int argc, char **argv) {
 
-  shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
+  shared_ptr<TProtocolFactory> protocolFactory(new TJSONProtocolFactory());
   shared_ptr<CalculatorHandler> handler(new CalculatorHandler());
   shared_ptr<TProcessor> processor(new CalculatorProcessor(handler));
   shared_ptr<TServerTransport> serverTransport(new TServerSocket(9090));
-  shared_ptr<TTransportFactory> transportFactory(new TBufferedTransportFactory());
+  shared_ptr<TTransportFactory> transportFactory(new THttpServerTransportFactory());
 
   TSimpleServer server(processor,
                        serverTransport,

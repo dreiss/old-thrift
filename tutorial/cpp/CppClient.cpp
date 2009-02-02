@@ -2,8 +2,9 @@
 #include <unistd.h>
 #include <sys/time.h>
 
-#include <protocol/TBinaryProtocol.h>
+#include <protocol/TJSONProtocol.h>
 #include <transport/TSocket.h>
+#include <transport/THttpClient.h>
 #include <transport/TTransportUtils.h>
 
 #include "../gen-cpp/Calculator.h"
@@ -20,8 +21,8 @@ using namespace boost;
 
 int main(int argc, char** argv) {
   shared_ptr<TTransport> socket(new TSocket("localhost", 9090));
-  shared_ptr<TTransport> transport(new TBufferedTransport(socket));
-  shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
+  shared_ptr<TTransport> transport(new THttpClient(socket, "localhost", "/?callback=getCalculs"));
+  shared_ptr<TProtocol> protocol(new TJSONProtocol(transport));
   CalculatorClient client(protocol);
 
   try {
