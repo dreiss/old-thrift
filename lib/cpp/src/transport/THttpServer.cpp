@@ -16,7 +16,8 @@ using namespace std;
  */
 
 THttpServer::THttpServer(boost::shared_ptr<TTransport> transport) :
-  THttpTransport(transport) {
+  THttpTransport(transport),
+  jsCallback_(NULL) {
 }
 
 THttpServer::~THttpServer() {}
@@ -56,6 +57,17 @@ bool THttpServer::parseStatusLine(char* status) {
   }
   *http = '\0';
 
+  // Check if we have a callback set to wrap answer into a
+  // javascript function (JsonP)
+  jsCallback_ = strstr(path, "callback=");
+  if (jsCallback_ != NULL) {
+    jsCallback_ += 9; // "callback=" length
+    char *paramEnd = strchr(jsCallback_, '&');
+    if (paramEnd != NULL) {
+      *paramEnd = '\0';
+    }
+  }
+
   if (strcmp(method, "POST") == 0) {
     // POST method ok, looking for content.
     return true;
@@ -80,6 +92,9 @@ void THttpServer::flush() {
     "Connection: Keep-Alive" << CRLF <<
     CRLF;
   string header = h.str();
+
+  if (jsCallback_ != NULL)
+    printf("Have callback %s\n", jsCallback_);
 
   // Write the header, then the data, then flush
   transport_->write((const uint8_t*)header.c_str(), header.size());

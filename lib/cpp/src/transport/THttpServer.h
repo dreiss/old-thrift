@@ -26,6 +26,8 @@ class THttpServer : public THttpTransport {
 
  protected:
 
+  char* jsCallback_;
+
   void readHeaders();
   virtual void parseHeader(char* header);
   virtual bool parseStatusLine(char* status);

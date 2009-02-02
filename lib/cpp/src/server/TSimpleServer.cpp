@@ -25,8 +25,7 @@ using boost::shared_ptr;
 void TSimpleServer::serve() {
 
   shared_ptr<TTransport> client;
-  shared_ptr<TTransport> inputTransport;
-  shared_ptr<TTransport> outputTransport;
+  shared_ptr<TTransport> transport;
   shared_ptr<TProtocol> inputProtocol;
   shared_ptr<TProtocol> outputProtocol;
 
@@ -47,17 +46,16 @@ void TSimpleServer::serve() {
   while (!stop_) {
     try {
       client = serverTransport_->accept();
-      inputTransport = inputTransportFactory_->getTransport(client);
-      outputTransport = outputTransportFactory_->getTransport(client);
-      inputProtocol = inputProtocolFactory_->getProtocol(inputTransport);
-      outputProtocol = outputProtocolFactory_->getProtocol(outputTransport);
+      transport = transportFactory_->getTransport(client);
+      inputProtocol = inputProtocolFactory_->getProtocol(transport);
+      outputProtocol = outputProtocolFactory_->getProtocol(transport);
       if (eventHandler_ != NULL) {
         eventHandler_->clientBegin(inputProtocol, outputProtocol);
       }
       try {
         while (processor_->process(inputProtocol, outputProtocol)) {
           // Peek ahead, is the remote side closed?
-          if (!inputTransport->peek()) {
+          if (!transport->peek()) {
             break;
           }
         }
@@ -69,24 +67,20 @@ void TSimpleServer::serve() {
       if (eventHandler_ != NULL) {
         eventHandler_->clientEnd(inputProtocol, outputProtocol);
       }
-      inputTransport->close();
-      outputTransport->close();
+      transport->close();
       client->close();
     } catch (TTransportException& ttx) {
-      if (inputTransport != NULL) { inputTransport->close(); }
-      if (outputTransport != NULL) { outputTransport->close(); }
+      if (transport != NULL) { transport->close(); }
       if (client != NULL) { client->close(); }
       cerr << "TServerTransport died on accept: " << ttx.what() << endl;
       continue;
     } catch (TException& tx) {
-      if (inputTransport != NULL) { inputTransport->close(); }
-      if (outputTransport != NULL) { outputTransport->close(); }
+      if (transport != NULL) { transport->close(); }
       if (client != NULL) { client->close(); }
       cerr << "Some kind of accept exception: " << tx.what() << endl;
       continue;
     } catch (string s) {
-      if (inputTransport != NULL) { inputTransport->close(); }
-      if (outputTransport != NULL) { outputTransport->close(); }
+      if (transport != NULL) { transport->close(); }
       if (client != NULL) { client->close(); }
       cerr << "TThreadPoolServer: Unknown exception: " << s << endl;
       break;

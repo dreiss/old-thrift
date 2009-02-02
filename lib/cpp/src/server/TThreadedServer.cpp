@@ -111,8 +111,7 @@ TThreadedServer::~TThreadedServer() {}
 void TThreadedServer::serve() {
 
   shared_ptr<TTransport> client;
-  shared_ptr<TTransport> inputTransport;
-  shared_ptr<TTransport> outputTransport;
+  shared_ptr<TTransport> transport;
   shared_ptr<TProtocol> inputProtocol;
   shared_ptr<TProtocol> outputProtocol;
 
@@ -133,8 +132,7 @@ void TThreadedServer::serve() {
   while (!stop_) {
     try {
       client.reset();
-      inputTransport.reset();
-      outputTransport.reset();
+      transport.reset();
       inputProtocol.reset();
       outputProtocol.reset();
 
@@ -142,10 +140,9 @@ void TThreadedServer::serve() {
       client = serverTransport_->accept();
 
       // Make IO transports
-      inputTransport = inputTransportFactory_->getTransport(client);
-      outputTransport = outputTransportFactory_->getTransport(client);
-      inputProtocol = inputProtocolFactory_->getProtocol(inputTransport);
-      outputProtocol = outputProtocolFactory_->getProtocol(outputTransport);
+      transport = transportFactory_->getTransport(client);
+      inputProtocol = inputProtocolFactory_->getProtocol(transport);
+      outputProtocol = outputProtocolFactory_->getProtocol(transport);
 
       TThreadedServer::Task* task = new TThreadedServer::Task(*this,
                                                               processor_,
@@ -170,8 +167,7 @@ void TThreadedServer::serve() {
       thread->start();
 
     } catch (TTransportException& ttx) {
-      if (inputTransport != NULL) { inputTransport->close(); }
-      if (outputTransport != NULL) { outputTransport->close(); }
+      if (transport != NULL) { transport->close(); }
       if (client != NULL) { client->close(); }
       if (!stop_ || ttx.getType() != TTransportException::INTERRUPTED) {
         string errStr = string("TThreadedServer: TServerTransport died on accept: ") + ttx.what();
@@ -179,15 +175,13 @@ void TThreadedServer::serve() {
       }
       continue;
     } catch (TException& tx) {
-      if (inputTransport != NULL) { inputTransport->close(); }
-      if (outputTransport != NULL) { outputTransport->close(); }
+      if (transport != NULL) { transport->close(); }
       if (client != NULL) { client->close(); }
       string errStr = string("TThreadedServer: Caught TException: ") + tx.what();
       GlobalOutput(errStr.c_str());
       continue;
     } catch (string s) {
-      if (inputTransport != NULL) { inputTransport->close(); }
-      if (outputTransport != NULL) { outputTransport->close(); }
+      if (transport != NULL) { transport->close(); }
       if (client != NULL) { client->close(); }
       string errStr = "TThreadedServer: Unknown exception: " + s;
       GlobalOutput(errStr.c_str());

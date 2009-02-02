@@ -99,12 +99,11 @@ TThreadPoolServer::TThreadPoolServer(shared_ptr<TProcessor> processor,
 
 TThreadPoolServer::TThreadPoolServer(shared_ptr<TProcessor> processor,
                                      shared_ptr<TServerTransport> serverTransport,
-                                     shared_ptr<TTransportFactory> inputTransportFactory,
-                                     shared_ptr<TTransportFactory> outputTransportFactory,
+                                     shared_ptr<TTransportFactory> transportFactory,
                                      shared_ptr<TProtocolFactory> inputProtocolFactory,
                                      shared_ptr<TProtocolFactory> outputProtocolFactory,
                                      shared_ptr<ThreadManager> threadManager) :
-  TServer(processor, serverTransport, inputTransportFactory, outputTransportFactory,
+  TServer(processor, serverTransport, transportFactory,
           inputProtocolFactory, outputProtocolFactory),
   threadManager_(threadManager),
   stop_(false), timeout_(0) {}
@@ -114,8 +113,7 @@ TThreadPoolServer::~TThreadPoolServer() {}
 
 void TThreadPoolServer::serve() {
   shared_ptr<TTransport> client;
-  shared_ptr<TTransport> inputTransport;
-  shared_ptr<TTransport> outputTransport;
+  shared_ptr<TTransport> transport;
   shared_ptr<TProtocol> inputProtocol;
   shared_ptr<TProtocol> outputProtocol;
 
@@ -136,8 +134,7 @@ void TThreadPoolServer::serve() {
   while (!stop_) {
     try {
       client.reset();
-      inputTransport.reset();
-      outputTransport.reset();
+      transport.reset();
       inputProtocol.reset();
       outputProtocol.reset();
 
@@ -145,17 +142,15 @@ void TThreadPoolServer::serve() {
       client = serverTransport_->accept();
 
       // Make IO transports
-      inputTransport = inputTransportFactory_->getTransport(client);
-      outputTransport = outputTransportFactory_->getTransport(client);
-      inputProtocol = inputProtocolFactory_->getProtocol(inputTransport);
-      outputProtocol = outputProtocolFactory_->getProtocol(outputTransport);
+      transport = transportFactory_->getTransport(client);
+      inputProtocol = inputProtocolFactory_->getProtocol(transport);
+      outputProtocol = outputProtocolFactory_->getProtocol(transport);
 
       // Add to threadmanager pool
       threadManager_->add(shared_ptr<TThreadPoolServer::Task>(new TThreadPoolServer::Task(*this, processor_, inputProtocol, outputProtocol)), timeout_);
 
     } catch (TTransportException& ttx) {
-      if (inputTransport != NULL) { inputTransport->close(); }
-      if (outputTransport != NULL) { outputTransport->close(); }
+      if (transport != NULL) { transport->close(); }
       if (client != NULL) { client->close(); }
       if (!stop_ || ttx.getType() != TTransportException::INTERRUPTED) {
         string errStr = string("TThreadPoolServer: TServerTransport died on accept: ") + ttx.what();
@@ -163,15 +158,13 @@ void TThreadPoolServer::serve() {
       }
       continue;
     } catch (TException& tx) {
-      if (inputTransport != NULL) { inputTransport->close(); }
-      if (outputTransport != NULL) { outputTransport->close(); }
+      if (transport != NULL) { transport->close(); }
       if (client != NULL) { client->close(); }
       string errStr = string("TThreadPoolServer: Caught TException: ") + tx.what();
       GlobalOutput(errStr.c_str());
       continue;
     } catch (string s) {
-      if (inputTransport != NULL) { inputTransport->close(); }
-      if (outputTransport != NULL) { outputTransport->close(); }
+      if (transport != NULL) { transport->close(); }
       if (client != NULL) { client->close(); }
       string errStr = "TThreadPoolServer: Unknown exception: " + s;
       GlobalOutput(errStr.c_str());

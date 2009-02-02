@@ -89,12 +89,8 @@ class TServer : public concurrency::Runnable {
     return serverTransport_;
   }
 
-  boost::shared_ptr<TTransportFactory> getInputTransportFactory() {
-    return inputTransportFactory_;
-  }
-
-  boost::shared_ptr<TTransportFactory> getOutputTransportFactory() {
-    return outputTransportFactory_;
+  boost::shared_ptr<TTransportFactory> getTransportFactory() {
+    return transportFactory_;
   }
 
   boost::shared_ptr<TProtocolFactory> getInputProtocolFactory() {
@@ -112,8 +108,7 @@ class TServer : public concurrency::Runnable {
 protected:
   TServer(boost::shared_ptr<TProcessor> processor):
     processor_(processor) {
-    setInputTransportFactory(boost::shared_ptr<TTransportFactory>(new TTransportFactory()));
-    setOutputTransportFactory(boost::shared_ptr<TTransportFactory>(new TTransportFactory()));
+    setTransportFactory(boost::shared_ptr<TTransportFactory>(new TTransportFactory()));
     setInputProtocolFactory(boost::shared_ptr<TProtocolFactory>(new TBinaryProtocolFactory()));
     setOutputProtocolFactory(boost::shared_ptr<TProtocolFactory>(new TBinaryProtocolFactory()));
   }
@@ -122,8 +117,7 @@ protected:
           boost::shared_ptr<TServerTransport> serverTransport):
     processor_(processor),
     serverTransport_(serverTransport) {
-    setInputTransportFactory(boost::shared_ptr<TTransportFactory>(new TTransportFactory()));
-    setOutputTransportFactory(boost::shared_ptr<TTransportFactory>(new TTransportFactory()));
+    setTransportFactory(boost::shared_ptr<TTransportFactory>(new TTransportFactory()));
     setInputProtocolFactory(boost::shared_ptr<TProtocolFactory>(new TBinaryProtocolFactory()));
     setOutputProtocolFactory(boost::shared_ptr<TProtocolFactory>(new TBinaryProtocolFactory()));
   }
@@ -134,21 +128,18 @@ protected:
           boost::shared_ptr<TProtocolFactory> protocolFactory):
     processor_(processor),
     serverTransport_(serverTransport),
-    inputTransportFactory_(transportFactory),
-    outputTransportFactory_(transportFactory),
+    transportFactory_(transportFactory),
     inputProtocolFactory_(protocolFactory),
     outputProtocolFactory_(protocolFactory) {}
 
   TServer(boost::shared_ptr<TProcessor> processor,
           boost::shared_ptr<TServerTransport> serverTransport,
-          boost::shared_ptr<TTransportFactory> inputTransportFactory,
-          boost::shared_ptr<TTransportFactory> outputTransportFactory,
+          boost::shared_ptr<TTransportFactory> transportFactory,
           boost::shared_ptr<TProtocolFactory> inputProtocolFactory,
           boost::shared_ptr<TProtocolFactory> outputProtocolFactory):
     processor_(processor),
     serverTransport_(serverTransport),
-    inputTransportFactory_(inputTransportFactory),
-    outputTransportFactory_(outputTransportFactory),
+    transportFactory_(transportFactory),
     inputProtocolFactory_(inputProtocolFactory),
     outputProtocolFactory_(outputProtocolFactory) {}
 
@@ -157,8 +148,7 @@ protected:
   boost::shared_ptr<TProcessor> processor_;
   boost::shared_ptr<TServerTransport> serverTransport_;
 
-  boost::shared_ptr<TTransportFactory> inputTransportFactory_;
-  boost::shared_ptr<TTransportFactory> outputTransportFactory_;
+  boost::shared_ptr<TTransportFactory> transportFactory_;
 
   boost::shared_ptr<TProtocolFactory> inputProtocolFactory_;
   boost::shared_ptr<TProtocolFactory> outputProtocolFactory_;
@@ -166,12 +156,8 @@ protected:
   boost::shared_ptr<TServerEventHandler> eventHandler_;
 
 public:
-  void setInputTransportFactory(boost::shared_ptr<TTransportFactory> inputTransportFactory) {
-    inputTransportFactory_ = inputTransportFactory;
-  }
-
-  void setOutputTransportFactory(boost::shared_ptr<TTransportFactory> outputTransportFactory) {
-    outputTransportFactory_ = outputTransportFactory;
+  void setTransportFactory(boost::shared_ptr<TTransportFactory> transportFactory) {
+    transportFactory_ = transportFactory;
   }
 
   void setInputProtocolFactory(boost::shared_ptr<TProtocolFactory> inputProtocolFactory) {

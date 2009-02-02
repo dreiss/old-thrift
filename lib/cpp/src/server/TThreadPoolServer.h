@@ -32,8 +32,7 @@ class TThreadPoolServer : public TServer {
 
   TThreadPoolServer(boost::shared_ptr<TProcessor> processor,
                     boost::shared_ptr<TServerTransport> serverTransport,
-                    boost::shared_ptr<TTransportFactory> inputTransportFactory,
-                    boost::shared_ptr<TTransportFactory> outputTransportFactory,
+                    boost::shared_ptr<TTransportFactory> transportFactory,
                     boost::shared_ptr<TProtocolFactory> inputProtocolFactory,
                     boost::shared_ptr<TProtocolFactory> outputProtocolFactory,
                     boost::shared_ptr<ThreadManager> threadManager);
