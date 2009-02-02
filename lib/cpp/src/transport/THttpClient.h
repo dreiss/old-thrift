@@ -9,7 +9,7 @@
 
 #include <transport/THttpTransport.h>
 
-namespace facebook { namespace thrift { namespace transport {
+namespace apache { namespace thrift { namespace transport {
 
 /**
  * HTTP client implementation.
@@ -34,6 +34,6 @@ class THttpClient : public THttpTransport {
 
 };
 
-}}} // facebook::thrift::transport
+}}} // apache::thrift::transport
 
 #endif // #ifndef _THRIFT_TRANSPORT_THTTPCLIENT_H_

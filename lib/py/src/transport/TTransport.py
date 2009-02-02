@@ -228,20 +228,14 @@ class TFramedTransportFactory:
     return framed
 
 
-class TFramedTransport(TTransportBase):
+class TFramedTransport(TTransportBase, CReadableTransport):
 
   """Class that wraps another transport and frames its I/O when writing."""
 
-  def __init__(self, trans, read=True, write=True):
+  def __init__(self, trans,):
     self.__trans = trans
-    if read:
-      self.__rbuf = ''
-    else:
-      self.__rbuf = None
-    if write:
-      self.__wbuf = StringIO()
-    else:
-      self.__wbuf = None
+    self.__rbuf = StringIO()
+    self.__wbuf = StringIO()
 
   def isOpen(self):
     return self.__trans.isOpen()
@@ -253,28 +247,22 @@ class TFramedTransport(TTransportBase):
     return self.__trans.close()
 
   def read(self, sz):
-    if self.__rbuf == None:
-      return self.__trans.read(sz)
-    if len(self.__rbuf) == 0:
-      self.readFrame()
-    give = min(len(self.__rbuf), sz)
-    buff = self.__rbuf[0:give]
-    self.__rbuf = self.__rbuf[give:]
-    return buff
+    ret = self.__rbuf.read(sz)
+    if len(ret) != 0:
+      return ret
+
+    self.readFrame()
+    return self.__rbuf.read(sz)
 
   def readFrame(self):
     buff = self.__trans.readAll(4)
     sz, = unpack('!i', buff)
-    self.__rbuf = self.__trans.readAll(sz)
+    self.__rbuf = StringIO(self.__trans.readAll(sz))
 
   def write(self, buf):
-    if self.__wbuf == None:
-      return self.__trans.write(buf)
     self.__wbuf.write(buf)
 
   def flush(self):
-    if self.__wbuf == None:
-      return self.__trans.flush()
     wout = self.__wbuf.getvalue()
     wsz = len(wout)
     # reset wbuf before write/flush to preserve state on underlying failure
@@ -286,3 +274,40 @@ class TFramedTransport(TTransportBase):
     buf = pack("!i", wsz) + wout
     self.__trans.write(buf)
     self.__trans.flush()
+
+  # Implement the CReadableTransport interface.
+  @property
+  def cstringio_buf(self):
+    return self.__rbuf
+
+  def cstringio_refill(self, prefix, reqlen):
+    # self.__rbuf will already be empty here because fastbinary doesn't
+    # ask for a refill until the previous buffer is empty.  Therefore,
+    # we can start reading new frames immediately.
+    while len(prefix) < reqlen:
+      readFrame()
+      prefix += self.__rbuf.getvalue()
+    self.__rbuf = StringIO(prefix)
+    return self.__rbuf
+
+
+class TFileObjectTransport(TTransportBase):
+  """Wraps a file-like object to make it work as a Thrift transport."""
+
+  def __init__(self, fileobj):
+    self.fileobj = fileobj
+
+  def isOpen(self):
+    return True
+
+  def close(self):
+    self.fileobj.close()
+
+  def read(self, sz):
+    return self.fileobj.read(sz)
+
+  def write(self, buf):
+    self.fileobj.write(buf)
+
+  def flush(self):
+    self.fileobj.flush()
