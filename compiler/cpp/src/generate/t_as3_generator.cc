@@ -79,18 +79,6 @@ void t_as3_generator::init_generator() {
   }
 
   package_dir_ = subdir;  
-
-  //TODO(atm): We should probably generate Service.as and VO.as here.
-/*
-  string outfile = package_dir_ + "/" + program_->get_name() + ".as";
-  f_out_.open(outfile.c_str());
-
-  f_out_ <<
-    autogen_comment() <<
-    as3_package();
-  indent_up();
-  generate_imports(f_out_);
-*/
 }
 
 void t_as3_generator::close_generator() {
@@ -113,7 +101,7 @@ string t_as3_generator::as3_package() {
 /**
  * Prints standard as3 imports
  *
- * @return List of imports for As3 types that are used in here
+ * @return List of imports for AS3 types that are used in here
  */
 void t_as3_generator::generate_imports(ofstream &ostream) {
   indent(ostream) << "import flash.net.Responder;" << endl;
@@ -122,7 +110,7 @@ void t_as3_generator::generate_imports(ofstream &ostream) {
 
 
 /**
- * Generates a typedef. This is not done in As3, since it does
+ * Generates a typedef. This is not done in AS3, since it does
  * not support arbitrary name replacements, and it'd be a wacky waste
  * of overhead to make wrapper classes.
  *
@@ -203,7 +191,7 @@ void t_as3_generator::generate_xception(t_struct* txception) {
 
 
 /**
- * As3 struct definition.
+ * AS3 struct definition.
  *
  * @param tstruct The struct definition
  */
@@ -220,7 +208,8 @@ void t_as3_generator::generate_as3_struct(t_struct* tstruct,
 
   indent_up();
 
-  indent(struct_out) << "public class " + tstruct->get_name() + " {" << endl;
+  indent(struct_out) << "[Bindable]" << endl;
+  indent(struct_out) << "dynamic public class " + tstruct->get_name() + " {" << endl;
   
   indent_up();
  
@@ -232,7 +221,10 @@ void t_as3_generator::generate_as3_struct(t_struct* tstruct,
 
   struct_out << endl;
 
-  indent(struct_out) << "public function " + tstruct->get_name() + "(remote:Object) {" << endl;
+  indent(struct_out) << "public function " + tstruct->get_name() + "(remote:Object = null) {" << endl;
+
+  indent_up();
+  indent(struct_out) << "if(remote != null) {" << endl;
 
   indent_up();
 
@@ -248,6 +240,9 @@ void t_as3_generator::generate_as3_struct(t_struct* tstruct,
       struct_out << "remote." + (*m_iter)->get_name() + ";" << endl;
     }
   }
+
+  indent_down();
+  indent(struct_out) << "}" << endl;
 
   indent_down();
   indent(struct_out) << "}" << endl;
@@ -324,7 +319,7 @@ void t_as3_generator::generate_service(t_service* tservice) {
     if (!first)
       service_out << ", ";
 
-    service_out << "onSuccess:Function";
+    service_out << "onSuccess:Function = null, onError:Function = null";
 
     t_type *ret_type = get_true_type(func->get_returntype());
     service_out << "):void {" << endl;
@@ -335,22 +330,41 @@ void t_as3_generator::generate_service(t_service* tservice) {
 
     if(ret_type->is_list()) {
       indent(service_out) << "function(result:Array):void {" << endl;
+    } else if(ret_type->is_void()) {
+      indent(service_out) << "function():void {" << endl;
     } else {
       indent(service_out) << "function(result:Object):void {" << endl;
     }
 
+    indent_up();
+    indent(service_out) << "if(onSuccess != null) {" << endl;
     indent_up();
     indent(service_out) << "onSuccess(";
 
     if(ret_type->is_list()) {
       t_list* tlist = (t_list*) ret_type;
       service_out << generate_makelist(tlist, "result") + ");" << endl;
+    } else if(ret_type->is_void()) {
+      service_out << ");" << endl;
     } else {
       service_out << "new " << type_name(ret_type) << "(result));" << endl;
     }
 
     indent_down();
+    indent(service_out) << "}" << endl;
+    indent_down();
+    indent(service_out) << "}," << endl;
+
+    indent(service_out) << "function(error:Object):void {" << endl;
+    indent_up();
+    indent(service_out) << "if(onError != null) {" << endl;
+    indent_up();
+    indent(service_out) << "onError(error);" << endl;
+    indent_down();
+    indent(service_out) << "}" << endl;
+    indent_down();
     indent(service_out) << "});" << endl;
+    
     indent_down();
     indent(service_out) << "connection.call('" <<
       tservice->get_name() << "." << func->get_name() << "', " << 
@@ -399,14 +413,14 @@ string t_as3_generator::generate_makelist(t_list* tlist, string field_name) {
 }
 
 /**
- * Returns a As3 type name
+ * Returns a AS3 type name
  *
  * @param ttype The type
  * @param container Is the type going inside a container?
- * @return As3 type name, i.e. HashMap<Key,Value>
+ * @return AS3 type name, i.e. HashMap<Key,Value>
  */
 string t_as3_generator::type_name(t_type* ttype) {
-  // In As3 typedefs are just resolved to their real type
+  // In AS3 typedefs are just resolved to their real type
   ttype = get_true_type(ttype);
   string prefix;
 
@@ -442,7 +456,7 @@ string t_as3_generator::type_name(t_type* ttype) {
  * Returns the C++ type that corresponds to the thrift type.
  *
  * @param tbase The base type
- * @param container Is it going in a As3 container?
+ * @param container Is it going in a AS3 container?
  */
 string t_as3_generator::base_type_name(t_base_type* type) {
   t_base_type::t_base tbase = type->get_base();
@@ -473,5 +487,5 @@ string t_as3_generator::base_type_name(t_base_type* type) {
 }
 
 
-THRIFT_REGISTER_GENERATOR(as3, "As3", "");
+THRIFT_REGISTER_GENERATOR(as3, "AS3", "");
 
