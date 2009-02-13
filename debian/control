@@ -2,7 +2,7 @@ Source: thrift
 Section: devel
 Priority: extra
 Build-Depends: debhelper (>= 5), build-essential, python-dev, ant,
-    erlang-base, ruby1.8-dev, autoconf, python-support, automake,
+    erlang-base | erlang-base-hipe, ruby1.8-dev, autoconf, python-support, automake,
     pkg-config, libtool, bison, flex, libboost-dev, python-all, python-all-dev,
     ruby, openjdk-6-jdk | java-sdk, libcommons-lang-java,
     libboost-test-dev, libevent-dev, perl (>= 5.8.0-7)
@@ -10,9 +10,17 @@ Maintainer: Esteve Fernandez <esteve@fluidinfo.com>
 Standards-Version: 3.7.2
 XS-Python-Version: 2.4, 2.5
 
+Package: thrift-all
+Architecture: any
+Depends: thrift-compiler, python-thrift, libthrift-perl, libthrift-java, libthrift-erlang, libthrift-ruby,
+    libthrift0, libthrift-dev
+Description: meta-package that pulls in all thrift packages
+
 Package: thrift-compiler
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
+Replaces: thrift (<= 20080501~amie.2)
+Conflicts: thrift (<= 20080501~amie.2)
 Description: Compiler for Thrift definition files
  Thrift is a software framework for scalable cross-language services
  development. It combines a software stack with a code generation engine to
@@ -29,6 +37,8 @@ Architecture: any
 Section: python
 Depends: ${python:Depends}, ${shlibs:Depends}, ${misc:Depends}
 Recommends: python-twisted-core
+Replaces: thrift (<= 20080501~amie.2)
+Conflicts: thrift (<= 20080501~amie.2)
 Provides: ${python:Provides}
 Description: Python bindings for Thrift
  Thrift is a software framework for scalable cross-language services
@@ -46,6 +56,7 @@ Package: libthrift-ruby
 Architecture: any
 Section: libs
 Depends: ${shlibs:Depends}, ${misc:Depends}, ruby1.8 (>= 1.8), ruby1.8 (<< 1.9)
+Replaces: thrift (<= 20080501~amie.2)
 Description: Ruby bindings for Thrift
  Thrift is a software framework for scalable cross-language services
  development. It combines a software stack with a code generation engine to
@@ -62,6 +73,8 @@ Package: libthrift-java
 Architecture: all
 Section: libs
 Depends: java-gcj-compat | java1-runtime | java2-runtime, ${misc:Depends}
+Replaces: thrift (<= 20080501~amie.2)
+Conflicts: thrift (<= 20080501~amie.2)
 Recommends: libcommons-lang-java
 Description: Java bindings for Thrift
  Thrift is a software framework for scalable cross-language services
@@ -110,6 +123,8 @@ Description: Perl bindings for Thrift
 Package: libthrift0
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
+Replaces: thrift (<= 20080501~amie.2)
+Conflicts: thrift (<= 20080501~amie.2)
 Description: Thrift C++ library
  Thrift is a software framework for scalable cross-language services
  development. It combines a software stack with a code generation engine to
@@ -122,6 +137,8 @@ Description: Thrift C++ library
 Package: libthrift-dev
 Architecture: any
 Section: libdevel
+Replaces: thrift (<= 20080501~amie.2)
+Conflicts: thrift (<= 20080501~amie.2)
 Depends: ${shlibs:Depends}, ${misc:Depends}, libthrift0
 Description: Thrift C++ library (development headers)
  Thrift is a software framework for scalable cross-language services

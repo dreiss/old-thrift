@@ -1,3 +1,9 @@
+thrift (0.2009.02.13~amie.1) etch; urgency=low
+
+  * Build for etch with some local changes
+
+ -- Todd Lipcon <todd@janus.corp.amiestreet.com>  Fri, 13 Feb 2009 14:12:39 -0500
+
 thrift (0.2008.12.30~8.04) hardy; urgency=low
 
   * Initial release.
