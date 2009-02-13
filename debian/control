@@ -1,10 +1,10 @@
 Source: thrift
 Section: devel
 Priority: extra
-Build-Depends: debhelper (>= 5), build-essential, mono-gmcs, python-dev, ant,
-    libmono-dev, erlang-base, ruby1.8-dev, autoconf, python-support, automake,
+Build-Depends: debhelper (>= 5), build-essential, python-dev, ant,
+    erlang-base, ruby1.8-dev, autoconf, python-support, automake,
     pkg-config, libtool, bison, flex, libboost-dev, python-all, python-all-dev,
-    python-all-dbg, ruby, openjdk-6-jdk | java-sdk, libcommons-lang-java,
+    ruby, openjdk-6-jdk | java-sdk, libcommons-lang-java,
     libboost-test-dev, libevent-dev, perl (>= 5.8.0-7)
 Maintainer: Esteve Fernandez <esteve@fluidinfo.com>
 Standards-Version: 3.7.2
@@ -42,23 +42,6 @@ Description: Python bindings for Thrift
  classes, and then the modules in this package will allow you to use those
  classes in your programs.
 
-Package: python-thrift-dbg
-Architecture: any
-Section: python
-Depends: ${shlibs:Depends}, ${misc:Depends}, python-thrift (= ${binary:Version}), python-all-dbg
-Provides: ${python:Provides}
-Description: Python bindings for Thrift (debug version)
- Thrift is a software framework for scalable cross-language services
- development. It combines a software stack with a code generation engine to
- build services that work efficiently and seamlessly.
- .
- Thrift came out of Facebook and is now an Apache Software Foundation project.
- .
- This package contains the Python bindings for Thrift with debugging symbols.
- You will need the thrift tool (in the thrift-compiler package) to compile your
- definition to Python classes, and then the modules in this package will allow
- you to use those classes in your programs.
-
 Package: libthrift-ruby
 Architecture: any
 Section: libs
@@ -89,22 +72,6 @@ Description: Java bindings for Thrift
  .
  This package contains the Java bindings for Thrift. You will need the thrift
  tool (in the thrift-compiler package) to compile your definition to Java
- classes, and then the modules in this package will allow you to use those
- classes in your programs.
-
-Package: libthrift-cil
-Architecture: all
-Section: libs
-Depends: cli-common, libmono-corlib1.0-cil (>= 1.0), libmono-system1.0-cil (>= 1.0), ${misc:Depends}
-Description: CLI bindings for Thrift
- Thrift is a software framework for scalable cross-language services
- development. It combines a software stack with a code generation engine to
- build services that work efficiently and seamlessly.
- .
- Thrift came out of Facebook and is now an Apache Software Foundation project.
- .
- This package contains the CLI bindings for Thrift. You will need the thrift
- tool (in the thrift-compiler package) to compile your definition to C#
  classes, and then the modules in this package will allow you to use those
  classes in your programs.
 
