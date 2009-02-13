@@ -1,0 +1,5 @@
+thrift (0.2008.12.30~8.04) hardy; urgency=low
+
+  * Initial release.
+
+ -- Esteve Fernandez <esteve@fluidinfo.com>  Thu, 15 Jan 2009 11:34:24 +0100
