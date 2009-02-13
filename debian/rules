@@ -23,7 +23,7 @@ configure-stamp:
 	dh_testdir
 	# Add here commands to configure the package.
 	$(CURDIR)/bootstrap.sh
-	$(CURDIR)/configure --prefix=/usr
+	$(CURDIR)/configure --prefix=/usr --without-csharp
 
 	touch configure-stamp
 
@@ -124,8 +124,7 @@ install-arch:
 	#compiler
 	mkdir -p $(CURDIR)/debian/thrift-compiler/usr/bin && \
 	cp $(CURDIR)/compiler/cpp/thrift \
-		$(CURDIR)/debian/thrift-compiler/usr/bin/thrift && \
-	rmdir $(CURDIR)/debian/thrift-compiler/usr/sbin
+		$(CURDIR)/debian/thrift-compiler/usr/bin/thrift
 
 	#python
 	cd $(CURDIR)/lib/py && \
