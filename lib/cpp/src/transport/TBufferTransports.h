@@ -163,7 +163,7 @@ class TUnderlyingTransport : public TBufferBase {
  public:
   static const int DEFAULT_BUFFER_SIZE = 512;
 
-  bool peek() {
+  virtual bool peek() {
     return (rBase_ < rBound_) || transport_->peek();
   }
 
@@ -246,6 +246,13 @@ class TBufferedTransport : public TUnderlyingTransport {
     initPointers();
   }
 
+  virtual bool peek() {
+    /* shigin: see THRIFT-96 discussion */
+    if (rBase_ == rBound_) {
+      setReadBuffer(rBuf_.get(), transport_->read(rBuf_.get(), rBufSize_));
+    }
+    return (rBound_ > rBase_);
+  }
   virtual uint32_t readSlow(uint8_t* buf, uint32_t len);
 
   virtual void writeSlow(const uint8_t* buf, uint32_t len);
