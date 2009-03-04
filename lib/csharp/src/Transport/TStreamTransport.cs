@@ -10,8 +10,6 @@
 //
 
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.IO;
 
 namespace Thrift.Transport
@@ -29,6 +27,16 @@ namespace Thrift.Transport
 		{
 			this.inputStream = inputStream;
 			this.outputStream = outputStream;
+		}
+
+		public Stream OutputStream
+		{
+			get { return outputStream; }
+		}
+
+		public Stream InputStream
+		{
+			get { return inputStream; }
 		}
 
 		public override bool IsOpen

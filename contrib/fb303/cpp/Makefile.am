@@ -5,7 +5,6 @@
 
 # User specified path variables set in configure.ac.
 # thrift_home
-# boost_home
 #
 THRIFT = $(thrift_home)/bin/thrift
 
@@ -20,7 +19,8 @@ endif
 
 AM_CPPFLAGS = -I..
 AM_CPPFLAGS += -Igen-cpp
-AM_CPPFLAGS += -I$(thrift_home)/include/thrift -I$(boost_home)/include/boost-1_33_1
+AM_CPPFLAGS += -I$(thrift_home)/include/thrift 
+AM_CPPFLAGS += $(BOOST_CPPFLAGS)
 AM_CPPFLAGS += $(FB_CPPFLAGS) $(DEBUG_CPPFLAGS)
 
 # GENERATE BUILD RULES
@@ -54,7 +54,7 @@ $(eval $(call thrift_template,.,../if/fb303.thrift,-I $(thrift_home)/share  --ge
 include_fb303dir = $(includedir)/thrift/fb303
 include_fb303_HEADERS = FacebookBase.h ServiceTracker.h gen-cpp/FacebookService.h gen-cpp/fb303_constants.h gen-cpp/fb303_types.h
 
-include_fb303ifdir = $(thrift_home)/share/fb303/if
+include_fb303ifdir = $(prefix)/share/fb303/if
 include_fb303if_HEADERS = ../if/fb303.thrift
 
 BUILT_SOURCES = thriftstyle

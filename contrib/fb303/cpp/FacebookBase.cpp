@@ -7,14 +7,11 @@
 #include "FacebookBase.h"
 
 using namespace facebook::fb303;
-using facebook::thrift::concurrency::Guard;
+using apache::thrift::concurrency::Guard;
 
-FacebookBase::FacebookBase(std::string name, get_static_limref_ptr reflect_lim) :
+FacebookBase::FacebookBase(std::string name) :
   name_(name) {
   aliveSince_ = (int64_t) time(NULL);
-  if (reflect_lim) {
-    reflect_lim(reflection_limited_);
-  }
 }
 
 inline void FacebookBase::getName(std::string& _return) {

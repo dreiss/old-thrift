@@ -13,7 +13,7 @@
 #include "TTransport.h"
 #include "TServerSocket.h"
 
-namespace facebook { namespace thrift { namespace transport {
+namespace apache { namespace thrift { namespace transport {
 
 /**
  * Dead-simple wrapper around a file descriptor.
@@ -22,9 +22,9 @@ namespace facebook { namespace thrift { namespace transport {
  */
 class TFDTransport : public TTransport {
  public:
-  enum ClosePolicy {
-    NO_CLOSE_ON_DESTROY = 0,
-    CLOSE_ON_DESTROY = 1,
+  enum ClosePolicy
+  { NO_CLOSE_ON_DESTROY = 0
+  , CLOSE_ON_DESTROY = 1
   };
 
   TFDTransport(int fd, ClosePolicy close_policy = NO_CLOSE_ON_DESTROY)
@@ -56,6 +56,6 @@ class TFDTransport : public TTransport {
   ClosePolicy close_policy_;
 };
 
-}}} // facebook::thrift::transport
+}}} // apache::thrift::transport
 
 #endif // #ifndef _THRIFT_TRANSPORT_TFDTRANSPORT_H_

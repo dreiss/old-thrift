@@ -20,7 +20,7 @@
 #define TDB_UNLIKELY(val) (val)
 #endif
 
-namespace facebook { namespace thrift { namespace transport {
+namespace apache { namespace thrift { namespace transport {
 
 
 /**
@@ -428,10 +428,10 @@ class TMemoryBuffer : public TBufferBase {
    *   and will be responsible for freeing it.
    *   The membory must have been allocated with malloc.
    */
-  enum MemoryPolicy {
-    OBSERVE = 1,
-    COPY = 2,
-    TAKE_OWNERSHIP = 3,
+  enum MemoryPolicy
+  { OBSERVE = 1
+  , COPY = 2
+  , TAKE_OWNERSHIP = 3
   };
 
   /**
@@ -635,6 +635,6 @@ class TMemoryBuffer : public TBufferBase {
   // you add new members.
 };
 
-}}} // facebook::thrift::transport
+}}} // apache::thrift::transport
 
 #endif // #ifndef _THRIFT_TRANSPORT_TBUFFERTRANSPORTS_H_

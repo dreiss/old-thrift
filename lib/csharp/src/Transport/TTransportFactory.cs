@@ -9,9 +9,6 @@
 //  All rights reserved.
 //
 using System;
-using System.Collections.Generic;
-using System.Text;
-
 
 namespace Thrift.Transport
 {
@@ -24,7 +21,7 @@ namespace Thrift.Transport
 	/// </summary>
 	public class TTransportFactory
 	{
-		public TTransport GetTransport(TTransport trans)
+		public virtual TTransport GetTransport(TTransport trans)
 		{
 			return trans;
 		}

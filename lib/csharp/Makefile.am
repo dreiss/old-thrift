@@ -1,4 +1,6 @@
 THRIFTCODE= \
+            src/Collections/THashSet.cs \
+            src/Protocol/TBase.cs \
             src/Protocol/TProtocolException.cs \
             src/Protocol/TProtocolFactory.cs \
             src/Protocol/TList.cs \
@@ -12,9 +14,11 @@ THRIFTCODE= \
             src/Protocol/TMessage.cs \
             src/Protocol/TStruct.cs \
             src/Protocol/TBinaryProtocol.cs \
+            src/Server/TThreadedServer.cs \
             src/Server/TThreadPoolServer.cs \
             src/Server/TSimpleServer.cs \
             src/Server/TServer.cs \
+            src/Transport/TBufferedTransport.cs \
             src/Transport/TTransport.cs \
             src/Transport/TSocket.cs \
             src/Transport/TTransportException.cs \
@@ -28,10 +32,14 @@ THRIFTCODE= \
 
 CSC=gmcs
 
+if NET_2_0
+MONO_DEFINES=/d:NET_2_0
+endif
+
 all-local: Thrift.dll
 
 Thrift.dll: $(THRIFTCODE)
-	$(CSC) $(THRIFTCODE) /out:Thrift.dll /target:library
+	$(CSC) $(THRIFTCODE) /out:Thrift.dll /target:library $(MONO_DEFINES)
 
 clean-local:
 	$(RM) Thrift.dll

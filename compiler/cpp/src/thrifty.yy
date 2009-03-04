@@ -17,6 +17,7 @@
 #define __STDC_FORMAT_MACROS
 #include <stdio.h>
 #include <inttypes.h>
+#include <limits.h>
 #include "main.h"
 #include "globals.h"
 #include "parse/t_program.h"
@@ -55,6 +56,7 @@ int g_arglist = 0;
   t_field*       tfield;
   char*          dtext;
   t_field::e_req ereq;
+  t_annotation*  tannot;
 }
 
 /**
@@ -141,6 +143,7 @@ int g_arglist = 0;
 
 %type<ttype>     BaseType
 %type<ttype>     ContainerType
+%type<ttype>     SimpleContainerType
 %type<ttype>     MapType
 %type<ttype>     SetType
 %type<ttype>     ListType
@@ -150,6 +153,10 @@ int g_arglist = 0;
 
 %type<ttypedef>  Typedef
 %type<ttype>     DefinitionType
+
+%type<ttype>     TypeAnnotations
+%type<ttype>     TypeAnnotationList
+%type<tannot>    TypeAnnotation
 
 %type<tfield>    Field
 %type<iconst>    FieldIdentifier
@@ -275,9 +282,10 @@ Header:
     }
 | tok_php_namespace tok_identifier
     {
+      pwarning(1, "'php_namespace' is deprecated. Use 'namespace php' instead");
       pdebug("Header -> tok_php_namespace tok_identifier");
       if (g_parse_mode == PROGRAM) {
-        g_program->set_php_namespace($2);
+        g_program->set_namespace("php", $2);
       }
     }
 /* TODO(dreiss): Get rid of this once everyone is using the new hotness. */
@@ -343,11 +351,13 @@ Header:
         g_program->set_namespace("cocoa", $2);
       }
     }
+/* TODO(dreiss): Get rid of this once everyone is using the new hotness. */
 | tok_xsd_namespace tok_literal
     {
+      pwarning(1, "'xsd_namespace' is deprecated. Use 'namespace xsd' instead");
       pdebug("Header -> tok_xsd_namespace tok_literal");
       if (g_parse_mode == PROGRAM) {
-        g_program->set_xsd_namespace($2);
+        g_program->set_namespace("cocoa", $2);
       }
     }
 /* TODO(dreiss): Get rid of this once everyone is using the new hotness. */
@@ -657,12 +667,16 @@ ConstMapContents:
     }
 
 Struct:
-  tok_struct tok_identifier XsdAll '{' FieldList '}'
+  tok_struct tok_identifier XsdAll '{' FieldList '}' TypeAnnotations
     {
       pdebug("Struct -> tok_struct tok_identifier { FieldList }");
-      $5->set_name($2);
       $5->set_xsd_all($3);
       $$ = $5;
+      $$->set_name($2);
+      if ($7 != NULL) {
+        $$->annotations_ = $7->annotations_;
+        delete $7;
+      }
       y_field_val = -1;
     }
 
@@ -996,20 +1010,30 @@ BaseType:
       $$ = g_type_double;
     }
 
-ContainerType:
+ContainerType: SimpleContainerType TypeAnnotations
+    {
+      pdebug("ContainerType -> SimpleContainerType TypeAnnotations");
+      $$ = $1;
+      if ($2 != NULL) {
+        $$->annotations_ = $2->annotations_;
+        delete $2;
+      }
+    }
+
+SimpleContainerType:
   MapType
     {
-      pdebug("ContainerType -> MapType");
+      pdebug("SimpleContainerType -> MapType");
       $$ = $1;
     }
 | SetType
     {
-      pdebug("ContainerType -> SetType");
+      pdebug("SimpleContainerType -> SetType");
       $$ = $1;
     }
 | ListType
     {
-      pdebug("ContainerType -> ListType");
+      pdebug("SimpleContainerType -> ListType");
       $$ = $1;
     }
 
@@ -1051,6 +1075,40 @@ CppType:
 |
     {
       $$ = NULL;
+    }
+
+TypeAnnotations:
+  '(' TypeAnnotationList ')'
+    {
+      pdebug("TypeAnnotations -> ( TypeAnnotationList )");
+      $$ = $2;
+    }
+|
+    {
+      $$ = NULL;
+    }
+
+TypeAnnotationList:
+  TypeAnnotationList TypeAnnotation
+    {
+      pdebug("TypeAnnotationList -> TypeAnnotationList , TypeAnnotation");
+      $$ = $1;
+      $$->annotations_[$2->key] = $2->val;
+      delete $2;
+    }
+|
+    {
+      /* Just use a dummy structure to hold the annotations. */
+      $$ = new t_struct(g_program);
+    }
+
+TypeAnnotation:
+  tok_identifier '=' tok_literal CommaOrSemicolonOptional
+    {
+      pdebug("TypeAnnotation -> tok_identifier = tok_literal");
+      $$ = new t_annotation;
+      $$->key = $1;
+      $$->val = $3;
     }
 
 %%

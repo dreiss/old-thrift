@@ -46,18 +46,34 @@ require File.dirname(__FILE__) + '/Benchmark_types'
 
         class Fibonacci_args
           include Thrift::Struct
+          N = 1
+
           Thrift::Struct.field_accessor self, :n
           FIELDS = {
-            1 => {:type => Thrift::Types::BYTE, :name => 'n'}
+            N => {:type => Thrift::Types::BYTE, :name => 'n'}
           }
+
+          def struct_fields; FIELDS; end
+
+          def validate
+          end
+
         end
 
         class Fibonacci_result
           include Thrift::Struct
+          SUCCESS = 0
+
           Thrift::Struct.field_accessor self, :success
           FIELDS = {
-            0 => {:type => Thrift::Types::I32, :name => 'success'}
+            SUCCESS => {:type => Thrift::Types::I32, :name => 'success'}
           }
+
+          def struct_fields; FIELDS; end
+
+          def validate
+          end
+
         end
 
       end

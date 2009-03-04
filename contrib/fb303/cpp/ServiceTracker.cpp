@@ -8,11 +8,11 @@
 
 #include "FacebookBase.h"
 #include "ServiceTracker.h"
-#include "thrift/concurrency/ThreadManager.h"
+#include "concurrency/ThreadManager.h"
 
 using namespace std;
 using namespace facebook::fb303;
-using namespace facebook::thrift::concurrency;
+using namespace apache::thrift::concurrency;
 
 
 uint64_t ServiceTracker::CHECKPOINT_MINIMUM_INTERVAL_SECONDS = 60;

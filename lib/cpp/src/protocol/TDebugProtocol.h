@@ -12,7 +12,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-namespace facebook { namespace thrift { namespace protocol {
+namespace apache { namespace thrift { namespace protocol {
 
 /*
 
@@ -36,13 +36,13 @@ Complaints are not. :R
  */
 class TDebugProtocol : public TWriteOnlyProtocol {
  private:
-  enum write_state_t {
-    UNINIT,
-    STRUCT,
-    LIST,
-    SET,
-    MAP_KEY,
-    MAP_VALUE,
+  enum write_state_t
+  { UNINIT
+  , STRUCT
+  , LIST
+  , SET
+  , MAP_KEY
+  , MAP_VALUE
   };
 
  public:
@@ -153,18 +153,18 @@ class TDebugProtocolFactory : public TProtocolFactory {
 
 };
 
-}}} // facebook::thrift::protocol
+}}} // apache::thrift::protocol
 
 
 // TODO(dreiss): Move (part of) ThriftDebugString into a .cpp file and remove this.
 #include <transport/TBufferTransports.h>
 
-namespace facebook { namespace thrift {
+namespace apache { namespace thrift {
 
 template<typename ThriftStruct>
 std::string ThriftDebugString(const ThriftStruct& ts) {
-  using namespace facebook::thrift::transport;
-  using namespace facebook::thrift::protocol;
+  using namespace apache::thrift::transport;
+  using namespace apache::thrift::protocol;
   TMemoryBuffer* buffer = new TMemoryBuffer;
   boost::shared_ptr<TTransport> trans(buffer);
   TDebugProtocol protocol(trans);
@@ -181,8 +181,8 @@ std::string ThriftDebugString(const ThriftStruct& ts) {
 #if 0
 template<typename Object>
 std::string DebugString(const std::vector<Object>& vec) {
-  using namespace facebook::thrift::transport;
-  using namespace facebook::thrift::protocol;
+  using namespace apache::thrift::transport;
+  using namespace apache::thrift::protocol;
   TMemoryBuffer* buffer = new TMemoryBuffer;
   boost::shared_ptr<TTransport> trans(buffer);
   TDebugProtocol protocol(trans);
@@ -205,7 +205,7 @@ std::string DebugString(const std::vector<Object>& vec) {
 }
 #endif // 0
 
-}} // facebook::thrift
+}} // apache::thrift
 
 
 #endif // #ifndef _THRIFT_PROTOCOL_TDEBUGPROTOCOL_H_

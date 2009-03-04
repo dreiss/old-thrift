@@ -22,7 +22,7 @@
 #include "TSocket.h"
 #include "TTransportException.h"
 
-namespace facebook { namespace thrift { namespace transport {
+namespace apache { namespace thrift { namespace transport {
 
 using namespace std;
 
@@ -574,4 +574,4 @@ int TSocket::getPeerPort() {
   return peerPort_;
 }
 
-}}} // facebook::thrift::transport
+}}} // apache::thrift::transport

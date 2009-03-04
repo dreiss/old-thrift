@@ -18,7 +18,7 @@
 
 #include <boost/weak_ptr.hpp>
 
-namespace facebook { namespace thrift { namespace concurrency {
+namespace apache { namespace thrift { namespace concurrency {
 
 using boost::shared_ptr;
 using boost::weak_ptr;
@@ -139,9 +139,8 @@ class PthreadThread: public Thread {
     }
   }
 
-  id_t getId() {
-    // TODO(dreiss): Stop using C-style casts.
-    return (id_t)pthread_;
+  Thread::id_t getId() {
+    return (Thread::id_t)pthread_;
   }
 
   shared_ptr<Runnable> runnable() const { return Thread::runnable(); }
@@ -294,4 +293,4 @@ void PosixThreadFactory::setDetached(bool value) { impl_->setDetached(value); }
 
 Thread::id_t PosixThreadFactory::getCurrentThreadId() const { return impl_->getCurrentThreadId(); }
 
-}}} // facebook::thrift::concurrency
+}}} // apache::thrift::concurrency

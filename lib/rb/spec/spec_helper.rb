@@ -3,12 +3,16 @@ require 'rubygems'
 gem 'rspec', '>= 1.1.4'
 require 'spec'
 
+$:.unshift File.join(File.dirname(__FILE__), *%w[.. ext])
+
 # pretend we already loaded fastthread, otherwise the nonblockingserver_spec
 # will get screwed up
 # $" << 'fastthread.bundle'
 
 # turn on deprecation so we can test it
 module Thrift
+  # squelch any warnings if we happen to get required twice
+  remove_const(:DEPRECATION) if const_defined? :DEPRECATION
   DEPRECATION = true
 end
 
@@ -27,3 +31,5 @@ Spec::Runner.configure do |configuration|
     Thrift.type_checking = true
   end
 end
+
+require "thrift_native"
