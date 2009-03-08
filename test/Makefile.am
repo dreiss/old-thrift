@@ -1,9 +1,5 @@
 SUBDIRS =
 
-if WITH_JAVA
-SUBDIRS += java
-endif
-
 if WITH_PYTHON
 SUBDIRS += py
 endif
@@ -17,13 +13,14 @@ libtestgencpp_la_SOURCES = \
 	gen-cpp/DebugProtoTest_types.cpp \
 	gen-cpp/OptionalRequiredTest_types.cpp \
 	gen-cpp/DebugProtoTest_types.cpp \
-	gen-cpp/PartiallyReflectable.cpp \
 	gen-cpp/Service.cpp \
 	gen-cpp/StressTest_types.cpp \
 	gen-cpp/SecondService.cpp \
 	gen-cpp/ThriftTest_constants.cpp \
 	gen-cpp/ThriftTest.cpp \
-	gen-cpp/ThriftTest_types.cpp
+	gen-cpp/ThriftTest_types.cpp \
+	ThriftTest_extras.cpp \
+	DebugProtoTest_extras.cpp
 
 libtestgencpp_la_LIBADD = $(top_builddir)/lib/cpp/libthrift.la
 
@@ -40,7 +37,6 @@ check_PROGRAMS = \
 	DebugProtoTest \
 	JSONProtoTest \
 	OptionalRequiredTest \
-	ReflectionTest \
 	UnitTests
 
 TESTS = \
@@ -99,29 +95,21 @@ OptionalRequiredTest_LDADD = libtestgencpp.la
 
 
 #
-# ReflectionTest
-#
-ReflectionTest_SOURCES = \
-	ReflectionTest.cpp
-
-ReflectionTest_LDADD = libtestgencpp.la
-
-#
 # Common thrift code generation rules
 #
 THRIFT = $(top_builddir)/compiler/cpp/thrift
 
-gen-cpp/DebugProtoTest_types.cpp gen-cpp/PartiallyReflectable.cpp: DebugProtoTest.thrift
-	$(THRIFT) --gen cpp:dense,reflection_limited $<
+gen-cpp/DebugProtoTest_types.cpp: DebugProtoTest.thrift
+	$(THRIFT) --gen cpp:dense $<
 
 gen-cpp/OptionalRequiredTest_types.cpp: OptionalRequiredTest.thrift
 	$(THRIFT) --gen cpp:dense $<
 
 gen-cpp/Service.cpp gen-cpp/StressTest_types.cpp: StressTest.thrift
-	$(THRIFT) --gen cpp:dense,reflection_limited $<
+	$(THRIFT) --gen cpp:dense $<
 
 gen-cpp/SecondService.cpp gen-cpp/ThriftTest_constants.cpp gen-cpp/ThriftTest.cpp gen-cpp/ThriftTest_types.cpp: ThriftTest.thrift
-	$(THRIFT) --gen cpp:dense,reflection_limited $<
+	$(THRIFT) --gen cpp:dense $<
 
 INCLUDES = \
 	-I$(top_srcdir)/lib/cpp/src

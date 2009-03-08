@@ -1,0 +1,2 @@
+#!/bin/bash -v
+java -server -cp thrifttest.jar:../../lib/java/libthrift.jar org.apache.thrift.test.TestServer $*

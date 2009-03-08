@@ -17,7 +17,7 @@ class FacebookBase(FacebookService.Iface):
     self.name = name
     self.alive = int(time.time())
     self.counters = {}
- 
+
   def getName(self, ):
     return self.name
 

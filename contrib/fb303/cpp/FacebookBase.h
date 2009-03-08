@@ -9,8 +9,8 @@
 
 #include "FacebookService.h"
 
-#include "thrift/server/TServer.h"
-#include "thrift/concurrency/Mutex.h"
+#include "server/TServer.h"
+#include "concurrency/Mutex.h"
 
 #include <time.h>
 #include <string>
@@ -18,15 +18,13 @@
 
 namespace facebook { namespace fb303 {
 
-using facebook::thrift::concurrency::Mutex;
-using facebook::thrift::concurrency::ReadWriteMutex;
-using facebook::thrift::server::TServer;
+using apache::thrift::concurrency::Mutex;
+using apache::thrift::concurrency::ReadWriteMutex;
+using apache::thrift::server::TServer;
 
 struct ReadWriteInt : ReadWriteMutex {int64_t value;};
 struct ReadWriteCounterMap : ReadWriteMutex,
                              std::map<std::string, ReadWriteInt> {};
-
-typedef void (*get_static_limref_ptr)(facebook::thrift::reflection::limited::Service &);
 
 /**
  * Base Facebook service implementation in C++.
@@ -35,7 +33,7 @@ typedef void (*get_static_limref_ptr)(facebook::thrift::reflection::limited::Ser
  */
 class FacebookBase : virtual public FacebookServiceIf {
  protected:
-  FacebookBase(std::string name, get_static_limref_ptr reflect_lim = NULL);
+  FacebookBase(std::string name);
   virtual ~FacebookBase() {}
 
  public:
@@ -50,10 +48,6 @@ class FacebookBase : virtual public FacebookServiceIf {
   void getOptions(std::map<std::string, std::string> & _return);
 
   int64_t aliveSince();
-
-  void getLimitedReflection(facebook::thrift::reflection::limited::Service& _return) {
-    _return = reflection_limited_;
-  }
 
   virtual void reinitialize() {}
 
@@ -81,7 +75,6 @@ class FacebookBase : virtual public FacebookServiceIf {
  private:
 
   std::string name_;
-  facebook::thrift::reflection::limited::Service reflection_limited_;
   int64_t aliveSince_;
 
   std::map<std::string, std::string> options_;

@@ -8,20 +8,23 @@ require 'thrift/protocol'
 
 module SpecNamespace
     class Hello
-      include Thrift::Struct
+      include ::Thrift::Struct
       GREETING = 1
 
       Thrift::Struct.field_accessor self, :greeting
       FIELDS = {
-        GREETING => {:type => Thrift::Types::STRING, :name => 'greeting', :default => 'hello world'}
+        GREETING => {:type => Thrift::Types::STRING, :name => 'greeting', :default => %q"hello world"}
       }
+
+      def struct_fields; FIELDS; end
+
       def validate
       end
 
     end
 
     class Foo
-      include Thrift::Struct
+      include ::Thrift::Struct
       SIMPLE = 1
       WORDS = 2
       HELLO = 3
@@ -33,10 +36,10 @@ module SpecNamespace
       Thrift::Struct.field_accessor self, :simple, :words, :hello, :ints, :complex, :shorts, :opt_string
       FIELDS = {
         SIMPLE => {:type => Thrift::Types::I32, :name => 'simple', :default => 53},
-        WORDS => {:type => Thrift::Types::STRING, :name => 'words', :default => 'words'},
+        WORDS => {:type => Thrift::Types::STRING, :name => 'words', :default => %q"words"},
         HELLO => {:type => Thrift::Types::STRUCT, :name => 'hello', :default => Hello.new({
-          'greeting' => 'hello, world!',
-        }), :class => Hello},
+          %q"greeting" => %q"hello, world!",
+        }), :class => SpecNamespace::Hello},
         INTS => {:type => Thrift::Types::LIST, :name => 'ints', :default => [
           1,
           2,
@@ -50,26 +53,32 @@ module SpecNamespace
         ]), :element => {:type => Thrift::Types::I16}},
         OPT_STRING => {:type => Thrift::Types::STRING, :name => 'opt_string', :optional => true}
       }
+
+      def struct_fields; FIELDS; end
+
       def validate
       end
 
     end
 
     class BoolStruct
-      include Thrift::Struct
+      include ::Thrift::Struct
       YESNO = 1
 
       Thrift::Struct.field_accessor self, :yesno
       FIELDS = {
         YESNO => {:type => Thrift::Types::BOOL, :name => 'yesno', :default => true}
       }
+
+      def struct_fields; FIELDS; end
+
       def validate
       end
 
     end
 
     class SimpleList
-      include Thrift::Struct
+      include ::Thrift::Struct
       BOOLS = 1
       BYTES = 2
       I16S = 3
@@ -94,15 +103,18 @@ module SpecNamespace
         MAPS => {:type => Thrift::Types::LIST, :name => 'maps', :element => {:type => Thrift::Types::MAP, :key => {:type => Thrift::Types::I16}, :value => {:type => Thrift::Types::I16}}},
         LISTS => {:type => Thrift::Types::LIST, :name => 'lists', :element => {:type => Thrift::Types::LIST, :element => {:type => Thrift::Types::I16}}},
         SETS => {:type => Thrift::Types::LIST, :name => 'sets', :element => {:type => Thrift::Types::SET, :element => {:type => Thrift::Types::I16}}},
-        HELLOS => {:type => Thrift::Types::LIST, :name => 'hellos', :element => {:type => Thrift::Types::STRUCT, :class => Hello}}
+        HELLOS => {:type => Thrift::Types::LIST, :name => 'hellos', :element => {:type => Thrift::Types::STRUCT, :class => SpecNamespace::Hello}}
       }
+
+      def struct_fields; FIELDS; end
+
       def validate
       end
 
     end
 
     class Xception < Thrift::Exception
-      include Thrift::Struct
+      include ::Thrift::Struct
       MESSAGE = 1
       CODE = 2
 
@@ -111,6 +123,9 @@ module SpecNamespace
         MESSAGE => {:type => Thrift::Types::STRING, :name => 'message'},
         CODE => {:type => Thrift::Types::I32, :name => 'code', :default => 1}
       }
+
+      def struct_fields; FIELDS; end
+
       def validate
       end
 

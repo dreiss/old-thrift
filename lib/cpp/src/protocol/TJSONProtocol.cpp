@@ -11,9 +11,9 @@
 #include "TBase64Utils.h"
 #include <transport/TTransportException.h>
 
-using namespace facebook::thrift::transport;
+using namespace apache::thrift::transport;
 
-namespace facebook { namespace thrift { namespace protocol {
+namespace apache { namespace thrift { namespace protocol {
 
 
 // Static data
@@ -32,7 +32,7 @@ static const uint8_t kJSONEscapeChar = 'u';
 
 static const std::string kJSONEscapePrefix("\\u00");
 
-static const uint8_t kThriftVersion1 = 1;
+static const uint32_t kThriftVersion1 = 1;
 
 static const std::string kThriftNan("NaN");
 static const std::string kThriftInfinity("Infinity");
@@ -874,7 +874,7 @@ uint32_t TJSONProtocol::readFieldBegin(std::string& name,
   // Check if we hit the end of the list
   uint8_t ch = reader_.peek();
   if (ch == kJSONObjectEnd) {
-    fieldType = facebook::thrift::protocol::T_STOP;
+    fieldType = apache::thrift::protocol::T_STOP;
   }
   else {
     uint64_t tmpVal = 0;
@@ -982,4 +982,4 @@ uint32_t TJSONProtocol::readBinary(std::string &str) {
   return readJSONBase64(str);
 }
 
-}}} // facebook::thrift::protocol
+}}} // apache::thrift::protocol

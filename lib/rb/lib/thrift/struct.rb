@@ -60,6 +60,8 @@ module Thrift
       names_to_ids[name]
     end
 
+    # Obsoleted by THRIFT-246, which generates this method inline
+    # TODO: Should be removed at some point. -- Kevin Clark
     def struct_fields
       self.class.const_get(:FIELDS)
     end
@@ -100,10 +102,10 @@ module Thrift
 
     def write(oprot)
       validate
-      if oprot.respond_to?(:encode_binary)
-        # TODO(kevinclark): Clean this so I don't have to access the transport.
-        oprot.trans.write oprot.encode_binary(self)
-      else
+      # if oprot.respond_to?(:encode_binary)
+      #   # TODO(kevinclark): Clean this so I don't have to access the transport.
+      #   oprot.trans.write oprot.encode_binary(self)
+      # else
         oprot.write_struct_begin(self.class.name)
         each_field do |fid, type, name|
           unless (value = instance_variable_get("@#{name}")).nil?
@@ -118,7 +120,7 @@ module Thrift
         end
         oprot.write_field_stop
         oprot.write_struct_end
-      end
+      # end
     end
 
     def ==(other)
@@ -127,6 +129,15 @@ module Thrift
         return false unless self.instance_variable_get("@#{name}") == other.instance_variable_get("@#{name}")
       end
       true
+    end
+
+    def eql?(other)
+      self.class == other.class && self == other
+    end
+
+    # for the time being, we're ok with a naive hash. this could definitely be improved upon.
+    def hash
+      0
     end
 
     def self.field_accessor(klass, *fields)
@@ -162,7 +173,7 @@ module Thrift
         # this will set our field default values
         method(:struct_initialize).call()
         # now give it to the exception
-        self.class.send(:class_variable_get, :'@@__thrift_struct_real_initialize').bind(self).call(*args, &block)
+        self.class.send(:class_variable_get, :'@@__thrift_struct_real_initialize').bind(self).call(*args, &block) if args.size > 0
         # self.class.instance_method(:initialize).bind(self).call(*args, &block)
       end
     end

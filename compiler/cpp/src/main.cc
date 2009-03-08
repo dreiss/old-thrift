@@ -36,9 +36,7 @@
 #include "main.h"
 #include "parse/t_program.h"
 #include "parse/t_scope.h"
-#include "generate/t_php_generator.h"
-#include "generate/t_xsd_generator.h"
-#include "generate/t_erl_generator.h"
+#include "generate/t_generator.h"
 
 #include "version.h"
 
@@ -604,19 +602,10 @@ void usage() {
   fprintf(stderr, "Usage: thrift [options] file\n");
   fprintf(stderr, "Options:\n");
   fprintf(stderr, "  -version    Print the compiler version\n");
-  fprintf(stderr, "  -php        Generate PHP output files\n");
-  fprintf(stderr, "  -phpi       Generate PHP inlined files\n");
-  fprintf(stderr, "  -phps       Generate PHP server stubs (with -php)\n");
-  fprintf(stderr, "  -phpl       Generate PHP-lite (with -php)\n");
-  fprintf(stderr, "  -phpa       Generate PHP with autoload (with -php)\n");
-  fprintf(stderr, "  -phpo       Generate PHP with object oriented subclasses (with -php)\n");
-  fprintf(stderr, "  -xsd        Generate XSD output files\n");
-  fprintf(stderr, "  -erl        Generate Erlang output files\n");
   fprintf(stderr, "  -o dir      Set the output directory for gen-* packages\n");
   fprintf(stderr, "               (default: current directory)\n");
   fprintf(stderr, "  -I dir      Add a directory to the list of directories\n");
   fprintf(stderr, "                searched for include directives\n");
-  fprintf(stderr, "  -rest       Generate PHP REST processors (with -php)\n");
   fprintf(stderr, "  -nowarn     Suppress all compiler warnings (BAD!)\n");
   fprintf(stderr, "  -strict     Strict compiler warnings on\n");
   fprintf(stderr, "  -v[erbose]  Verbose mode\n");
@@ -860,34 +849,6 @@ void generate(t_program* program, const vector<string>& generator_strings) {
     // Compute fingerprints.
     generate_all_fingerprints(program);
 
-    if (gen_php) {
-      pverbose("Generating PHP\n");
-      t_php_generator* php = new t_php_generator(program, false, gen_rest, gen_phps, gen_phpa, gen_phpo);
-      php->generate_program();
-      delete php;
-    }
-
-    if (gen_phpi) {
-      pverbose("Generating PHP-inline\n");
-      t_php_generator* phpi = new t_php_generator(program, true, gen_rest);
-      phpi->generate_program();
-      delete phpi;
-    }
-
-    if (gen_xsd) {
-      pverbose("Generating XSD\n");
-      t_xsd_generator* xsd = new t_xsd_generator(program);
-      xsd->generate_program();
-      delete xsd;
-    }
-
-    if (gen_erl) {
-      pverbose("Generating Erlang\n");
-      t_erl_generator* erl = new t_erl_generator(program);
-      erl->generate_program();
-      delete erl;
-    }
-
     if (dump_docs) {
       dump_docstrings(program);
     }
@@ -1106,9 +1067,29 @@ int main(int argc, char** argv) {
     pwarning(1, "-perl is deprecated.  Use --gen perl");
     generator_strings.push_back("perl");
   }
+  if (gen_php || gen_phpi) {
+    pwarning(1, "-php is deprecated.  Use --gen php");
+    string gen_string = "php:";
+    if (gen_phpi) {
+      gen_string.append("inlined,");
+    } else if(gen_phps) {
+      gen_string.append("server,");
+    } else if(gen_phpa) {
+      gen_string.append("autoload,");
+    } else if(gen_phpo) {
+      gen_string.append("oop,");
+    } else if(gen_rest) {
+      gen_string.append("rest,");
+    }
+    generator_strings.push_back(gen_string);
+  }
   if (gen_cocoa) {
     pwarning(1, "-cocoa is deprecated.  Use --gen cocoa");
     generator_strings.push_back("cocoa");
+  }
+  if (gen_erl) {
+    pwarning(1, "-erl is deprecated.  Use --gen erl");
+    generator_strings.push_back("erl");
   }
   if (gen_st) {
     pwarning(1, "-st is deprecated.  Use --gen st");
@@ -1122,9 +1103,13 @@ int main(int argc, char** argv) {
     pwarning(1, "-hs is deprecated.  Use --gen hs");
     generator_strings.push_back("hs");
   }
+  if (gen_xsd) {
+    pwarning(1, "-xsd is deprecated.  Use --gen xsd");
+    generator_strings.push_back("xsd");
+  }
 
   // You gotta generate something!
-  if (!gen_php && !gen_phpi && !gen_xsd && !gen_erl && generator_strings.empty()) {
+  if (generator_strings.empty()) {
     fprintf(stderr, "!!! No output language(s) specified\n\n");
     usage();
   }

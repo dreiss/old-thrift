@@ -10,8 +10,6 @@
 //
 
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Net.Sockets;
 
 namespace Thrift.Transport
@@ -66,6 +64,22 @@ namespace Thrift.Transport
 			get
 			{
 				return client;
+			}
+		}
+
+		public string Host
+		{
+			get
+			{
+				return host;
+			}
+		}
+
+		public int Port
+		{
+			get
+			{
+				return port;
 			}
 		}
 

@@ -10,8 +10,6 @@
 //  See accompanying file LICENSE or visit the Thrift site at:
 //  http://developers.facebook.com/thrift/using
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using Thrift.Protocol;
 using Thrift.Transport;
@@ -31,9 +29,18 @@ namespace Thrift.Server
 			:this(processor, serverTransport,
 				 new TTransportFactory(), new TTransportFactory(),
 				 new TBinaryProtocol.Factory(), new TBinaryProtocol.Factory(),
-				 DEFAULT_MIN_THREADS, DEFAULT_MAX_THREADS)
+				 DEFAULT_MIN_THREADS, DEFAULT_MAX_THREADS, DefaultLogDelegate)
 		{
 		}
+
+		public TThreadPoolServer(TProcessor processor, TServerTransport serverTransport, LogDelegate logDelegate)
+			: this(processor, serverTransport,
+				 new TTransportFactory(), new TTransportFactory(),
+				 new TBinaryProtocol.Factory(), new TBinaryProtocol.Factory(),
+				 DEFAULT_MIN_THREADS, DEFAULT_MAX_THREADS, logDelegate)
+		{
+		}
+
 
 		public TThreadPoolServer(TProcessor processor,
 								 TServerTransport serverTransport,
@@ -42,7 +49,7 @@ namespace Thrift.Server
 			:this(processor, serverTransport,
 				 transportFactory, transportFactory,
 				 protocolFactory, protocolFactory,
-				 DEFAULT_MIN_THREADS, DEFAULT_MAX_THREADS)
+				 DEFAULT_MIN_THREADS, DEFAULT_MAX_THREADS, DefaultLogDelegate)
 		{
 		}
 
@@ -52,9 +59,9 @@ namespace Thrift.Server
 								 TTransportFactory outputTransportFactory,
 								 TProtocolFactory inputProtocolFactory,
 								 TProtocolFactory outputProtocolFactory,
-								 int minThreadPoolThreads, int maxThreadPoolThreads)
+								 int minThreadPoolThreads, int maxThreadPoolThreads, LogDelegate logDel)
 			:base(processor, serverTransport, inputTransportFactory, outputTransportFactory,
-				  inputProtocolFactory, outputProtocolFactory)
+				  inputProtocolFactory, outputProtocolFactory, logDel)
 		{
 			if (!ThreadPool.SetMinThreads(minThreadPoolThreads, minThreadPoolThreads))
 			{
@@ -64,7 +71,6 @@ namespace Thrift.Server
 			{
 				throw new Exception("Error: could not SetMaxThreads in ThreadPool");
 			}
-
 		}
 
 		/// <summary>
@@ -78,7 +84,7 @@ namespace Thrift.Server
 			}
 			catch (TTransportException ttx)
 			{
-				Console.Error.WriteLine("Error, could not listen on ServerTransport: " + ttx);
+				logDelegate("Error, could not listen on ServerTransport: " + ttx);
 				return;
 			}
 
@@ -92,8 +98,16 @@ namespace Thrift.Server
 				}
 				catch (TTransportException ttx)
 				{
-					++failureCount;
-					Console.Error.WriteLine(ttx);
+					if (stop)
+					{
+						logDelegate("TThreadPoolServer was shutting down, caught " + ttx.GetType().Name);
+					}
+					else
+					{
+						++failureCount;
+						logDelegate(ttx.ToString());
+					}
+
 				}
 			}
 
@@ -105,16 +119,10 @@ namespace Thrift.Server
 				}
 				catch (TTransportException ttx)
 				{
-					Console.Error.WriteLine("TServerTrasnport failed on close: " + ttx.Message);
+					logDelegate("TServerTransport failed on close: " + ttx.Message);
 				}
 				stop = false;
 			}
-		}
-
-
-		public override void Stop()
-		{
-			stop = true;
 		}
 
 		/// <summary>
@@ -143,11 +151,12 @@ namespace Thrift.Server
 			catch (TTransportException)
 			{
 				// Assume the client died and continue silently
+				//Console.WriteLine(ttx);
 			}
 			
 			catch (Exception x)
 			{
-				Console.Error.WriteLine("Error: " + x);
+				logDelegate("Error: " + x);
 			}
 
 			if (inputTransport != null)
@@ -158,6 +167,12 @@ namespace Thrift.Server
 			{
 				outputTransport.Close();
 			}
+		}
+
+		public override void Stop()
+		{
+			stop = true;
+			serverTransport.Close();
 		}
 	}
 }
