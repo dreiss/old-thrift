@@ -139,10 +139,10 @@ typedef struct {
   PyObject* refill_callable;
 } DecodeBuffer;
 
-/** Pointer to interned string to speed up attribute lookup. */
+/** Pointers to interned string to speed up attribute lookup. */
 static PyObject* INTERN_STRING(cstringio_buf);
-/** Pointer to interned string to speed up attribute lookup. */
 static PyObject* INTERN_STRING(cstringio_refill);
+static PyObject* INTERN_STRING(thrift_offset);
 
 static inline bool
 check_ssize_t_32(Py_ssize_t len) {
@@ -227,7 +227,7 @@ parse_struct_args(StructTypeArgs* dest, PyObject* typeargs) {
   dest->klass = PyTuple_GET_ITEM(typeargs, 0);
   dest->spec = PyTuple_GET_ITEM(typeargs, 1);
 
-  offset = PyObject_GetAttrString(dest->klass, "thrift_offset");
+  offset = PyObject_GetAttr(dest->klass, INTERN_STRING(thrift_offset));
   if (offset) {
     long result = PyInt_AsLong(offset);
     if (result == -1 && PyErr_Occurred()) {
@@ -1176,6 +1176,7 @@ initfastbinary(void) {
 
   INIT_INTERN_STRING(cstringio_buf);
   INIT_INTERN_STRING(cstringio_refill);
+  INIT_INTERN_STRING(thrift_offset);
 #undef INIT_INTERN_STRING
 
   PycString_IMPORT;
