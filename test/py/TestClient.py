@@ -126,7 +126,7 @@ class AbstractTest(unittest.TestCase):
     x.i32_thing = -3
     x.i64_thing = -5
 
-    y = self.client.testInsanity(Insanity(dict(userMap={1:2}, xtructs=[x])))
+    y = self.client.testInsanity(Insanity(userMap={1:2}, xtructs=[x]))
     z = y[1][Numberz.ONE]
     assert z.xtructs[0] == x
     assert z.userMap == {1:2}
