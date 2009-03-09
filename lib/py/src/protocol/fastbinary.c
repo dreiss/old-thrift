@@ -883,6 +883,12 @@ decode_struct(DecodeBuffer* input, PyObject* output, PyObject* spec_seq, const l
     if (!parse_struct_item_spec(&parsedspec, item_spec)) {
       return false;
     }
+
+    /* a little paranoic check: ensure that tag is correct */
+    if (parsedspec.tag != tag) {
+      PyErr_SetString(PyExc_TypeError, "thrift_offset has incorrect value or memory is corrupted");
+      return false;
+    }
     if (parsedspec.type != type) {
       PyErr_SetString(PyExc_TypeError, "struct field had wrong type while reading");
       return false;
