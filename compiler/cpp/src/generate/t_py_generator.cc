@@ -146,6 +146,7 @@ class t_py_generator : public t_generator {
   std::string py_imports();
   std::string render_includes();
   std::string render_fastbinary_includes();
+  bool can_default(t_field* field);
   std::string declare_argument(t_field* tfield);
   std::string render_field_default_value(t_field* tfield);
   std::string type_name(t_type* ttype);
@@ -591,11 +592,11 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
 
   if (members.size() > 0) {
     out <<
-      indent() << "def __init__(self,";
+      indent() << "def __init__(self";
 
     for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
       // This fills in default values, as opposed to nulls
-      out << " " << declare_argument(*m_iter) << ",";
+      out << ", " << declare_argument(*m_iter);
     }
 
     out << "):" << endl;
@@ -604,16 +605,17 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
 
     for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
       // Initialize fields
-      t_type* type = (*m_iter)->get_type();
-      if (!type->is_base_type() && !type->is_enum() && (*m_iter)->get_value() != NULL) {
+      if (!can_default(*m_iter) && (*m_iter)->get_value() != NULL) {
         indent(out) <<
-          "if " << (*m_iter)->get_name() << " is " << "self.thrift_spec[" <<
-            (*m_iter)->get_key() << "][4]:" << endl;
-        indent(out) << "  " << (*m_iter)->get_name() << " = " <<
+          "if " << (*m_iter)->get_name() << " is None:" << endl;
+        indent_up();
+        indent(out) << (*m_iter)->get_name() << " = " <<
           render_field_default_value(*m_iter) << endl;
+        indent_down();
+      } else {
+        indent(out) << "self." << (*m_iter)->get_name() << " = " 
+                    << (*m_iter)->get_name() << endl;
       }
-      indent(out) <<
-        "self." << (*m_iter)->get_name() << " = " << (*m_iter)->get_name() << endl;
     }
 
     indent_down();
@@ -674,7 +676,7 @@ void t_py_generator::generate_py_struct_reader(ofstream& out,
   indent_up();
 
   indent(out) <<
-    "fastbinary.decode_binary(self, iprot.trans, (" << tstruct->get_name() << 
+    "fastbinary.decode_binary(self, iprot.trans, (" << tstruct->get_name() <<
     ", " << tstruct->get_name() << ".thrift_spec))" << endl;
   indent(out) <<
     "return" << endl;
@@ -2037,6 +2039,16 @@ void t_py_generator::generate_serialize_list_element(ofstream &out,
 }
 
 /**
+ * Returns if field default value can be used in param of function.
+ *
+ * @param tfield The field
+ */
+bool t_py_generator::can_default(t_field* tfield) {
+  t_type* type = tfield->get_type();
+  return type->is_base_type() && !type->is_enum();
+}
+
+/**
  * Declares an argument, which may include initialization as necessary.
  *
  * @param tfield The field
@@ -2044,9 +2056,8 @@ void t_py_generator::generate_serialize_list_element(ofstream &out,
 string t_py_generator::declare_argument(t_field* tfield) {
   std::ostringstream result;
   result << tfield->get_name() << "=";
-  if (tfield->get_value() != NULL) {
-    result << "thrift_spec[" <<
-      tfield->get_key() << "][4]";
+  if (can_default(tfield) && tfield->get_value() != NULL) {
+    result << render_field_default_value(tfield);
   } else {
     result << "None";
   }
