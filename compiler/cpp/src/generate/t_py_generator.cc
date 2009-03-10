@@ -612,10 +612,9 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
         indent(out) << (*m_iter)->get_name() << " = " <<
           render_field_default_value(*m_iter) << endl;
         indent_down();
-      } else {
-        indent(out) << "self." << (*m_iter)->get_name() << " = " 
-                    << (*m_iter)->get_name() << endl;
       }
+      indent(out) << "self." << (*m_iter)->get_name() << " = " 
+                  << (*m_iter)->get_name() << endl;
     }
 
     indent_down();
