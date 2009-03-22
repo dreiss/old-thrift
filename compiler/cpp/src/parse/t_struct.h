@@ -50,7 +50,11 @@ class t_struct : public t_type {
   }
 
   void append(t_field* elem) {
+    // it's a much better to use std::set, but i don't want to change 
+    // each get_members call
+    // or std::map to make validate_field is much simple
     members_.push_back(elem);
+    std::sort(members_.begin(), members_.end(), FieldKeyCompare());
   }
 
   const std::vector<t_field*>& get_members() {
@@ -68,11 +72,7 @@ class t_struct : public t_type {
   virtual std::string get_fingerprint_material() const {
     std::string rv = "{";
     std::vector<t_field*>::const_iterator m_iter;
-    // fingerprint shouldn't depend on appearence order
-    std::vector<t_field*> sorted_members(members_);
-    std::sort(sorted_members.begin(), sorted_members.end(), FieldKeyCompare());
-
-    for (m_iter = sorted_members.begin(); m_iter != sorted_members.end(); ++m_iter) {
+    for (m_iter = members_.begin(); m_iter != members_.end(); ++m_iter) {
       rv += (*m_iter)->get_fingerprint_material();
       rv += ";";
     }
