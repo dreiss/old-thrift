@@ -68,7 +68,11 @@ class t_struct : public t_type {
   virtual std::string get_fingerprint_material() const {
     std::string rv = "{";
     std::vector<t_field*>::const_iterator m_iter;
-    for (m_iter = members_.begin(); m_iter != members_.end(); ++m_iter) {
+    // fingerprint shouldn't depend on appearence order
+    std::vector<t_field*> sorted_members(members_);
+    std::sort(sorted_members.begin(), sorted_members.end(), FieldKeyCompare());
+
+    for (m_iter = sorted_members.begin(); m_iter != sorted_members.end(); ++m_iter) {
       rv += (*m_iter)->get_fingerprint_material();
       rv += ";";
     }

@@ -122,4 +122,17 @@ class t_field : public t_doc {
 
 };
 
+/**
+ * Comparator to sort fields in ascending order by key.
+ * Make this a functor instead of a function to help GCC inline it.
+ * The arguments are (const) references to const pointers to const t_fields.
+ * Unfortunately, we cannot declare it within the function.  Boo!
+ * http://www.open-std.org/jtc1/sc22/open/n2356/ (paragraph 9).
+ */
+struct FieldKeyCompare {
+  bool operator()(t_field const * const & a, t_field const * const & b) {
+    return a->get_key() < b->get_key();
+  }
+};
+
 #endif
