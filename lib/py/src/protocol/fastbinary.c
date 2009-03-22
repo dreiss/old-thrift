@@ -237,7 +237,6 @@ parse_map_args(MapTypeArgs* dest, PyObject* typeargs) {
 
 static bool
 parse_struct_args(StructTypeArgs* dest, PyObject* typeargs) {
-  PyObject *offset;
   if (PyTuple_Size(typeargs) != 2) {
     PyErr_SetString(PyExc_TypeError, "expecting tuple of size 2 for struct args");
     return false;
@@ -246,8 +245,8 @@ parse_struct_args(StructTypeArgs* dest, PyObject* typeargs) {
   dest->klass = PyTuple_GET_ITEM(typeargs, 0);
   dest->spec = PyTuple_GET_ITEM(typeargs, 1);
 
-  offset = PyObject_GetAttr(dest->klass, INTERN_STRING(thrift_offset));
-  if (offset) {
+  if (PyObject_HasAttr(dest->klass, INTERN_STRING(thrift_offset))) {
+    PyObject *offset = PyObject_GetAttr(dest->klass, INTERN_STRING(thrift_offset));
     long result = PyInt_AsLong(offset);
     if (result == -1 && PyErr_Occurred()) {
       Py_DECREF(offset);
