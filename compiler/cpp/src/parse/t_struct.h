@@ -50,9 +50,14 @@ class t_struct : public t_type {
   }
 
   void append(t_field* elem) {
-    // it's a much better to use std::set, but i don't want to change 
-    // each get_members call
-    // or std::map to make validate_field is much simple
+    /* (shigin) It's a much better to use std::set or std::map, 
+     * but i don't want to change each call of get_members.
+     * If we use std::map it makes validate_field much simpler.
+     *
+     * It's really ugly to sort vector after each insert, but a speed of 
+     * the compiler isn't an issue at a present time. The other choise is
+     * binary search.
+     */
     members_.push_back(elem);
     std::sort(members_.begin(), members_.end(), FieldKeyCompare());
   }
