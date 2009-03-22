@@ -24,7 +24,6 @@ using namespace std;
 /**
  * Ruby code generator.
  *
- * @author Mark Slee <mcslee@facebook.com>
  */
 class t_rb_generator : public t_oop_generator {
  public:
@@ -590,6 +589,10 @@ void t_rb_generator::generate_field_data(std::ofstream& out, t_type* field_type,
   
   if(optional) {
     out << ", :optional => true";
+  }
+
+  if (field_type->is_enum()) {
+    out << ", :enum_class => " << full_type_name(field_type);
   }
 
   // End of this field's defn

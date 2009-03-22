@@ -17,7 +17,6 @@ import org.apache.thrift.transport.TIOStreamTransport;
  * Generic utility for easily deserializing objects from a byte array or Java
  * String.
  *
- * @author David Reiss <dreiss@facebook.com>
  */
 public class TDeserializer {
   private final TProtocolFactory protocolFactory_;
@@ -69,12 +68,11 @@ public class TDeserializer {
   }
 
   /**
-   * Deerialize the Thrift object from a Java string, using the default JVM
+   * Deserialize the Thrift object from a Java string, using the default JVM
    * charset encoding.
    *
    * @param base The object to read into
    * @param data The string to read from
-   * @return Serialized object as a String
    */
   public void toString(TBase base, String data) throws TException {
     deserialize(base, data.getBytes());

@@ -10,7 +10,6 @@
  *
  * This parser is used on a thrift definition file.
  *
- * @author Mark Slee <mcslee@facebook.com>
  */
 
 #define __STDC_LIMIT_MACROS
@@ -677,7 +676,6 @@ Struct:
         $$->annotations_ = $7->annotations_;
         delete $7;
       }
-      y_field_val = -1;
     }
 
 XsdAll:
@@ -727,7 +725,6 @@ Xception:
       $4->set_name($2);
       $4->set_xception(true);
       $$ = $4;
-      y_field_val = -1;
     }
 
 Service:
@@ -788,7 +785,6 @@ Function:
       if ($1 != NULL) {
         $$->set_doc($1);
       }
-      y_field_val = -1;
     }
 
 Async:
@@ -830,6 +826,7 @@ FieldList:
 |
     {
       pdebug("FieldList -> ");
+      y_field_val = -1;
       $$ = new t_struct(g_program);
     }
 

@@ -1,14 +1,27 @@
 
 package org.apache.thrift.test;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
 
-import org.apache.thrift.transport.*;
-import org.apache.thrift.server.*;
-import org.apache.thrift.protocol.*;
-import org.apache.thrift.*;
+import org.apache.thrift.TBase;
+import org.apache.thrift.TException;
+import org.apache.thrift.protocol.TBinaryProtocol;
+import org.apache.thrift.protocol.TCompactProtocol;
+import org.apache.thrift.protocol.TField;
+import org.apache.thrift.protocol.TMessage;
+import org.apache.thrift.protocol.TMessageType;
+import org.apache.thrift.protocol.TProtocol;
+import org.apache.thrift.protocol.TProtocolFactory;
+import org.apache.thrift.protocol.TStruct;
+import org.apache.thrift.protocol.TType;
+import org.apache.thrift.transport.TMemoryBuffer;
 
-import thrift.test.*;
+import thrift.test.CompactProtoTestStruct;
+import thrift.test.HolyMoley;
+import thrift.test.Nesting;
+import thrift.test.OneOfEach;
+import thrift.test.Srv;
 
 public class TCompactProtocolTest {
 
@@ -65,35 +78,17 @@ public class TCompactProtocolTest {
     testI32Field(-0xffffff);
     
     testNakedI64(0);
-    testNakedI64(1);
-    testNakedI64(0xff);
-    testNakedI64(0xffff);
-    testNakedI64(0xffffff);
-    testNakedI64(6000000000L);
-    testNakedI64(Long.MAX_VALUE);
-    testNakedI64(-1);
-    testNakedI64(-0xff);
-    testNakedI64(-0xffff);
-    testNakedI64(-0xffffff);
-    testNakedI64(-6000000000L);
-    
+    for (int i = 0; i < 62; i++) {
+      testNakedI64(1L << i);
+      testNakedI64(-(1L << i));
+    }
+
     testI64Field(0);
-    testI64Field(1);
-    testI64Field(0xff);
-    testI64Field(0xffff);
-    testI64Field(0xffffff);
-    testI64Field(6000000000L);
-    testI64Field(1L << 32);
-    testI64Field(1L << 48);
-    testI64Field(1L << 55);
-    testI64Field(Long.MAX_VALUE);
-    testI64Field(-1);
-    testI64Field(-0xff);
-    testI64Field(-0xffff);
-    testI64Field(-0xffffff);
-    testI64Field(-6000000000L);
-    testI64Field(-1*Long.MAX_VALUE);
-    
+    for (int i = 0; i < 62; i++) {
+      testI64Field(1L << i);
+      testI64Field(-(1L << i));
+    }
+
     testDouble();
     
     testNakedString("");

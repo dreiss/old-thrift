@@ -22,7 +22,6 @@ using namespace std;
 /**
  * Java code generator.
  *
- * @author Mark Slee <mcslee@facebook.com>
  */
 class t_java_generator : public t_oop_generator {
  public:
@@ -177,6 +176,7 @@ class t_java_generator : public t_oop_generator {
   std::string function_signature(t_function* tfunction, std::string prefix="");
   std::string argument_list(t_struct* tstruct);
   std::string type_to_enum(t_type* ttype);
+  std::string get_enum_class_name(t_type* type);
 
   bool type_can_be_null(t_type* ttype) {
     ttype = get_true_type(ttype);
@@ -318,7 +318,9 @@ void t_java_generator::generate_enum(t_enum* tenum) {
     "import java.util.Set;\n" +
     "import java.util.HashSet;\n" +
     "import java.util.Collections;\n" +
-    "import org.apache.thrift.IntRangeSet;\n"<< endl;
+    "import org.apache.thrift.IntRangeSet;\n" +
+    "import java.util.Map;\n" + 
+    "import java.util.HashMap;\n" << endl;
 
   f_enum <<
     "public class " << tenum->get_name() << " ";
@@ -354,7 +356,19 @@ void t_java_generator::generate_enum(t_enum* tenum) {
   indent_down();
   f_enum << ");" << endl;
 
+  indent(f_enum) << "public static final Map<Integer, String> VALUES_TO_NAMES = new HashMap<Integer, String>() {{" << endl;
+
+  indent_up();
+  for (c_iter = constants.begin(); c_iter != constants.end(); ++c_iter) {    
+    indent(f_enum) << "put(" << (*c_iter)->get_name() << ", \"" << (*c_iter)->get_name() <<"\");" << endl;
+  }
+  indent_down();
+
+  
+  indent(f_enum) << "}};" << endl;
+
   scope_down(f_enum);
+  
   f_enum.close();
 }
 
@@ -1034,12 +1048,12 @@ void t_java_generator::generate_java_validator(ofstream& out,
   out << indent() << "// check that fields of type enum have valid values" << endl;
   for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
     t_field* field = (*f_iter);
-    
+    t_type* type = field->get_type();
     // if field is an enum, check that its value is valid
-    if (field->get_type()->is_enum()){      
-      indent(out) << "if (__isset." << field->get_name() << " && !" << field->get_type()->get_name() << ".VALID_VALUES.contains(" << field->get_name() << ")){" << endl;
+    if (type->is_enum()){
+      indent(out) << "if (" << generate_isset_check(field) << " && !" << get_enum_class_name(type) << ".VALID_VALUES.contains(" << field->get_name() << ")){" << endl;
       indent_up();
-      indent(out) << "throw new TProtocolException(\"Invalid value of field '" << field->get_name() << "'!\");" << endl;
+      indent(out) << "throw new TProtocolException(\"The field '" << field->get_name() << "' has been assigned the invalid value \" + " << field->get_name() << ");" << endl;
       indent_down();
       indent(out) << "}" << endl;
     } 
@@ -1188,8 +1202,11 @@ void t_java_generator::generate_reflection_getters(ostringstream& out, t_type* t
 void t_java_generator::generate_reflection_setters(ostringstream& out, t_type* type, string field_name, string cap_name) {
   indent(out) << "case " << upcase_string(field_name) << ":" << endl;
   indent_up();
-
-  indent(out) << "set" << cap_name << "((" << type_name(type, true, false) << ")value);" << endl;
+  indent(out) << "if (value == null) {" << endl;
+  indent(out) << "  unset" << get_cap_name(field_name) << "();" << endl;
+  indent(out) << "} else {" << endl;
+  indent(out) << "  set" << cap_name << "((" << type_name(type, true, false) << ")value);" << endl;
+  indent(out) << "}" << endl;
   indent(out) << "break;" << endl << endl;
 
   indent_down();
@@ -1476,6 +1493,16 @@ void t_java_generator::generate_java_struct_tostring(ofstream& out,
       indent(out) << "    sb.append(Integer.toHexString(this." << field->get_name() << "[i]).length() > 1 ? Integer.toHexString(this." << field->get_name() << "[i]).substring(Integer.toHexString(this." << field->get_name() << "[i]).length() - 2).toUpperCase() : \"0\" + Integer.toHexString(this." << field->get_name() << "[i]).toUpperCase());" <<endl;
       indent(out) << "  }" << endl;
       indent(out) << "  if (this." << field->get_name() << ".length > 128) sb.append(\" ...\");" << endl;
+    } else if(field->get_type()->is_enum()) {
+      indent(out) << "String " << field->get_name() << "_name = " << get_enum_class_name(field->get_type()) << ".VALUES_TO_NAMES.get(this." << (*f_iter)->get_name() << ");"<< endl;
+      indent(out) << "if (" << field->get_name() << "_name != null) {" << endl;
+      indent(out) << "  sb.append(" << field->get_name() << "_name);" << endl;
+      indent(out) << "  sb.append(\" (\");" << endl;
+      indent(out) << "}" << endl;
+      indent(out) << "sb.append(this." << field->get_name() << ");" << endl;
+      indent(out) << "if (" << field->get_name() << "_name != null) {" << endl;
+      indent(out) << "  sb.append(\")\");" << endl;
+      indent(out) << "}" << endl;
     } else {
       indent(out) << "sb.append(this." << (*f_iter)->get_name() << ");" << endl;
     }
@@ -2959,6 +2986,14 @@ void t_java_generator::generate_isset_set(ofstream& out, t_field* field) {
   }
 }
 
+std::string t_java_generator::get_enum_class_name(t_type* type) {
+  string package = "";
+  t_program* program = type->get_program();
+  if (program != NULL && program != program_) {
+    package = program->get_namespace("java") + ".";
+  }
+  return package + type->get_name();
+}
 
 THRIFT_REGISTER_GENERATOR(java, "Java",
 "    beans:           Generate bean-style output files.\n"
