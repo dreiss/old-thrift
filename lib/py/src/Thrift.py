@@ -107,3 +107,41 @@ class TApplicationException(TException):
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
     oprot.writeStructEnd()
+
+
+class TFreezableDict(dict):
+  """A dictionary that can be "frozen" like a frozenset
+
+  TFreezableDict objects act just like dictionaries until
+  their "freeze" method is called.  At that point, they become
+  immutable and hashable.
+  """
+
+  def __init__(self, *args, **kwargs):
+    super(dict, self).__init__(*args, **kwargs)
+    self.__frozen = False
+
+  def __setitem__(self, *args):
+    if self.__frozen:
+      raise TypeError("Can't modify frozen TFreezableDict")
+    return super(dict, self).__setattr__(*args)
+
+  def __delitem__(self, *args):
+    if self.__frozen:
+      raise TypeError("Can't modify frozen TFreezableDict")
+    return super(dict, self).__delattr__(*args)
+
+  def __hash__(self):
+    if self.__frozen:
+      return self.__hashval
+    raise TypeError("Unfrozen TFreezableDict objects are unhashable")
+
+  def freeze(self):
+    self.__frozen = True
+    self.__hashval = hash(tuple(self.items()))
+
+
+def TFrozenDict(*args, **kwargs):
+  d = TFreezableDict(*args, **kwargs)
+  d.freeze()
+  return d

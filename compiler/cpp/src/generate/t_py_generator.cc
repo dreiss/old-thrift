@@ -428,6 +428,9 @@ string t_py_generator::render_const_value(t_type* type, t_const_value* value) {
   } else if (type->is_map()) {
     t_type* ktype = ((t_map*)type)->get_key_type();
     t_type* vtype = ((t_map*)type)->get_val_type();
+    if (is_immutable(type)) {
+      out << "TFrozenDict(";
+    }
     out << "{" << endl;
     indent_up();
     const map<t_const_value*, t_const_value*>& val = value->get_map();
@@ -441,6 +444,9 @@ string t_py_generator::render_const_value(t_type* type, t_const_value* value) {
     }
     indent_down();
     indent(out) << "}";
+    if (is_immutable(type)) {
+      out << ")";
+    }
   } else if (type->is_list() || type->is_set()) {
     t_type* etype;
     if (type->is_list()) {
