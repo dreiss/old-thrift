@@ -586,6 +586,42 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
     indent(out) << "thrift_spec = None" << endl;
   }
 
+  // Check immutability
+  if (gen_newstyle_ && tstruct->annotations_.find("python.immutable")
+    != tstruct->annotations_.end()) {
+
+    out <<
+      indent() << "__slots__ = (";
+
+    for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
+      // This fills in default values, as opposed to nulls
+      out << "'" << (*m_iter)->get_name() << "', ";
+    }
+
+    out << ")" << endl << endl;
+
+    out <<
+      indent() << "def __setattr__(self, *args):" << endl <<
+      indent() << "  raise TypeError(\"can't modify immutable instance\")" << endl <<
+      endl;
+
+    out <<
+      indent() << "__delattr__ = __setattr__" << endl <<
+      endl;
+
+    out <<
+      indent() << "def __hash__(self):" << endl <<
+      indent() << "  return hash((";
+
+    for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
+      // This fills in default values, as opposed to nulls
+      out << "self." << (*m_iter)->get_name() << ", ";
+    }
+
+    out << "))" << endl <<
+      endl;
+  }
+
 
   if (members.size() > 0) {
     out <<
@@ -610,8 +646,18 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
         indent(out) << "  " << (*m_iter)->get_name() << " = " <<
           render_field_default_value(*m_iter) << endl;
       }
-      indent(out) <<
-        "self." << (*m_iter)->get_name() << " = " << (*m_iter)->get_name() << endl;
+
+      // Check immutability
+      if (gen_newstyle_ && tstruct->annotations_.find("python.immutable")
+        != tstruct->annotations_.end()) {
+        indent(out) <<
+          "super(" << tstruct->get_name() << ", self).__setattr__('" <<
+            (*m_iter)->get_name() << "', " <<
+            (*m_iter)->get_name() << ")" << endl;
+      } else {
+        indent(out) <<
+          "self." << (*m_iter)->get_name() << " = " << (*m_iter)->get_name() << endl;
+      }
     }
 
     indent_down();
@@ -619,27 +665,65 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
     out << endl;
   }
 
-  generate_py_struct_reader(out, tstruct);
-  generate_py_struct_writer(out, tstruct);
+  if (gen_newstyle_ && tstruct->annotations_.find("python.immutable")
+    != tstruct->annotations_.end()) {
 
-  // Printing utilities so that on the command line thrift
-  // structs look pretty like dictionaries
-  out <<
-    indent() << "def __repr__(self):" << endl <<
-    indent() << "  L = ['%s=%r' % (key, value)" << endl <<
-    indent() << "    for key, value in self.__dict__.iteritems()]" << endl <<
-    indent() << "  return '%s(%s)' % (self.__class__.__name__, ', '.join(L))" << endl <<
-    endl;
+    // Printing utilities so that on the command line thrift
+    // structs look pretty like dictionaries
+    out <<
+      indent() << "def __repr__(self):" << endl <<
+      indent() << "  s = ";
 
-  // Equality and inequality methods that compare by value
-  out <<
-    indent() << "def __eq__(self, other):" << endl;
-  indent_up();
-  out <<
-    indent() << "return isinstance(other, self.__class__) and "
-                "self.__dict__ == other.__dict__" << endl;
-  indent_down();
-  out << endl;
+    m_iter = members.begin();
+    out << "'" << (*m_iter)->get_name() << "=' + repr(self." << (*m_iter)->get_name() << ")";
+
+    ++m_iter;
+
+    for (; m_iter != members.end(); ++m_iter) {
+      out << " + ', " << (*m_iter)->get_name() << "=' + repr(self." << (*m_iter)->get_name() << ")";
+    }
+
+    out << endl <<
+      indent() << "  return '%s(%s)' % (self.__class__.__name__, s)" << endl <<
+      endl;
+
+    // Equality and inequality methods that compare by value
+    out <<
+      indent() << "def __eq__(self, other):" << endl;
+    indent_up();
+    out <<
+      indent() << "return isinstance(other, self.__class__)";
+
+      for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
+        out << " and self." << (*m_iter)->get_name() << " == other." << (*m_iter)->get_name();
+      }
+
+    out << endl;
+    indent_down();
+    out << endl;
+
+  } else {
+
+    // Printing utilities so that on the command line thrift
+    // structs look pretty like dictionaries
+    out <<
+      indent() << "def __repr__(self):" << endl <<
+      indent() << "  L = ['%s=%r' % (key, value)" << endl <<
+      indent() << "    for key, value in self.__dict__.iteritems()]" << endl <<
+      indent() << "  return '%s(%s)' % (self.__class__.__name__, ', '.join(L))" << endl <<
+      endl;
+
+    // Equality and inequality methods that compare by value
+    out <<
+      indent() << "def __eq__(self, other):" << endl;
+    indent_up();
+    out <<
+      indent() << "return isinstance(other, self.__class__) and "
+                  "self.__dict__ == other.__dict__" << endl;
+    indent_down();
+    out << endl;
+
+  }
 
   out <<
     indent() << "def __ne__(self, other):" << endl;
@@ -648,6 +732,9 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
     indent() << "return not (self == other)" << endl;
   indent_down();
   out << endl;
+
+  generate_py_struct_reader(out, tstruct);
+  generate_py_struct_writer(out, tstruct);
 
   indent_down();
 }
