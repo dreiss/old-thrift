@@ -658,6 +658,9 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
       endl;
   }
 
+  generate_py_struct_reader(out, tstruct);
+  generate_py_struct_writer(out, tstruct);
+
   // Printing utilities so that on the command line thrift
   // structs look pretty like dictionaries
   out <<
@@ -684,9 +687,6 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
     indent() << "return not (self == other)" << endl;
   indent_down();
   out << endl;
-
-  generate_py_struct_reader(out, tstruct);
-  generate_py_struct_writer(out, tstruct);
 
   indent_down();
 }
