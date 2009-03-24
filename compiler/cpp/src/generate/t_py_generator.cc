@@ -658,65 +658,24 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
       endl;
   }
 
-  if (gen_newstyle_ && tstruct->annotations_.find("python.immutable")
-    != tstruct->annotations_.end()) {
+  // Printing utilities so that on the command line thrift
+  // structs look pretty like dictionaries
+  out <<
+    indent() << "def __repr__(self):" << endl <<
+    indent() << "  L = ['%s=%r' % (key, value)" << endl <<
+    indent() << "    for key, value in self.__dict__.iteritems()]" << endl <<
+    indent() << "  return '%s(%s)' % (self.__class__.__name__, ', '.join(L))" << endl <<
+    endl;
 
-    // Printing utilities so that on the command line thrift
-    // structs look pretty like dictionaries
-    out <<
-      indent() << "def __repr__(self):" << endl <<
-      indent() << "  s = ";
-
-    m_iter = members.begin();
-    out << "'" << (*m_iter)->get_name() << "=' + repr(self." << (*m_iter)->get_name() << ")";
-
-    ++m_iter;
-
-    for (; m_iter != members.end(); ++m_iter) {
-      out << " + ', " << (*m_iter)->get_name() << "=' + repr(self." << (*m_iter)->get_name() << ")";
-    }
-
-    out << endl <<
-      indent() << "  return '%s(%s)' % (self.__class__.__name__, s)" << endl <<
-      endl;
-
-    // Equality and inequality methods that compare by value
-    out <<
-      indent() << "def __eq__(self, other):" << endl;
-    indent_up();
-    out <<
-      indent() << "return isinstance(other, self.__class__)";
-
-      for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
-        out << " and self." << (*m_iter)->get_name() << " == other." << (*m_iter)->get_name();
-      }
-
-    out << endl;
-    indent_down();
-    out << endl;
-
-  } else {
-
-    // Printing utilities so that on the command line thrift
-    // structs look pretty like dictionaries
-    out <<
-      indent() << "def __repr__(self):" << endl <<
-      indent() << "  L = ['%s=%r' % (key, value)" << endl <<
-      indent() << "    for key, value in self.__dict__.iteritems()]" << endl <<
-      indent() << "  return '%s(%s)' % (self.__class__.__name__, ', '.join(L))" << endl <<
-      endl;
-
-    // Equality and inequality methods that compare by value
-    out <<
-      indent() << "def __eq__(self, other):" << endl;
-    indent_up();
-    out <<
-      indent() << "return isinstance(other, self.__class__) and "
-                  "self.__dict__ == other.__dict__" << endl;
-    indent_down();
-    out << endl;
-
-  }
+  // Equality and inequality methods that compare by value
+  out <<
+    indent() << "def __eq__(self, other):" << endl;
+  indent_up();
+  out <<
+    indent() << "return isinstance(other, self.__class__) and "
+                "self.__dict__ == other.__dict__" << endl;
+  indent_down();
+  out << endl;
 
   out <<
     indent() << "def __ne__(self, other):" << endl;
