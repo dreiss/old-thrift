@@ -591,9 +591,9 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
       indent() << "def __setattr__(self, *args):" << endl <<
       indent() << "  raise TypeError(\"can't modify immutable instance\")" << endl <<
       endl;
-
     out <<
-      indent() << "__delattr__ = __setattr__" << endl <<
+      indent() << "def __delattr__(self, *args):" << endl <<
+      indent() << "  raise TypeError(\"can't modify immutable instance\")" << endl <<
       endl;
 
     out <<
