@@ -635,13 +635,18 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
           render_field_default_value(*m_iter) << endl;
       }
 
-      // Check immutability
-      if (gen_newstyle_ && tstruct->annotations_.find("python.immutable")
-        != tstruct->annotations_.end()) {
-        indent(out) <<
-          "super(" << tstruct->get_name() << ", self).__setattr__('" <<
-            (*m_iter)->get_name() << "', " <<
-            (*m_iter)->get_name() << ")" << endl;
+      if (tstruct->annotations_.find("python.immutable") != tstruct->annotations_.end()) {
+        if (gen_newstyle_) {
+          indent(out) <<
+            "super(" << tstruct->get_name() << ", self).__setattr__('" <<
+              (*m_iter)->get_name() << "', " <<
+              (*m_iter)->get_name() << ")" << endl;
+        } else {
+          indent(out) <<
+            "self.__dict__['" <<
+            (*m_iter)->get_name() << "'] = " <<
+            (*m_iter)->get_name() << endl;
+        }
       } else {
         indent(out) <<
           "self." << (*m_iter)->get_name() << " = " << (*m_iter)->get_name() << endl;
