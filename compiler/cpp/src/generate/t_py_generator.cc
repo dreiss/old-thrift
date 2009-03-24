@@ -586,20 +586,7 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
     indent(out) << "thrift_spec = None" << endl;
   }
 
-  // Check immutability
-  if (gen_newstyle_ && tstruct->annotations_.find("python.immutable")
-    != tstruct->annotations_.end()) {
-
-    out <<
-      indent() << "__slots__ = (";
-
-    for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
-      // This fills in default values, as opposed to nulls
-      out << "'" << (*m_iter)->get_name() << "', ";
-    }
-
-    out << ")" << endl << endl;
-
+  if (tstruct->annotations_.find("python.immutable") != tstruct->annotations_.end()) {
     out <<
       indent() << "def __setattr__(self, *args):" << endl <<
       indent() << "  raise TypeError(\"can't modify immutable instance\")" << endl <<
