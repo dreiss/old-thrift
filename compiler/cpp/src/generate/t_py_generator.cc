@@ -596,12 +596,13 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
       indent() << "  raise TypeError(\"can't modify immutable instance\")" << endl <<
       endl;
 
+    // Hash all of the members in order, and also hash in the class
+    // to avoid collisions for stuff like single-field structures.
     out <<
       indent() << "def __hash__(self):" << endl <<
-      indent() << "  return hash((";
+      indent() << "  return hash(self.__class__) ^ hash((";
 
     for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
-      // This fills in default values, as opposed to nulls
       out << "self." << (*m_iter)->get_name() << ", ";
     }
 
