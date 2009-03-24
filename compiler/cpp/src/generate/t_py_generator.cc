@@ -162,6 +162,11 @@ class t_py_generator : public t_generator {
     return real_module;
   }
 
+  static bool is_immutable(t_type* ttype) {
+    return ttype->annotations_.find("python.immutable") != ttype->annotations_.end();
+  }
+
+
  private:
 
   /**
@@ -611,7 +616,7 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
           render_field_default_value(*m_iter) << endl;
       }
 
-      if (tstruct->annotations_.find("python.immutable") != tstruct->annotations_.end()) {
+      if (is_immutable(tstruct)) {
         if (gen_newstyle_) {
           indent(out) <<
             "super(" << tstruct->get_name() << ", self).__setattr__('" <<
@@ -634,7 +639,7 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
     out << endl;
   }
 
-  if (tstruct->annotations_.find("python.immutable") != tstruct->annotations_.end()) {
+  if (is_immutable(tstruct)) {
     out <<
       indent() << "def __setattr__(self, *args):" << endl <<
       indent() << "  raise TypeError(\"can't modify immutable instance\")" << endl <<
