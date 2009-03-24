@@ -449,9 +449,16 @@ string t_py_generator::render_const_value(t_type* type, t_const_value* value) {
       etype = ((t_set*)type)->get_elem_type();
     }
     if (type->is_set()) {
+      if (is_immutable(type)) {
+        out << "frozen";
+      }
       out << "set(";
     }
-    out << "[" << endl;
+    if (is_immutable(type) || type->is_set()) {
+      out << "(" << endl;
+    } else {
+      out << "[" << endl;
+    }
     indent_up();
     const vector<t_const_value*>& val = value->get_list();
     vector<t_const_value*>::const_iterator v_iter;
@@ -461,7 +468,11 @@ string t_py_generator::render_const_value(t_type* type, t_const_value* value) {
       out << "," << endl;
     }
     indent_down();
-    indent(out) << "]";
+    if (is_immutable(type) || type->is_set()) {
+      indent(out) << ")";
+    } else {
+      indent(out) << "]";
+    }
     if (type->is_set()) {
       out << ")";
     }
