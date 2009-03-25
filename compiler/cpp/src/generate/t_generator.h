@@ -146,6 +146,11 @@ class t_generator {
   }
 
   /**
+   * Escape string to use one in generated sources.
+   */
+  virtual std::string escape_string(const std::string &in);
+
+  /**
    * Get the true type behind a series of typedefs.
    */
   static t_type* get_true_type(t_type* type) {
