@@ -440,23 +440,23 @@ void t_java_generator::print_const_value(std::ofstream& out, string name, t_type
     for (v_iter = val.begin(); v_iter != val.end(); ++v_iter) {
       t_type* field_type = NULL;
       for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
-        if ((*f_iter)->get_name() == v_iter->first->get_string()) {
+        if ((*f_iter)->get_name() == v_iter->first->get_raw_string()) {
           field_type = (*f_iter)->get_type();
         }
       }
       if (field_type == NULL) {
-        throw "type error: " + type->get_name() + " has no field " + v_iter->first->get_string();
+        throw "type error: " + type->get_name() + " has no field " + v_iter->first->get_raw_string();
       }
       string val = render_const_value(out, name, field_type, v_iter->second);
       indent(out) << name << ".";
       if (bean_style_) {
-        std::string cap_name = get_cap_name(v_iter->first->get_string());
+        std::string cap_name = get_cap_name(v_iter->first->get_raw_string());
         out << "set" << cap_name << "(" << val << ")";
       } else {
-        out << v_iter->first->get_string() << " = " << val;
+        out << v_iter->first->get_raw_string() << " = " << val;
       }
       out << ";" << endl;
-      indent(out) << name << ".__isset." << v_iter->first->get_string() << " = true;" << endl;
+      indent(out) << name << ".__isset." << v_iter->first->get_raw_string() << " = true;" << endl;
     }
     if (!in_static) {
       indent_down();
@@ -519,7 +519,7 @@ string t_java_generator::render_const_value(ofstream& out, string name, t_type* 
     t_base_type::t_base tbase = ((t_base_type*)type)->get_base();
     switch (tbase) {
     case t_base_type::TYPE_STRING:
-      render << "\"" + value->get_string() + "\"";
+      render << "\"" + value->get_string(this) + "\"";
       break;
     case t_base_type::TYPE_BOOL:
       render << ((value->get_integer() > 0) ? "true" : "false");

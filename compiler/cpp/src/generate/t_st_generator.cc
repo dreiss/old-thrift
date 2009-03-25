@@ -348,7 +348,7 @@ string t_st_generator::render_const_value(t_type* type, t_const_value* value) {
     t_base_type::t_base tbase = ((t_base_type*)type)->get_base();
     switch (tbase) {
     case t_base_type::TYPE_STRING:
-      out << "'" << value->get_string() << "'";
+      out << '"' << value->get_string(this) << '"';
       break;
     case t_base_type::TYPE_BOOL:
       out << (value->get_integer() > 0 ? "true" : "false");
@@ -383,15 +383,15 @@ string t_st_generator::render_const_value(t_type* type, t_const_value* value) {
     for (v_iter = val.begin(); v_iter != val.end(); ++v_iter) {
       t_type* field_type = NULL;
       for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
-        if ((*f_iter)->get_name() == v_iter->first->get_string()) {
+        if ((*f_iter)->get_name() == v_iter->first->get_raw_string()) {
           field_type = (*f_iter)->get_type();
         }
       }
       if (field_type == NULL) {
-        throw "type error: " + type->get_name() + " has no field " + v_iter->first->get_string();
+        throw "type error: " + type->get_name() + " has no field " + v_iter->first->get_raw_string();
       }
 
-      out << indent() << v_iter->first->get_string() << ": " <<
+      out << indent() << v_iter->first->get_raw_string() << ": " <<
         render_const_value(field_type, v_iter->second) << ";" << endl;
     }
     out << indent() << "yourself)";

@@ -128,6 +128,8 @@ class t_perl_generator : public t_oop_generator {
                                           t_list*     tlist,
                                           std::string iter);
 
+  string escape_string(const string &in) const;
+
   /**
    * Helper rendering functions
    */
@@ -328,7 +330,7 @@ string t_perl_generator::render_const_value(t_type* type, t_const_value* value) 
     t_base_type::t_base tbase = ((t_base_type*)type)->get_base();
     switch (tbase) {
     case t_base_type::TYPE_STRING:
-      out << "'" << value->get_string() << "'";
+      out << "'" << value->get_string(this) << "'";
       break;
     case t_base_type::TYPE_BOOL:
       out << (value->get_integer() > 0 ? "1" : "0");
@@ -361,12 +363,12 @@ string t_perl_generator::render_const_value(t_type* type, t_const_value* value) 
     for (v_iter = val.begin(); v_iter != val.end(); ++v_iter) {
       t_type* field_type = NULL;
       for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
-        if ((*f_iter)->get_name() == v_iter->first->get_string()) {
+        if ((*f_iter)->get_name() == v_iter->first->get_raw_string()) {
           field_type = (*f_iter)->get_type();
         }
       }
       if (field_type == NULL) {
-        throw "type error: " + type->get_name() + " has no field " + v_iter->first->get_string();
+        throw "type error: " + type->get_name() + " has no field " + v_iter->first->get_raw_string();
       }
       out << render_const_value(g_type_string, v_iter->first);
       out << " => ";
@@ -1796,5 +1798,24 @@ string t_perl_generator ::type_to_enum(t_type* type) {
   throw "INVALID TYPE IN type_to_enum: " + type->get_name();
 }
 
+string t_perl_generator::escape_string(const string &in) const {
+  string result = "";
+  for (string::const_iterator it = in.begin(); it < in.end(); it++) {
+    switch (*it) {
+      case '\n':
+        result.append("\\n");
+        break;
+      case '\t':
+        result.append("\\t");
+        break;
+      case '\'':
+        result.append("\\\'");
+        break;
+      default:
+        result.push_back(*it);
+    }
+  }
+  return result;
+}
 
 THRIFT_REGISTER_GENERATOR(perl, "Perl", "");

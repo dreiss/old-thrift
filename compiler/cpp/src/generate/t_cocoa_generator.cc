@@ -1794,7 +1794,7 @@ string t_cocoa_generator::render_const_value(string name,
     t_base_type::t_base tbase = ((t_base_type*)type)->get_base();
     switch (tbase) {
     case t_base_type::TYPE_STRING:
-      render << "@\"" + value->get_string() + "\"";
+      render << "@\"" + value->get_string(this) + "\"";
       break;
     case t_base_type::TYPE_BOOL:
       render << ((value->get_integer() > 0) ? "YES" : "NO");
@@ -1827,18 +1827,18 @@ string t_cocoa_generator::render_const_value(string name,
     for (v_iter = val.begin(); v_iter != val.end(); ++v_iter) {
       t_type* field_type = NULL;
       for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
-        if ((*f_iter)->get_name() == v_iter->first->get_string()) {
+        if ((*f_iter)->get_name() == v_iter->first->get_raw_string()) {
           field_type = (*f_iter)->get_type();
         }
       }
       if (field_type == NULL) {
-        throw "type error: " + type->get_name() + " has no field " + v_iter->first->get_string();
+        throw "type error: " + type->get_name() + " has no field " + v_iter->first->get_raw_string();
       }
       if (first) {
-        render << capitalize(v_iter->first->get_string());
+        render << capitalize(v_iter->first->get_raw_string());
         first = false;
       } else {
-        render << " " << v_iter->first->get_string();
+        render << " " << v_iter->first->get_raw_string();
       }
       render << ": " << render_const_value(name, field_type, v_iter->second);
     }

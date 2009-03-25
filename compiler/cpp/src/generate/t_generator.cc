@@ -59,7 +59,7 @@ void t_generator::generate_program() {
   close_generator();
 }
 
-string t_generator::escape_string(const string &in) {
+string t_generator::escape_string(const string &in) const {
   string result = "";
   for (string::const_iterator it = in.begin(); it < in.end(); it++) {
     switch (*it) {

@@ -17,6 +17,7 @@ thrift_SOURCES = src/thrifty.yy \
                  src/parse/t_doc.h \
                  src/parse/t_type.h \
                  src/parse/t_base_type.h \
+                 src/parse/t_const_value.cc \
                  src/parse/t_enum.h \
                  src/parse/t_enum_value.h \
                  src/parse/t_typedef.h \

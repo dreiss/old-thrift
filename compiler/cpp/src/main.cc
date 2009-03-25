@@ -702,15 +702,15 @@ void validate_const_rec(std::string name, t_type* type, t_const_value* value) {
       }
       t_type* field_type = NULL;
       for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
-        if ((*f_iter)->get_name() == v_iter->first->get_string()) {
+        if ((*f_iter)->get_name() == v_iter->first->get_raw_string()) {
           field_type = (*f_iter)->get_type();
         }
       }
       if (field_type == NULL) {
-        throw "type error: " + type->get_name() + " has no field " + v_iter->first->get_string();
+        throw "type error: " + type->get_name() + " has no field " + v_iter->first->get_raw_string();
       }
 
-      validate_const_rec(name + "." + v_iter->first->get_string(), field_type, v_iter->second);
+      validate_const_rec(name + "." + v_iter->first->get_raw_string(), field_type, v_iter->second);
     }
   } else if (type->is_map()) {
     t_type* k_type = ((t_map*)type)->get_key_type();

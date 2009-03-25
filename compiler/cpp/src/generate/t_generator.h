@@ -39,6 +39,11 @@ class t_generator {
 
   const t_program* get_program() const { return program_; }
 
+  /**
+   * Escape string to use one in generated sources.
+   */
+  virtual std::string escape_string(const std::string &in) const;
+
  protected:
 
   /**
@@ -130,25 +135,20 @@ class t_generator {
   /**
    * Capitalization helpers
    */
-  std::string capitalize(std::string in) {
+  std::string capitalize(std::string in) const {
     in[0] = toupper(in[0]);
     return in;
   }
-  std::string decapitalize(std::string in) {
+  std::string decapitalize(std::string in) const {
     in[0] = tolower(in[0]);
     return in;
   }
-  std::string lowercase(std::string in) {
+  std::string lowercase(std::string in) const {
     for (size_t i = 0; i < in.size(); ++i) {
       in[i] = tolower(in[i]);
     }
     return in;
   }
-
-  /**
-   * Escape string to use one in generated sources.
-   */
-  virtual std::string escape_string(const std::string &in);
 
   /**
    * Get the true type behind a series of typedefs.

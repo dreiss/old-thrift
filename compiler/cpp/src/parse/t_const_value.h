@@ -13,6 +13,11 @@
 #include <vector>
 
 /**
+ * Forward declaration of generator.
+ */
+class t_generator;
+
+/**
  * A const value is something parsed that could be a map, set, list, struct
  * or whatever.
  *
@@ -43,9 +48,11 @@ class t_const_value {
     stringVal_ = val;
   }
 
-  std::string get_string() const {
+  std::string get_string(const t_generator *generator) const;
+
+  std::string get_raw_string() const {
     return stringVal_;
-  }
+  };
 
   void set_integer(int64_t val) {
     valType_ = CV_INTEGER;
