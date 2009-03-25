@@ -118,18 +118,18 @@ class TFreezableDict(dict):
   """
 
   def __init__(self, *args, **kwargs):
-    super(dict, self).__init__(*args, **kwargs)
+    dict.__init__(self, *args, **kwargs)
     self.__frozen = False
 
   def __setitem__(self, *args):
     if self.__frozen:
       raise TypeError("Can't modify frozen TFreezableDict")
-    return super(dict, self).__setattr__(*args)
+    return dict.__setitem__(self, *args)
 
   def __delitem__(self, *args):
     if self.__frozen:
       raise TypeError("Can't modify frozen TFreezableDict")
-    return super(dict, self).__delattr__(*args)
+    return dict.__delitem__(self, *args)
 
   def __hash__(self):
     if self.__frozen:
@@ -138,7 +138,11 @@ class TFreezableDict(dict):
 
   def freeze(self):
     self.__frozen = True
-    self.__hashval = hash(tuple(self.items()))
+    # Sort the items so they will be in a consistent order.
+    # Thrift structures aren't sortable, so sort by hash.
+    # XOR in the hash of the class so we don't collide with
+    # the hash of a list of tuples.
+    self.__hashval = hash(TFreezableDict) ^ hash(tuple(sorted(self.items(), key=hash)))
 
 
 def TFrozenDict(*args, **kwargs):
