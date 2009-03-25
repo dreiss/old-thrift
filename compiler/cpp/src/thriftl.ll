@@ -14,6 +14,7 @@
 
 %{
 
+#include <string>
 #include <errno.h>
 
 #include "main.h"
@@ -58,10 +59,9 @@ doctext       ("/**"([^*/]|[^*]"/"|"*"[^/])*"*"*"*/")
 comment       ("//"[^\n]*)
 unixcomment   ("#"[^\n]*)
 symbol        ([:;\,\{\}\(\)\=<>\[\]])
-dliteral      ("\""[^"]*"\"")
-sliteral      ("'"[^']*"'")
-st_identifier ([a-zA-Z-][\.a-zA-Z_0-9-]*)
+literal_begin (['\"]) /* " vim highligth sux */
 
+st_identifier ([a-zA-Z-][\.a-zA-Z_0-9-]*)
 
 %%
 
@@ -222,17 +222,52 @@ st_identifier ([a-zA-Z-][\.a-zA-Z_0-9-]*)
   return tok_st_identifier;
 }
 
-{dliteral} {
-  yylval.id = strdup(yytext+1);
-  yylval.id[strlen(yylval.id)-1] = '\0';
-  return tok_literal;
+{literal_begin} {
+  char mark = yytext[0];
+  std::string result;
+  for(;;)
+  {
+    int ch = yyinput();
+    switch (ch)
+    {
+      case EOF:
+        yyerror("Emd of file while read string at \n");
+        return -1;
+      case '\n':
+        yyerror("End of line while read string at \n");
+        return -1;
+    }
+    if (ch == '\\')
+    {
+      ch = yyinput();
+      switch (ch)
+      {
+        case 'n':
+          result.push_back('\n');
+          continue;
+        case '"': /* " vim highligth sux */
+          result.push_back('"'); /* " vim highligth sux */
+          continue;
+        case '\'':
+          result.push_back('\'');
+          continue;
+        case 't':
+          result.push_back('\t');
+          continue;
+        default:
+          yyerror("Bad escape\n");
+          return -1;
+      }
+    }
+    if (ch == mark)
+    {
+      yylval.id = strdup(result.c_str());
+      return tok_literal;
+    }
+    result.push_back(ch);
+  }
 }
 
-{sliteral} {
-  yylval.id = strdup(yytext+1);
-  yylval.id[strlen(yylval.id)-1] = '\0';
-  return tok_literal;
-}
 
 {doctext} {
  /* This does not show up in the parse tree. */
