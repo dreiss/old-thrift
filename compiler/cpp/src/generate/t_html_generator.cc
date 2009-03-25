@@ -398,7 +398,7 @@ void t_html_generator::print_const_value(t_const_value* tvalue) {
     f_out_ << tvalue->get_double();
     break;
   case t_const_value::CV_STRING:
-    f_out_ << '"' << tvalue->get_string(this) << '"';
+    f_out_ << '"' << tvalue->get_escaped_string(this) << '"';
     break;
   case t_const_value::CV_MAP:
     {

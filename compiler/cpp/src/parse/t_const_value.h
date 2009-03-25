@@ -48,9 +48,9 @@ class t_const_value {
     stringVal_ = val;
   }
 
-  std::string get_string(const t_generator *generator) const;
+  std::string get_escaped_string(const t_generator *generator) const;
 
-  std::string get_raw_string() const {
+  std::string get_string() const {
     return stringVal_;
   };
 
