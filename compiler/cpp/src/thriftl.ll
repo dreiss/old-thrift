@@ -59,9 +59,8 @@ doctext       ("/**"([^*/]|[^*]"/"|"*"[^/])*"*"*"*/")
 comment       ("//"[^\n]*)
 unixcomment   ("#"[^\n]*)
 symbol        ([:;\,\{\}\(\)\=<>\[\]])
-literal_begin (['\"]) /* " vim highligth sux */
-
 st_identifier ([a-zA-Z-][\.a-zA-Z_0-9-]*)
+literal_begin (['\"]) /* " vim highligth sux */
 
 %%
 
@@ -231,10 +230,10 @@ st_identifier ([a-zA-Z-][\.a-zA-Z_0-9-]*)
     switch (ch)
     {
       case EOF:
-        yyerror("Emd of file while read string at \n");
+        yyerror("End of file while read string at %d\n", yylineno);
         return -1;
       case '\n':
-        yyerror("End of line while read string at \n");
+        yyerror("End of line while read string at %d\n", yylineno - 1);
         return -1;
     }
     if (ch == '\\')
@@ -255,7 +254,7 @@ st_identifier ([a-zA-Z-][\.a-zA-Z_0-9-]*)
           result.push_back('\t');
           continue;
         default:
-          yyerror("Bad escape\n");
+          yyerror("Bad escape character\n");
           return -1;
       }
     }
