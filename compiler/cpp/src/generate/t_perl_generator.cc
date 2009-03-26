@@ -31,6 +31,8 @@ class t_perl_generator : public t_oop_generator {
     : t_oop_generator(program)
   {
     out_dir_base_ = "gen-perl";
+    escape_.erase('"');
+    escape_['\''] = "\\'";
   }
 
   /**
@@ -127,8 +129,6 @@ class t_perl_generator : public t_oop_generator {
   void generate_serialize_list_element   (std::ofstream &out,
                                           t_list*     tlist,
                                           std::string iter);
-
-  string escape_string(const string &in) const;
 
   /**
    * Helper rendering functions
@@ -1796,26 +1796,6 @@ string t_perl_generator ::type_to_enum(t_type* type) {
   }
 
   throw "INVALID TYPE IN type_to_enum: " + type->get_name();
-}
-
-string t_perl_generator::escape_string(const string &in) const {
-  string result = "";
-  for (string::const_iterator it = in.begin(); it < in.end(); it++) {
-    switch (*it) {
-      case '\n':
-        result.append("\\n");
-        break;
-      case '\t':
-        result.append("\\t");
-        break;
-      case '\'':
-        result.append("\\\'");
-        break;
-      default:
-        result.push_back(*it);
-    }
-  }
-  return result;
 }
 
 THRIFT_REGISTER_GENERATOR(perl, "Perl", "");

@@ -32,6 +32,9 @@ class t_html_generator : public t_generator {
     : t_generator(program)
   {
     out_dir_base_ = "gen-html";
+    escape_['<'] = "&lt;";
+    escape_['>'] = "&gt;";
+    escape_['&'] = "&amp;";
   }
 
   void generate_program();
@@ -56,8 +59,6 @@ class t_html_generator : public t_generator {
   void print_doc        (t_doc* tdoc);
   int  print_type       (t_type* ttype);
   void print_const_value(t_const_value* tvalue);
-
-  string escape_string(const string &in) const;
 
   std::ofstream f_out_;
 };
@@ -615,24 +616,6 @@ void t_html_generator::generate_service(t_service* tservice) {
     print_doc(*fn_iter);
     f_out_ << "</div>";
   }
-}
-
-string t_html_generator::escape_string(const string &in) const {
-  string tmp = t_generator::escape_string(in);
-  string result = "";
-  for (string::const_iterator it = in.begin(); it < in.end(); it++) {
-    switch (*it) {
-      case '<':
-        result.append("&lt;");
-        break;
-      case '>':
-        result.append("&gt;");
-        break;
-      default:
-        result.push_back(*it);
-    }
-  }
-  return result;
 }
 
 THRIFT_REGISTER_GENERATOR(html, "HTML", "");

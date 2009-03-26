@@ -26,6 +26,9 @@ class t_generator {
     indent_ = 0;
     program_ = program;
     program_name_ = get_program_name(program);
+    escape_['\\'] = "\\\\";
+    escape_['\n'] = "\\n";
+    escape_['"'] = "\\\"";
   }
 
   virtual ~t_generator() {}
@@ -182,6 +185,11 @@ class t_generator {
    * Output type-specifc directory name ("gen-*")
    */
   std::string out_dir_base_;
+
+  /**
+   * Map of char to escape.
+   */
+  std::map<char, std::string> escape_;
 
  private:
   /**

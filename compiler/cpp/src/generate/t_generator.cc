@@ -62,18 +62,12 @@ void t_generator::generate_program() {
 string t_generator::escape_string(const string &in) const {
   string result = "";
   for (string::const_iterator it = in.begin(); it < in.end(); it++) {
-    switch (*it) {
-      case '\n':
-        result.append("\\n");
-        break;
-      case '\t':
-        result.append("\\t");
-        break;
-      case '"':
-        result.append("\\\"");
-        break;
-      default:
-        result.push_back(*it);
+    std::map<char, std::string>::const_iterator res = escape_.find(*it);
+    if (res != escape_.end())
+    {
+      result.append(res->second);
+    } else {
+      result.push_back(*it);
     }
   }
   return result;
