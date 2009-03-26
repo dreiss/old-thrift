@@ -19,6 +19,7 @@
 
 #include <ruby.h>
 #include <constants.h>
+#include "macros.h"
 
 ID buf_ivar_id;
 ID index_ivar_id;
@@ -31,7 +32,7 @@ int GARBAGE_BUFFER_SIZE;
 
 VALUE rb_thrift_memory_buffer_write(VALUE self, VALUE str) {
   VALUE buf = GET_BUF(self);
-  rb_str_buf_cat(buf, RSTRING(str)->ptr, RSTRING(str)->len);
+  rb_str_buf_cat(buf, RSTRING_PTR(str), RSTRING_LEN(str));
   return Qnil;
 }
 
@@ -45,11 +46,11 @@ VALUE rb_thrift_memory_buffer_read(VALUE self, VALUE length_value) {
   VALUE data = rb_funcall(buf, slice_method_id, 2, index_value, length_value);
   
   index += length;
-  if (index > RSTRING(buf)->len) {
-    index = RSTRING(buf)->len;
+  if (index > RSTRING_LEN(buf)) {
+    index = RSTRING_LEN(buf);
   }
   if (index >= GARBAGE_BUFFER_SIZE) {
-    rb_ivar_set(self, buf_ivar_id, rb_funcall(buf, slice_method_id, 2, INT2FIX(index), INT2FIX(RSTRING(buf)->len - 1)));
+    rb_ivar_set(self, buf_ivar_id, rb_funcall(buf, slice_method_id, 2, INT2FIX(index), INT2FIX(RSTRING_LEN(buf) - 1)));
     index = 0;
   }
 
