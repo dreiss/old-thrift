@@ -97,15 +97,6 @@ class t_struct : public t_type {
  private:
 
   members_type members_;
-
-  /**
-   * Fields should be sorted by tag order. We store if fields sorted 
-   * to avoid sort on every call of get_members or append routines.
-   */
-  void sort_members() {
-    std::sort(members_.begin(), members_.end(), t_field::key_compare());
-  }
-
   bool is_xception_;
 
   bool xsd_all_;
