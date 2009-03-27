@@ -26,11 +26,13 @@ class t_struct : public t_type {
  public:
   t_struct(t_program* program) :
     t_type(program),
+    sorted_(false),
     is_xception_(false),
     xsd_all_(false) {}
 
   t_struct(t_program* program, const std::string& name) :
     t_type(program, name),
+    sorted_(false),
     is_xception_(false),
     xsd_all_(false) {}
 
@@ -51,19 +53,12 @@ class t_struct : public t_type {
   }
 
   void append(t_field* elem) {
-    /* (shigin) It's a much better to use std::set or std::map, 
-     * but i don't want to change each call of get_members.
-     * If we use std::map it makes validate_field much simpler.
-     *
-     * It's really ugly to sort vector after each insert, but a speed of 
-     * the compiler isn't an issue at a present time. The other choise is
-     * binary search.
-     */
     members_.push_back(elem);
-    std::sort(members_.begin(), members_.end(), t_field::key_compare());
+    sorted_ = false;
   }
 
   const std::vector<t_field*>& get_members() {
+    sort_members();
     return members_;
   }
 
@@ -76,6 +71,7 @@ class t_struct : public t_type {
   }
 
   virtual std::string get_fingerprint_material() const {
+    sort_members();
     std::string rv = "{";
     std::vector<t_field*>::const_iterator m_iter;
     for (m_iter = members_.begin(); m_iter != members_.end(); ++m_iter) {
@@ -87,6 +83,7 @@ class t_struct : public t_type {
   }
 
   virtual void generate_fingerprint() {
+    sort_members();
     t_type::generate_fingerprint();
     std::vector<t_field*>::const_iterator m_iter;
     for (m_iter = members_.begin(); m_iter != members_.end(); ++m_iter) {
@@ -95,6 +92,7 @@ class t_struct : public t_type {
   }
 
   bool validate_field(t_field* field) {
+    sort_members();
     int key = field->get_key();
     std::vector<t_field*>::const_iterator m_iter;
     for (m_iter = members_.begin(); m_iter != members_.end(); ++m_iter) {
@@ -108,6 +106,19 @@ class t_struct : public t_type {
  private:
 
   std::vector<t_field*> members_;
+  bool sorted_;
+
+  /**
+   * Fields should be sorted by tag order. We store if fields sorted 
+   * to avoid sort on every call of get_members or append routines.
+   */
+  void sort_members() {
+    if (!sorted_) {
+      std::sort(members_.begin(), members_.end(), t_field::key_compare());
+      sorted_ = true;
+    }
+  }
+
   bool is_xception_;
 
   bool xsd_all_;
