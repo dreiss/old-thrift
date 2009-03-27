@@ -7,6 +7,7 @@
 #ifndef T_STRUCT_H
 #define T_STRUCT_H
 
+#include <algorithm>
 #include <vector>
 #include <string>
 
@@ -59,7 +60,7 @@ class t_struct : public t_type {
      * binary search.
      */
     members_.push_back(elem);
-    std::sort(members_.begin(), members_.end(), FieldKeyCompare());
+    std::sort(members_.begin(), members_.end(), t_field::key_compare());
   }
 
   const std::vector<t_field*>& get_members() {
