@@ -18,7 +18,6 @@
 // Forward declare that puppy
 class t_program;
 
-typedef std::vector<t_field*> members_type;
 /**
  * A struct is a container for a set of member fields that has a name. Structs
  * are also used to implement exception types.
@@ -26,6 +25,8 @@ typedef std::vector<t_field*> members_type;
  */
 class t_struct : public t_type {
  public:
+  typedef std::vector<t_field*> members_type;
+
   t_struct(t_program* program) :
     t_type(program),
     is_xception_(false),
