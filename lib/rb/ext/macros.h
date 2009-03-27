@@ -22,4 +22,20 @@
 #define GET_STRICT_WRITE(obj) rb_ivar_get(obj, strict_write_ivar_id)
 #define WRITE(obj, data, length) rb_funcall(obj, write_method_id, 1, rb_str_new(data, length))
 #define CHECK_NIL(obj) if (NIL_P(obj)) { rb_raise(rb_eStandardError, "nil argument not allowed!");}
-#define READ(obj, length) rb_funcall(GET_TRANSPORT(obj), read_method_id, 1, INT2FIX(length)) 
+#define READ(obj, length) rb_funcall(GET_TRANSPORT(obj), read_method_id, 1, INT2FIX(length))
+
+#ifndef RFLOAT_VALUE
+#  define RFLOAT_VALUE(v) RFLOAT(rb_Float(v))->value
+#endif
+
+#ifndef RSTRING_LEN
+#  define RSTRING_LEN(v) RSTRING(rb_String(v))->len
+#endif
+
+#ifndef RSTRING_PTR
+#  define RSTRING_PTR(v) RSTRING(rb_String(v))->ptr
+#endif
+
+#ifndef RARRAY_LEN
+#  define RARRAY_LEN(v) RARRAY(rb_Array(v))->len
+#endif

@@ -15,7 +15,15 @@
 # KIND, either express or implied. See the License for the
 # specific language governing permissions and limitations
 # under the License.
-# 
+#
 
-require 'thrift/deprecation'
-require 'thrift/protocol'
+# Versions of ruby pre 1.8.7 do not have an .ord method available in the Fixnum
+# class.
+#
+if RUBY_VERSION < "1.8.7"
+  class Fixnum
+    def ord
+      self
+    end
+  end
+end

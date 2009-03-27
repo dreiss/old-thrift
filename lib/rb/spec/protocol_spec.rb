@@ -1,5 +1,4 @@
 require File.dirname(__FILE__) + '/spec_helper'
-require "thrift_native"
 
 class ThriftProtocolSpec < Spec::ExampleGroup
   include Thrift
@@ -134,9 +133,9 @@ class ThriftProtocolSpec < Spec::ExampleGroup
   end
 
   describe ProtocolFactory do
-    it "should return nil" do
+    it "should raise NotImplementedError" do
       # returning nil since Protocol is just an abstract class
-      ProtocolFactory.new.get_protocol(mock("MockTransport")).should be_nil
+      lambda {ProtocolFactory.new.get_protocol(mock("MockTransport"))}.should raise_error(NotImplementedError)
     end
   end
 end

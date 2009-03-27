@@ -48,6 +48,8 @@ module Thrift
       end
     end
 
+    def write_struct_begin(name); nil; end
+
     def write_field_begin(name, type, id)
       write_byte(type)
       write_i16(id)
@@ -78,6 +80,7 @@ module Thrift
     end
 
     def write_byte(byte)
+      raise RangeError if byte < -2**31 || byte >= 2**32
       trans.write([byte].pack('c'))
     end
 
@@ -91,6 +94,7 @@ module Thrift
     end
 
     def write_i64(i64)
+      raise RangeError if i64 < -2**63 || i64 >= 2**64
       hi = i64 >> 32
       lo = i64 & 0xffffffff
       trans.write([hi, lo].pack('N2'))
@@ -125,6 +129,8 @@ module Thrift
         [name, type, seqid]
       end
     end
+
+    def read_struct_begin; nil; end
 
     def read_field_begin
       type = read_byte
@@ -162,7 +168,7 @@ module Thrift
 
     def read_byte
       dat = trans.read_all(1)
-      val = dat[0]
+      val = dat[0].ord
       if (val > 0x7f)
         val = 0 - ((val - 1) ^ 0xff)
       end
@@ -212,12 +218,10 @@ module Thrift
     end
 
   end
-  deprecate_class! :TBinaryProtocol => BinaryProtocol
 
   class BinaryProtocolFactory < ProtocolFactory
     def get_protocol(trans)
       return Thrift::BinaryProtocol.new(trans)
     end
   end
-  deprecate_class! :TBinaryProtocolFactory => BinaryProtocolFactory
 end

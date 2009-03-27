@@ -348,7 +348,7 @@ string t_st_generator::render_const_value(t_type* type, t_const_value* value) {
     t_base_type::t_base tbase = ((t_base_type*)type)->get_base();
     switch (tbase) {
     case t_base_type::TYPE_STRING:
-      out << "'" << value->get_string() << "'";
+      out << '"' << get_escaped_string(value) << '"';
       break;
     case t_base_type::TYPE_BOOL:
       out << (value->get_integer() > 0 ? "true" : "false");
@@ -937,14 +937,14 @@ void t_st_generator::generate_service_client(t_service* tservice) {
     f_ << function_types_comment(*f_iter) << endl <<
       indent() << "self send" << capitalize(signature) << "." << endl;
 
-    if (!(*f_iter)->is_async()) {
+    if (!(*f_iter)->is_oneway()) {
       f_ << indent() << "^ self recv" << capitalize(funname) << " success " << endl;
     }
 
     st_close_method(f_);
 
     generate_send_method(*f_iter);
-    if (!(*f_iter)->is_async()) {
+    if (!(*f_iter)->is_oneway()) {
       generate_recv_method(*f_iter);
     }
   }
