@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <vector>
+#include <utility>
 #include <string>
 
 #include "t_type.h"
@@ -17,6 +18,7 @@
 // Forward declare that puppy
 class t_program;
 
+typedef std::vector<t_field*> members_type;
 /**
  * A struct is a container for a set of member fields that has a name. Structs
  * are also used to implement exception types.
@@ -26,13 +28,11 @@ class t_struct : public t_type {
  public:
   t_struct(t_program* program) :
     t_type(program),
-    sorted_(false),
     is_xception_(false),
     xsd_all_(false) {}
 
   t_struct(t_program* program, const std::string& name) :
     t_type(program, name),
-    sorted_(false),
     is_xception_(false),
     xsd_all_(false) {}
 
@@ -52,13 +52,18 @@ class t_struct : public t_type {
     return xsd_all_;
   }
 
-  void append(t_field* elem) {
-    members_.push_back(elem);
-    sorted_ = false;
+  bool append(t_field* elem) {
+    typedef members_type::iterator iter_type;
+    std::pair<iter_type, iter_type> bounds = std::equal_range(
+            members_.begin(), members_.end(), elem, t_field::key_compare()
+        );
+    if (bounds.first != bounds.second)
+        return false;
+    members_.insert(bounds.second, elem);
+    return true;
   }
 
-  const std::vector<t_field*>& get_members() {
-    sort_members();
+  const members_type& get_members() {
     return members_;
   }
 
@@ -71,9 +76,8 @@ class t_struct : public t_type {
   }
 
   virtual std::string get_fingerprint_material() const {
-    sort_members();
     std::string rv = "{";
-    std::vector<t_field*>::const_iterator m_iter;
+    members_type::const_iterator m_iter;
     for (m_iter = members_.begin(); m_iter != members_.end(); ++m_iter) {
       rv += (*m_iter)->get_fingerprint_material();
       rv += ";";
@@ -83,40 +87,23 @@ class t_struct : public t_type {
   }
 
   virtual void generate_fingerprint() {
-    sort_members();
     t_type::generate_fingerprint();
-    std::vector<t_field*>::const_iterator m_iter;
+    members_type::const_iterator m_iter;
     for (m_iter = members_.begin(); m_iter != members_.end(); ++m_iter) {
       (*m_iter)->get_type()->generate_fingerprint();
     }
   }
 
-  bool validate_field(t_field* field) {
-    sort_members();
-    int key = field->get_key();
-    std::vector<t_field*>::const_iterator m_iter;
-    for (m_iter = members_.begin(); m_iter != members_.end(); ++m_iter) {
-      if ((*m_iter)->get_key() == key) {
-        return false;
-      }
-    }
-    return true;
-  }
-
  private:
 
-  std::vector<t_field*> members_;
-  bool sorted_;
+  members_type members_;
 
   /**
    * Fields should be sorted by tag order. We store if fields sorted 
    * to avoid sort on every call of get_members or append routines.
    */
   void sort_members() {
-    if (!sorted_) {
-      std::sort(members_.begin(), members_.end(), t_field::key_compare());
-      sorted_ = true;
-    }
+    std::sort(members_.begin(), members_.end(), t_field::key_compare());
   }
 
   bool is_xception_;
