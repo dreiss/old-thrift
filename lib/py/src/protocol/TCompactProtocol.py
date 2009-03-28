@@ -4,10 +4,12 @@ from struct import pack, unpack
 __all__ = ['TCompactProtocol']
 
 CLEAR = 0
-BOOL_WRITE = 1
-VALUE_WRITE = 2
-BOOL_READ = 3
-VALUE_READ = 4
+WRITE = 1
+BOOL_WRITE = 2
+VALUE_WRITE = 3
+READ = 4
+BOOL_READ = 5
+VALUE_READ = 6
 
 def writer(func):
   def nested(self, *args, **kwargs):
@@ -15,7 +17,7 @@ def writer(func):
     try:
       return func(self, *args, **kwargs)
     finally:
-      self.__state = CLEAR
+      self.__state = WRITE
   return nested
 
 def reader(func):
@@ -24,7 +26,7 @@ def reader(func):
     try:
       return func(self, *args, **kwargs)
     finally:
-      self.__state = CLEAR
+      self.__state = READ
   return nested
 
 def makeZigZag(n, bits):
@@ -40,6 +42,7 @@ class TCompactProtocol(TProtocolBase):
   __state = CLEAR
   __last = None
   __id = None
+  __bool = None
   def __init__(self, trans):
     TProtocolBase.__init__(self, trans)
 
@@ -56,7 +59,7 @@ class TCompactProtocol(TProtocolBase):
       self.__last = id
 
   def writeFieldBegin(self, name, type, id):
-    assert state == CLEAR
+    assert self.__state == WRITE
     if type == TType.BOOL:
       self.__state = BOOL_WRITE
       self.__id = id
@@ -86,6 +89,24 @@ class TCompactProtocol(TProtocolBase):
       raise TException("thrift can't handle strings longer 0x7FFF")
     self.writeVarint(i32)
 
+  def readFieldBegin(self):
+    assert self.__state == READ
+    type = self.__readByte()
+    if type & 0x0f == TType.STOP:
+      return
+    delta = type >> 4
+    if delta == 0:
+      id = self.__readI16:
+    else:
+      id = self.__last + delta
+      self.__last = id
+    if type == ...:
+      self.__state = BOOL_READ
+      self.__bool = ...
+    else:
+      self.__state = VALUE_READ
+    return None, self.__getTType(type), id
+
   def writeCollectionBegin(self, etype, size):
     assert self.__state == VALUE_WRITE
     if size <= 14:
@@ -107,7 +128,7 @@ class TCompactProtocol(TProtocolBase):
   def writeBool(self, bool):
     assert self.__state == BOOL_WRITE
     self.__writeFieldHeader(types[bool], self.__id)
-    self.__state = CLEAR
+    self.__state = WRITE
 
   writeByte = writer(__writeByte)
   writeI16 = writer(__writeI16)
