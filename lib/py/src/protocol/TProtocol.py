@@ -233,7 +233,6 @@ class TProtocolImpl(TProtocolBase):
   def readSetEnd(self):
     pass
 
-  
 class TProtocolFactory:
   def getProtocol(self, trans):
     pass
