@@ -33,7 +33,7 @@ def makeZigZag(n, bits):
 def fromZigZag(n, bits):
   return (n >> 1) ^ -(n & 1)
 
-TYPES = {True: 0x01, False: 0x02}
+CTYPES = {True: 0x01, False: 0x02}
 class TCompactProtocol(TProtocolBase):
   "Compact implementation of the Thrift protocol driver."
 
@@ -62,7 +62,7 @@ class TCompactProtocol(TProtocolBase):
       self.__id = id
     else:
       self.__state = VALUE_WRITE
-      self.__writeFieldHeader(type, id)
+      self.__writeFieldHeader(CTYPE[type], id)
 
   def __writeByte(self, byte):
     self.trans.write(pack('!b', byte))
@@ -89,9 +89,9 @@ class TCompactProtocol(TProtocolBase):
   def writeCollectionBegin(self, etype, size):
     assert self.__state == VALUE_WRITE
     if size <= 14:
-      self.__writeByte(size << 4 | TYPES[etype])
+      self.__writeByte(size << 4 | CTYPES[etype])
     else:
-      self.__writeByte(0xf0 | TYPES[etype])
+      self.__writeByte(0xf0 | CTYPES[etype])
       self.__writeSize(size)
   writeSetBegin = writeCollectionBegin
   writeListBegin = writeCollectionBegin
@@ -102,7 +102,7 @@ class TCompactProtocol(TProtocolBase):
       self.__writeByte(0)
     else:
       self.__writeSize(size)
-      self.__writeByte(TYPES[ktype] << 4 | TYPES[vtype])
+      self.__writeByte(CTYPES[ktype] << 4 | CTYPES[vtype])
 
   def writeBool(self, bool):
     assert self.__state == BOOL_WRITE
