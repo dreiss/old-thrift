@@ -7,27 +7,25 @@ CLEAR = 0
 WRITE = 1
 BOOL_WRITE = 2
 VALUE_WRITE = 3
+CONTAINER_WRITE = 7
 READ = 4
 BOOL_READ = 5
 VALUE_READ = 6
+CONTAINER_READ = 8
 
-def writer(func):
-  def nested(self, *args, **kwargs):
-    assert self.__state == VALUE_WRITE
-    try:
-      return func(self, *args, **kwargs)
-    finally:
-      self.__state = WRITE
-  return nested
-
-def reader(func):
-  def nested(self, *args, **kwargs):
-    assert self.__state == VALUE_READ
-    try:
-      return func(self, *args, **kwargs)
-    finally:
-      self.__state = READ
-  return nested
+def make_helper(v_from, v_to, container):
+  def helper(func):
+    def nested(self, *args, **kwargs):
+      assert self.__state == v_from or self.__state == container
+      try:
+        return func(self, *args, **kwargs)
+      finally:
+        if self.__state == v_from:
+          self.__state = v_to
+    return nested
+  return helper
+writer = make_helper(VALUE_WRITE, WRITE, CONTAINER_WRITE)
+reader = make_helper(VALUE_READ, READ, CONTAINER_READ)
 
 def makeZigZag(n, bits):
   return (n << 1) ^ (n >> (bits - 1))
@@ -114,6 +112,7 @@ class TCompactProtocol(TProtocolBase):
     else:
       self.__writeByte(0xf0 | CTYPES[etype])
       self.__writeSize(size)
+    self.__state = CONTAINER_WRITE
   writeSetBegin = writeCollectionBegin
   writeListBegin = writeCollectionBegin
 
@@ -124,6 +123,7 @@ class TCompactProtocol(TProtocolBase):
     else:
       self.__writeSize(size)
       self.__writeByte(CTYPES[ktype] << 4 | CTYPES[vtype])
+    self.__state = CONTAINER_WRITE
 
   def writeBool(self, bool):
     if self.__state == BOOL_WRITE:
@@ -182,6 +182,7 @@ class TCompactProtocol(TProtocolBase):
 
   def readCollectionBegin(self):
     assert self.__state == VALUE_READ
+    self.__state = CONTAINER_READ
     size_type = self.__readByte()
     type = self.__getTType(size)
     if size_type >> 4 == 15:
@@ -193,6 +194,7 @@ class TCompactProtocol(TProtocolBase):
 
   def readMapBegin(self):
     assert self.__state == VALUE_READ
+    self.__state = CONTAINER_READ
     size = self.__readSize()
     types = 0
     if size > 0:
