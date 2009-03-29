@@ -126,8 +126,12 @@ class TCompactProtocol(TProtocolBase):
       self.__writeByte(CTYPES[ktype] << 4 | CTYPES[vtype])
 
   def writeBool(self, bool):
-    assert self.__state == BOOL_WRITE
-    self.__writeFieldHeader(types[bool], self.__id)
+    if self.__state == BOOL_WRITE:
+      self.__writeFieldHeader(types[bool], self.__id)
+    elif self.__state == VALUE_WRITE:
+      self.__writeByte(int(bool))
+    else:
+      raise AssertetionError, "Invalid state in compact protocol"
     self.__state = WRITE
 
   writeByte = writer(__writeByte)
