@@ -1,7 +1,7 @@
 from TProtocol import *
 from struct import pack, unpack
 
-__all__ = ['TCompactProtocol']
+__all__ = ['TCompactProtocol', 'TCompactProtocolFactory']
 
 CLEAR = 0
 WRITE = 1
@@ -29,6 +29,8 @@ writer = make_helper(VALUE_WRITE, WRITE, CONTAINER_WRITE)
 reader = make_helper(VALUE_READ, READ, CONTAINER_READ)
 
 def makeZigZag(n, bits):
+  import sys
+  sys.stderr.write('%s, %s\n' % (n, bits))
   return (n << 1) ^ (n >> (bits - 1))
 
 def fromZigZag(n, bits):
@@ -109,15 +111,15 @@ class TCompactProtocol(TProtocolBase):
 
   def __writeFieldHeader(self, type, seqid):
     try:
-      if self.__last and id > self.__last:
-        delta = id - self.__last
+      if self.__last and seqid > self.__last:
+        delta = seqid - self.__last
         if delta < 16:
           self.writeByte(delta << 4 | type)
           return
       self.__writeByte(type)
     finally:
       self.__writeI16(seqid)
-      self.__last = id
+      self.__last = seqid
 
   def writeFieldBegin(self, name, type, seqid):
     assert self.__state == WRITE
@@ -126,13 +128,13 @@ class TCompactProtocol(TProtocolBase):
       self.__seqid = seqid
     else:
       self.__state = VALUE_WRITE
-      self.__writeFieldHeader(CTYPE[type], id)
+      self.__writeFieldHeader(CTYPES[type], seqid)
 
   def __writeByte(self, byte):
     self.trans.write(pack('!b', byte))
 
   def __writeI16(self, i16):
-    self.writeVarint(makeZigZag(i16, 16))
+    self.__writeVarint(makeZigZag(i16, 16))
 
   def __writeVarint(self, n):
     out = []
@@ -148,7 +150,7 @@ class TCompactProtocol(TProtocolBase):
   def __writeSize(self, i32):
     if i32 > 0x7fff:
       raise TException("thrift can't handle strings longer 0x7FFF")
-    self.writeVarint(i32)
+    self.__writeVarint(i32)
 
   def readFieldBegin(self):
     assert self.__state == READ
@@ -331,3 +333,10 @@ class TCompactProtocol(TProtocolBase):
     len = self.__readSize()
     return self.trans.readAll(len)
   readString = reader(__readString)
+
+class TCompactProtocolFactory:
+  def __init__(self):
+    pass
+
+  def getProtocol(self, trans):
+    return TCompactProtocol(trans)
