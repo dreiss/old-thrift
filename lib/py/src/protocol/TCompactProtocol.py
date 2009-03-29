@@ -9,9 +9,10 @@ BOOL_WRITE = 2
 VALUE_WRITE = 3
 CONTAINER_WRITE = 7
 READ = 4
-BOOL_READ = 5
 VALUE_READ = 6
 CONTAINER_READ = 8
+TRUE_READ = 9
+FALSE_READ = 10
 
 def make_helper(v_from, v_to, container):
   def helper(func):
@@ -33,16 +34,38 @@ def makeZigZag(n, bits):
 def fromZigZag(n, bits):
   return (n >> 1) ^ -(n & 1)
 
-CTYPES = {True: 0x01, False: 0x02}
+class CompactType:
+  TRUE = 1
+  FALSE = 2
+
+CTYPES = {True: CompactType.TRUE, False: CompactType.FALSE}
+
 class TCompactProtocol(TProtocolBase):
   "Compact implementation of the Thrift protocol driver."
+
+  PROTOCOL_ID = 0x82
+  VERSION = 1
+  VERSION_MASK = 0x1f
+  TYPE_MASK = 0xe0
+  SHIFT_AMOUNT = 5
 
   __state = CLEAR
   __last = None
   __id = None
-  __bool = None
   def __init__(self, trans):
     TProtocolBase.__init__(self, trans)
+
+  def writeMessageBegin(self, name, type, seqid):
+    assert self.__state == CLEAR
+    self.__writeByte(self.PROTOCOL_ID)
+    self.__writeByte(self.VERSION | (type << self.SHIFT_AMOUNT))
+    self.__writeVarint(seqid)
+    self.__writeString(name)
+    self.__state = WRITE
+
+  def writeMessageEnd(self):
+    assert self.__state == WRITE
+    self.__state = CLEAR
 
   def __writeFieldHeader(self, type, id):
     try:
@@ -98,9 +121,10 @@ class TCompactProtocol(TProtocolBase):
     else:
       id = self.__last + delta
       self.__last = id
-    if type == ...:
+    if type == CompactType.TRUE:
       self.__state = BOOL_READ
-      self.__bool = ...
+    elif type == CompactType.FALSE:
+      self.__state = BOOL_READ
     else:
       self.__state = VALUE_READ
     return None, self.__getTType(type), id
@@ -149,10 +173,10 @@ class TCompactProtocol(TProtocolBase):
   def writeDouble(self, dub):
     self.trans.write(pack('!d', dub))
 
-  @writer
-  def writeString(self, s):
+  def __writeString(self, s):
     self.__writeSize(len(s))
     self.trans.write(str)
+  writeString = writer(__writeString)
 
   def __readByte(self):
     result, = unpack(self.trans.readAll(1)
@@ -180,6 +204,38 @@ class TCompactProtocol(TProtocolBase):
       raise TException("Length is too long")
     return result
 
+  def readMessageBegin(self):
+    assert self.__state == CLEAR
+    proto_id = self.__readByte()
+    if proto_id != self.PROTOCOL_ID:
+      raise TProtocolException(TProtocolException.BAD_VERSION, 
+          'Bad protocol id in the message: %d' % proto_id)
+    ver_type = self.__readByte()
+    type = (ver_type & self.TYPE_MASK) >> self.SHIFT_AMOUNT
+    version = ver_type & self.VERSION_MASK
+    if version != self.VERSION:
+      raise TProtocolException(TProtocolException.BAD_VERSION, 
+          'Bad version: %d (expect %d)' % (version, self.VERSION))
+    seqid = self.__readVarint()
+    name = self.__readString()
+    return name, type, seqid
+
+  def readMessageEnd(self):
+    assert self.__state == READ
+    assert len(self.__structs) == 0
+    self.__state = CLEAR
+
+  def readStructBegin(self):
+    assert self.__state == CLEAR or self.__state == READ
+    self.__structs.append(self.__state, self.__last, self.__id)
+    self.__state = self.__state = READ
+    self.__last = None
+    self.__id = None
+
+  def readStructEnd(self):
+    assert self.__state == READ
+    self.__state, self.__last, self.__id = self.__structs.pop()
+
   def readCollectionBegin(self):
     assert self.__state == VALUE_READ
     self.__state = CONTAINER_READ
@@ -203,6 +259,23 @@ class TCompactProtocol(TProtocolBase):
     ktype = self.__getTType(types >> 4)
     return ktype, vtype, size
 
+  def readCollectionEnd(self):
+    assert self.__state == CONTAINER_READ
+    self.__state = CLEAR
+  readSetEnd = readCollectionEnd
+  readListEnd = readCollectionEnd
+  readMapEnd = readCollectionEnd
+
+  def readBool(self):
+    if self.__state == TRUE_READ:
+      return True
+    elif self.__state == FALSE_READ:
+      return False
+    elif self.__state == CONTAINER_READ:
+      return bool(self.__readByte())
+    else:
+      raise AssertetionError, "Invalid state"
+
   readByte = reader(__readByte)
   readI16 = reader(__readZigZag)
   readI32 = reader(__readZigZag)
@@ -214,7 +287,7 @@ class TCompactProtocol(TProtocolBase):
     val, = unpack('!d', buff)
     return val
 
-  @reader
-  def readString(self):
+  def __readString(self):
     len = self.__readSize()
     return self.trans.readAll(len)
+  readString = reader(__readString)
