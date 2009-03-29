@@ -37,8 +37,36 @@ def fromZigZag(n, bits):
 class CompactType:
   TRUE = 1
   FALSE = 2
+  BYTE = 0x03
+  I16 = 0x04
+  I32 = 0x05
+  I64 = 0x06
+  DOUBLE = 0x07
+  BINARY = 0x08
+  LIST = 0x09
+  SET = 0x0A
+  MAP = 0x0B
+  STRUCT = 0x0C
 
-CTYPES = {True: CompactType.TRUE, False: CompactType.FALSE}
+CTYPES = {TType.BOOL: CompactType.TRUE, # used for collection
+          TType.BYTE: CompactType.BYTE,
+          TType.I16: CompactType.I16,
+          TType.I32: CompactType.I32,
+          TType.I64: CompactType.I64,
+          TType.DOUBLE: CompactType.DOUBLE,
+          TType.STRING: CompactType.BINARY,
+          TType.STRUCT: CompactType.STRUCT,
+          TType.LIST: CompactType.LIST,
+          TType.SET: CompactType.SET,
+          TType.MAP: CompactType.MAP,
+          }
+
+TTYPES = {}
+for k, v in CTYPES.items():
+  TTYPES[v] = k
+TTYPES[CompactType.FALSE] = TType.BOOL
+del k
+del v
 
 class TCompactProtocol(TProtocolBase):
   "Compact implementation of the Thrift protocol driver."
@@ -50,8 +78,8 @@ class TCompactProtocol(TProtocolBase):
   SHIFT_AMOUNT = 5
 
   __state = CLEAR
-  __last = None
-  __seqid = None
+  __last = 0
+  __seqid = 0
   def __init__(self, trans):
     TProtocolBase.__init__(self, trans)
     self.__structs = []
@@ -228,14 +256,13 @@ class TCompactProtocol(TProtocolBase):
 
   def readStructBegin(self):
     assert self.__state == CLEAR or self.__state == READ
-    self.__structs.append(self.__state, self.__last, self.__seqid)
+    self.__structs.append(self.__state, self.__last)
     self.__state = self.__state = READ
-    self.__last = None
-    self.__seqid = None
+    self.__last = 0
 
   def readStructEnd(self):
     assert self.__state == READ
-    self.__state, self.__last, self.__seqid = self.__structs.pop()
+    self.__state, self.__last = self.__structs.pop()
 
   def readCollectionBegin(self):
     assert self.__state == VALUE_READ
