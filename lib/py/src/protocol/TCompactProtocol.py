@@ -51,9 +51,10 @@ class TCompactProtocol(TProtocolBase):
 
   __state = CLEAR
   __last = None
-  __id = None
+  __seqid = None
   def __init__(self, trans):
     TProtocolBase.__init__(self, trans)
+    self.__structs = []
 
   def writeMessageBegin(self, name, type, seqid):
     assert self.__state == CLEAR
@@ -67,23 +68,23 @@ class TCompactProtocol(TProtocolBase):
     assert self.__state == WRITE
     self.__state = CLEAR
 
-  def __writeFieldHeader(self, type, id):
+  def __writeFieldHeader(self, type, seqid):
     try:
       if self.__last and id > self.__last:
         delta = id - self.__last
         if delta < 16:
-          return self.writeByte(delta << 4 | type)
+          self.writeByte(delta << 4 | type)
+          return
       self.__writeByte(type)
-      self.__writeI16(id)
-      return 3
     finally:
+      self.__writeI16(seqid)
       self.__last = id
 
-  def writeFieldBegin(self, name, type, id):
+  def writeFieldBegin(self, name, type, seqid):
     assert self.__state == WRITE
     if type == TType.BOOL:
       self.__state = BOOL_WRITE
-      self.__id = id
+      self.__seqid = seqid
     else:
       self.__state = VALUE_WRITE
       self.__writeFieldHeader(CTYPE[type], id)
@@ -151,7 +152,7 @@ class TCompactProtocol(TProtocolBase):
 
   def writeBool(self, bool):
     if self.__state == BOOL_WRITE:
-      self.__writeFieldHeader(types[bool], self.__id)
+      self.__writeFieldHeader(types[bool], self.__seqid)
     elif self.__state == VALUE_WRITE:
       self.__writeByte(int(bool))
     else:
@@ -227,14 +228,14 @@ class TCompactProtocol(TProtocolBase):
 
   def readStructBegin(self):
     assert self.__state == CLEAR or self.__state == READ
-    self.__structs.append(self.__state, self.__last, self.__id)
+    self.__structs.append(self.__state, self.__last, self.__seqid)
     self.__state = self.__state = READ
     self.__last = None
-    self.__id = None
+    self.__seqid = None
 
   def readStructEnd(self):
     assert self.__state == READ
-    self.__state, self.__last, self.__id = self.__structs.pop()
+    self.__state, self.__last, self.__seqid = self.__structs.pop()
 
   def readCollectionBegin(self):
     assert self.__state == VALUE_READ
