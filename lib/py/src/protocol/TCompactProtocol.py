@@ -96,6 +96,17 @@ class TCompactProtocol(TProtocolBase):
     assert self.__state == WRITE
     self.__state = CLEAR
 
+  def writeStructBegin(self, name):
+    assert self.__state == CLEAR or self.__state == WRITE or \
+          self.__state == CONTAINER_WRITE
+    self.__structs.append((self.__state, self.__last))
+    self.__state = WRITE
+    self.__last = 0
+
+  def writeStructEnd(self):
+    assert self.__state == WRITE
+    self.__state, self.__last = self.__structs.pop()
+
   def __writeFieldHeader(self, type, seqid):
     try:
       if self.__last and id > self.__last:
@@ -255,9 +266,10 @@ class TCompactProtocol(TProtocolBase):
     self.__state = CLEAR
 
   def readStructBegin(self):
-    assert self.__state == CLEAR or self.__state == READ
-    self.__structs.append(self.__state, self.__last)
-    self.__state = self.__state = READ
+    assert self.__state == CLEAR or self.__state == READ or \
+          self.__state == CONTAINER_READ
+    self.__structs.append((self.__state, self.__last))
+    self.__state = READ
     self.__last = 0
 
   def readStructEnd(self):
