@@ -157,7 +157,7 @@ class TCompactProtocol(TProtocolBase):
       return
     delta = type >> 4
     if delta == 0:
-      id = self.__readI16:
+      id = self.__readI16
     else:
       id = self.__last + delta
       self.__last = id
@@ -219,7 +219,7 @@ class TCompactProtocol(TProtocolBase):
   writeString = writer(__writeString)
 
   def __readByte(self):
-    result, = unpack(self.trans.readAll(1)
+    result, = unpack(self.trans.readAll(1))
     return result
 
   def __readVarint(self):
