@@ -50,7 +50,10 @@ def readVarint(trans):
   result = 0
   shift = 0
   while True:
-    byte = unpack('!B', trans.read(1))[0]
+    x = trans.read(1)
+    if len(x) != 1:
+      raise EOFError
+    byte = unpack('!B', x)[0]
     result |= (byte & 0x7f) << shift
     if byte >> 7 == 0:
       return result
