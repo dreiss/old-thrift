@@ -101,7 +101,7 @@ class TCompactProtocol(TProtocolBase):
 
   state = CLEAR
   __last = 0
-  __seqid = 0
+  __fid = 0
   def __init__(self, trans):
     TProtocolBase.__init__(self, trans)
     self.__structs = []
@@ -141,28 +141,30 @@ class TCompactProtocol(TProtocolBase):
   writeSetEnd = writeCollectionEnd
   writeListEnd = writeCollectionEnd
 
-  def __writeFieldHeader(self, type, seqid):
+  def __writeFieldHeader(self, type, fid):
     try:
-      if self.__last and seqid > self.__last:
-        delta = seqid - self.__last
+      if self.__last and fid > self.__last:
+        delta = fid - self.__last
         if delta < 16:
           self.__writeUByte(delta << 4 | type)
+          print "pack,", fid, type, delta, repr(chr(delta << 4 | type))
           return
+      print "long,", fid, type
       self.__writeByte(type)
+      self.__writeI16(fid)
     finally:
-      self.__writeI16(seqid)
-      self.__last = seqid
+      self.__last = fid
 
-  def writeFieldBegin(self, name, type, seqid):
+  def writeFieldBegin(self, name, type, fid):
     import pdb
     #pdb.set_trace()
     assert self.state == WRITE, self.state
     if type == TType.BOOL:
       self.state = BOOL_WRITE
-      self.__seqid = seqid
+      self.__fid = fid
     else:
       self.state = VALUE_WRITE
-      self.__writeFieldHeader(CTYPES[type], seqid)
+      self.__writeFieldHeader(CTYPES[type], fid)
 
   def __writeUByte(self, byte):
     self.trans.write(pack('!B', byte))
@@ -185,10 +187,10 @@ class TCompactProtocol(TProtocolBase):
       return None, 0, 0
     delta = type >> 4
     if delta == 0:
-      id = self.__readI16()
+      fid = self.__readI16()
     else:
-      id = self.__last + delta
-      self.__last = id
+      fid = self.__last + delta
+      self.__last = fid
     type = type & 0x0f
     if type == CompactType.TRUE:
       self.state = TRUE_READ
@@ -196,7 +198,8 @@ class TCompactProtocol(TProtocolBase):
       self.state = FALSE_READ
     else:
       self.state = VALUE_READ
-    return None, self.__getTType(type), id
+    print fid, type, self.__getTType(type)
+    return None, self.__getTType(type), fid
 
   def writeCollectionBegin(self, etype, size):
     assert self.state == VALUE_WRITE
@@ -220,7 +223,7 @@ class TCompactProtocol(TProtocolBase):
 
   def writeBool(self, bool):
     if self.state == BOOL_WRITE:
-      self.__writeFieldHeader(types[bool], self.__seqid)
+      self.__writeFieldHeader(types[bool], self.__fid)
     elif self.state == VALUE_WRITE:
       self.__writeByte(int(bool))
     else:
@@ -273,9 +276,11 @@ class TCompactProtocol(TProtocolBase):
     return TTYPES[byte & 0x0f]
     
   def __readSize(self):
-    result = self.__readZigZag()
+    result = self.__readVarint()
     if result > 0x7fff:
       raise TException("Length is too long")
+    elif result < 0:
+      raise TException("Length < 0")
     return result
 
   def readMessageBegin(self):
@@ -367,8 +372,12 @@ class TCompactProtocol(TProtocolBase):
 
   def __readString(self):
     len = self.__readSize()
+    print "read string", len
     return self.trans.readAll(len)
   readString = reader(__readString)
+
+  def writeFieldStop(self):
+    self.__writeByte(0)
 
 class TCompactProtocolFactory:
   def __init__(self):
