@@ -190,7 +190,7 @@ class TCompactProtocol(TProtocolBase):
       fid = self.__readI16()
     else:
       fid = self.__last + delta
-      self.__last = fid
+    self.__last = fid
     type = type & 0x0f
     if type == CompactType.TRUE:
       self.state = TRUE_READ
