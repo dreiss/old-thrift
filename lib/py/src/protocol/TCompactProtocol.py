@@ -177,12 +177,14 @@ class TCompactProtocol(TProtocolBase):
     else:
       id = self.__last + delta
       self.__last = id
+    type = type & 0x0f
     if type == CompactType.TRUE:
       self.state = TRUE_READ
     elif type == CompactType.FALSE:
       self.state = FALSE_READ
     else:
       self.state = VALUE_READ
+    print "field:", type, self.__getTType(type), id
     return None, self.__getTType(type), id
 
   def writeCollectionBegin(self, etype, size):
@@ -330,13 +332,16 @@ class TCompactProtocol(TProtocolBase):
 
   def readBool(self):
     if self.state == TRUE_READ:
+      self.state = READ
       return True
     elif self.state == FALSE_READ:
+      self.state = READ
       return False
     elif self.state == CONTAINER_READ:
+      self.state = CONTAINER_READ
       return bool(self.__readByte())
     else:
-      raise AssertionError, "Invalid state"
+      raise AssertionError, "Invalid state in compact protocol: %d" % self.state
 
   readByte = reader(__readByte)
   __readI16 = __readZigZag
