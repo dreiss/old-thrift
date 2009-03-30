@@ -147,9 +147,7 @@ class TCompactProtocol(TProtocolBase):
         delta = fid - self.__last
         if delta < 16:
           self.__writeUByte(delta << 4 | type)
-          print "pack,", fid, type, delta, repr(chr(delta << 4 | type))
           return
-      print "long,", fid, type
       self.__writeByte(type)
       self.__writeI16(fid)
     finally:
@@ -198,7 +196,6 @@ class TCompactProtocol(TProtocolBase):
       self.state = FALSE_READ
     else:
       self.state = VALUE_READ
-    print fid, type, self.__getTType(type)
     return None, self.__getTType(type), fid
 
   def writeCollectionBegin(self, etype, size):
@@ -372,7 +369,6 @@ class TCompactProtocol(TProtocolBase):
 
   def __readString(self):
     len = self.__readSize()
-    print "read string", len
     return self.trans.readAll(len)
   readString = reader(__readString)
 
