@@ -44,7 +44,6 @@ def writeVarint(trans, n):
     else:
       out.append((n & 0xff) | 0x80)
       n = n >> 7
-  print sn, out
   trans.write(''.join(map(chr, out)))
 
 def readVarint(trans):
@@ -52,10 +51,8 @@ def readVarint(trans):
   shift = 0
   while True:
     byte = unpack('!B', trans.read(1))[0]
-    print byte, ", ", 
-    result |= (byte & 0xf7) << shift
+    result |= (byte & 0x7f) << shift
     if byte >> 7 == 0:
-      print ''
       return result
     shift += 7
 
@@ -264,10 +261,8 @@ class TCompactProtocol(TProtocolBase):
     shift = 0
     while True:
       byte = self.__readUByte()
-      print byte, ", ", 
       result |= (byte & 0xf7) << shift
       if byte >> 7 == 0:
-        print ''
         return result
       shift += 7
   
