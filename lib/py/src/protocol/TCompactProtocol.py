@@ -154,8 +154,6 @@ class TCompactProtocol(TProtocolBase):
       self.__last = fid
 
   def writeFieldBegin(self, name, type, fid):
-    import pdb
-    #pdb.set_trace()
     assert self.state == WRITE, self.state
     if type == TType.BOOL:
       self.state = BOOL_WRITE
@@ -302,8 +300,10 @@ class TCompactProtocol(TProtocolBase):
     self.state = CLEAR
 
   def readStructBegin(self):
-    assert self.state == CLEAR or self.state == READ or \
-          self.state == CONTAINER_READ or self.state == VALUE_READ, self.state
+    assert self.state == CLEAR or \
+          self.state == READ or \
+          self.state == CONTAINER_READ or \
+          self.state == VALUE_READ, self.state
     self.__structs.append((self.state, self.__last))
     self.state = READ
     self.__last = 0
@@ -311,14 +311,14 @@ class TCompactProtocol(TProtocolBase):
   def readStructEnd(self):
     assert self.state == READ
     self.state, self.__last = self.__structs.pop()
-    if self.state == VALUE_WRITE:
-      self.state = WRITE
+    if self.state == VALUE_READ:
+      self.state = READ
 
   def readCollectionBegin(self):
     assert self.state == VALUE_READ
     self.state = CONTAINER_READ
     size_type = self.__readUByte()
-    type = self.__getTType(size)
+    type = self.__getTType(size_type)
     if size_type >> 4 == 15:
       return type, self.__readSize()
     else:
@@ -339,7 +339,7 @@ class TCompactProtocol(TProtocolBase):
 
   def readCollectionEnd(self):
     assert self.state == CONTAINER_READ
-    self.state = CLEAR
+    self.state = READ
   readSetEnd = readCollectionEnd
   readListEnd = readCollectionEnd
   readMapEnd = readCollectionEnd
