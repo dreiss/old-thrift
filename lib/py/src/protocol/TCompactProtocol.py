@@ -303,7 +303,7 @@ class TCompactProtocol(TProtocolBase):
 
   def readStructBegin(self):
     assert self.state == CLEAR or self.state == READ or \
-          self.state == CONTAINER_READ
+          self.state == CONTAINER_READ or self.state == VALUE_READ, self.state
     self.__structs.append((self.state, self.__last))
     self.state = READ
     self.__last = 0
@@ -311,6 +311,8 @@ class TCompactProtocol(TProtocolBase):
   def readStructEnd(self):
     assert self.state == READ
     self.state, self.__last = self.__structs.pop()
+    if self.state == VALUE_WRITE:
+      self.state = WRITE
 
   def readCollectionBegin(self):
     assert self.state == VALUE_READ
