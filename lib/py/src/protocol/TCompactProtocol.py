@@ -34,6 +34,31 @@ def makeZigZag(n, bits):
 def fromZigZag(n):
   return (n >> 1) ^ -(n & 1)
 
+def writeVarint(trans, n):
+  sn = n
+  out = []
+  while True:
+    if n & ~0x7f == 0:
+      out.append(n)
+      break
+    else:
+      out.append((n & 0xff) | 0x80)
+      n = n >> 7
+  print sn, out
+  trans.write(''.join(map(chr, out)))
+
+def readVarint(trans):
+  result = 0
+  shift = 0
+  while True:
+    byte = unpack('!B', trans.read(1))[0]
+    print byte, ", ", 
+    result |= (byte & 0xf7) << shift
+    if byte >> 7 == 0:
+      print ''
+      return result
+    shift += 7
+
 class CompactType:
   TRUE = 1
   FALSE = 2
@@ -83,6 +108,9 @@ class TCompactProtocol(TProtocolBase):
   def __init__(self, trans):
     TProtocolBase.__init__(self, trans)
     self.__structs = []
+
+  def __writeVarint(self, n):
+    writeVarint(self.trans, n)
 
   def writeMessageBegin(self, name, type, seqid):
     assert self.state == CLEAR
@@ -148,19 +176,6 @@ class TCompactProtocol(TProtocolBase):
   def __writeI16(self, i16):
     self.__writeVarint(makeZigZag(i16, 16))
 
-  def __writeVarint(self, n):
-    sn = n
-    out = []
-    while True:
-      if n & ~0x7f == 0:
-        out.append(n)
-        break
-      else:
-        out.append((n & 0xff) | 0x80)
-        n = n >> 7
-    print sn, out
-    self.trans.write(''.join(map(chr, out)))
-
   def __writeSize(self, i32):
     if i32 > 0x7fff:
       raise TException("thrift can't handle strings longer 0x7FFF")
@@ -184,7 +199,6 @@ class TCompactProtocol(TProtocolBase):
       self.state = FALSE_READ
     else:
       self.state = VALUE_READ
-    print "field:", type, self.__getTType(type), id
     return None, self.__getTType(type), id
 
   def writeCollectionBegin(self, etype, size):
@@ -245,6 +259,7 @@ class TCompactProtocol(TProtocolBase):
     return result
 
   def __readVarint(self):
+    return readVarint(self.trans)
     result = 0
     shift = 0
     while True:
