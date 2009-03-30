@@ -187,52 +187,6 @@ class TProtocolBase:
         self.skip(etype)
       self.readListEnd()
 
-class TProtocolImpl(TProtocolBase):
-  def writeMessageEnd(self):
-    pass
-
-  def writeStructBegin(self, name):
-    pass
-
-  def writeStructEnd(self):
-    pass
-
-  def writeFieldStop(self):
-    self.writeByte(TType.STOP);
-
-  def writeFieldEnd(self):
-    pass
-
-  def writeMapEnd(self):
-    pass
-
-  def writeListEnd(self):
-    pass
-
-  def writeSetEnd(self):
-    pass
-
-  def readMessageEnd(self):
-    pass
-
-  def readStructBegin(self):
-    pass
-
-  def readStructEnd(self):
-    pass
-
-  def readFieldEnd(self):
-    pass
-
-  def readMapEnd(self):
-    pass
-
-  def readListEnd(self):
-    pass
-
-  def readSetEnd(self):
-    pass
-
 class TProtocolFactory:
   def getProtocol(self, trans):
     pass

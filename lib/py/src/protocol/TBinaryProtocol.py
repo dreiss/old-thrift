@@ -7,7 +7,7 @@
 from TProtocol import *
 from struct import pack, unpack
 
-class TBinaryProtocol(TProtocolImpl):
+class TBinaryProtocol(TProtocolBase):
 
   """Binary implementation of the Thrift protocol driver."""
 
@@ -38,22 +38,46 @@ class TBinaryProtocol(TProtocolImpl):
       self.writeByte(type)
       self.writeI32(seqid)
 
+  def writeMessageEnd(self):
+    pass
+
+  def writeStructBegin(self, name):
+    pass
+
+  def writeStructEnd(self):
+    pass
+
   def writeFieldBegin(self, name, type, id):
     self.writeByte(type)
     self.writeI16(id)
+
+  def writeFieldEnd(self):
+    pass
+
+  def writeFieldStop(self):
+    self.writeByte(TType.STOP);
 
   def writeMapBegin(self, ktype, vtype, size):
     self.writeByte(ktype)
     self.writeByte(vtype)
     self.writeI32(size)
 
+  def writeMapEnd(self):
+    pass
+
   def writeListBegin(self, etype, size):
     self.writeByte(etype)
     self.writeI32(size)
 
+  def writeListEnd(self):
+    pass
+
   def writeSetBegin(self, etype, size):
     self.writeByte(etype)
     self.writeI32(size)
+
+  def writeSetEnd(self):
+    pass
 
   def writeBool(self, bool):
     if bool:
@@ -102,6 +126,15 @@ class TBinaryProtocol(TProtocolImpl):
       seqid = self.readI32()
     return (name, type, seqid)
 
+  def readMessageEnd(self):
+    pass
+
+  def readStructBegin(self):
+    pass
+
+  def readStructEnd(self):
+    pass
+
   def readFieldBegin(self):
     type = self.readByte()
     if type == TType.STOP:
@@ -109,21 +142,33 @@ class TBinaryProtocol(TProtocolImpl):
     id = self.readI16()
     return (None, type, id)
 
+  def readFieldEnd(self):
+    pass
+
   def readMapBegin(self):
     ktype = self.readByte()
     vtype = self.readByte()
     size = self.readI32()
     return (ktype, vtype, size)
 
+  def readMapEnd(self):
+    pass
+
   def readListBegin(self):
     etype = self.readByte()
     size = self.readI32()
     return (etype, size)
 
+  def readListEnd(self):
+    pass
+
   def readSetBegin(self):
     etype = self.readByte()
     size = self.readI32()
     return (etype, size)
+
+  def readSetEnd(self):
+    pass
 
   def readBool(self):
     byte = self.readByte()
