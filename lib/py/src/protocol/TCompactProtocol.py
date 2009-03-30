@@ -106,6 +106,15 @@ class TCompactProtocol(TProtocolBase):
   def writeStructEnd(self):
     assert self.state == WRITE
     self.state, self.__last = self.__structs.pop()
+    if self.state == VALUE_WRITE:
+      self.state = WRITE
+
+  def writeCollectionEnd(self):
+    assert self.state == CONTAINER_WRITE
+    self.state = WRITE
+  writeMapEnd = writeCollectionEnd
+  writeSetEnd = writeCollectionEnd
+  writeListEnd = writeCollectionEnd
 
   def __writeFieldHeader(self, type, seqid):
     try:
@@ -122,7 +131,7 @@ class TCompactProtocol(TProtocolBase):
   def writeFieldBegin(self, name, type, seqid):
     import pdb
     #pdb.set_trace()
-    assert self.state == WRITE
+    assert self.state == WRITE, self.state
     if type == TType.BOOL:
       self.state = BOOL_WRITE
       self.__seqid = seqid
@@ -157,13 +166,13 @@ class TCompactProtocol(TProtocolBase):
     self.__writeVarint(i32)
 
   def readFieldBegin(self):
-    assert self.state == READ
+    assert self.state == READ, self.state
     type = self.__readUByte()
     if type & 0x0f == TType.STOP:
       return
     delta = type >> 4
     if delta == 0:
-      id = self.__readI16
+      id = self.__readI16()
     else:
       id = self.__last + delta
       self.__last = id
