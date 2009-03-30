@@ -149,15 +149,16 @@ class TCompactProtocol(TProtocolBase):
     self.__writeVarint(makeZigZag(i16, 16))
 
   def __writeVarint(self, n):
+    sn = n
     out = []
     while True:
       if n & ~0x7f == 0:
         out.append(n)
         break
       else:
-        out.append(n & 0xff)
+        out.append((n & 0xff) | 0x80)
         n = n >> 7
-    print out
+    print sn, out
     self.trans.write(''.join(map(chr, out)))
 
   def __writeSize(self, i32):
@@ -245,9 +246,11 @@ class TCompactProtocol(TProtocolBase):
     result = 0
     shift = 0
     while True:
-      byte = self.__readByte()
+      byte = self.__readUByte()
+      print byte, ", ", 
       result |= (byte & 0xf7) << shift
-      if byte >> 7:
+      if byte >> 7 == 0:
+        print ''
         return result
       shift += 7
   
@@ -333,7 +336,7 @@ class TCompactProtocol(TProtocolBase):
     elif self.state == CONTAINER_READ:
       return bool(self.__readByte())
     else:
-      raise AssertetionError, "Invalid state"
+      raise AssertionError, "Invalid state"
 
   readByte = reader(__readByte)
   __readI16 = __readZigZag
