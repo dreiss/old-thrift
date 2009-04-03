@@ -1,3 +1,22 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements. See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership. The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License. You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
 require File.dirname(__FILE__) + '/spec_helper'
 
 shared_examples_for 'a binary protocol' do
@@ -184,6 +203,17 @@ shared_examples_for 'a binary protocol' do
     lambda { @prot.write_string(nil) }.should raise_error
   end
   
+  it "should read message header correctly" do
+    @trans.write([protocol_class.const_get(:VERSION_1) | Thrift::MessageTypes::CALL, "testMessage".size, "testMessage", 17].pack("NNa11N"))
+    @prot.read_message_begin().should == ['testMessage', Thrift::MessageTypes::CALL, 17]
+  end
+  
+  it "should read the message header without version when writes are not strict" do
+    @prot = protocol_class.new(@trans, false, true) # no strict write
+    @trans.write("\000\000\000\vtestMessage\001\000\000\000\021")
+    @prot.read_message_begin().should == ['testMessage', Thrift::MessageTypes::CALL, 17]
+  end
+
   # message footer is a noop
   
   it "should read a field header" do
@@ -269,4 +299,77 @@ shared_examples_for 'a binary protocol' do
     @trans.write([str.size].pack("N") + str)
     @prot.read_string.should == str
   end
+
+  it "should perform a complete rpc with no args or return" do
+    srv_test(
+      proc {|client| client.send_voidMethod()},
+      proc {|client| client.recv_voidMethod.should == nil}
+    )
+  end
+
+  it "should perform a complete rpc with a primitive return type" do
+    srv_test(
+      proc {|client| client.send_primitiveMethod()},
+      proc {|client| client.recv_primitiveMethod.should == 1}
+    )
+  end
+
+  it "should perform a complete rpc with a struct return type" do
+    srv_test(
+      proc {|client| client.send_structMethod()},
+      proc {|client|
+        result = client.recv_structMethod
+        result.set_byte_map = nil
+        result.map_byte_map = nil
+        result.should == Fixtures::COMPACT_PROTOCOL_TEST_STRUCT
+      }
+    )
+  end
+
+  def get_socket_connection
+    server = Thrift::ServerSocket.new("localhost", 9090)
+    server.listen
+    
+    clientside = Thrift::Socket.new("localhost", 9090)
+    clientside.open
+    serverside = server.accept
+    [clientside, serverside, server]
+  end
+
+  def srv_test(firstblock, secondblock)
+    clientside, serverside, server = get_socket_connection
+
+    clientproto = protocol_class.new(clientside)
+    serverproto = protocol_class.new(serverside)
+
+    processor = Srv::Processor.new(SrvHandler.new)
+
+    client = Srv::Client.new(clientproto, clientproto)
+    
+    # first block
+    firstblock.call(client)
+    
+    processor.process(serverproto, serverproto)
+    
+    # second block
+    secondblock.call(client)
+  ensure
+    clientside.close
+    serverside.close
+    server.close
+  end
+
+  class SrvHandler 
+    def voidMethod()
+    end
+    
+    def primitiveMethod
+      1
+    end
+    
+    def structMethod
+      Fixtures::COMPACT_PROTOCOL_TEST_STRUCT
+    end
+  end
+
 end

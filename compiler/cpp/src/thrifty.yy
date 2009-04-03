@@ -1,9 +1,22 @@
 %{
-// Copyright (c) 2006- Facebook
-// Distributed under the Thrift Software License
-//
-// See accompanying file LICENSE or visit the Thrift site at:
-// http://developers.facebook.com/thrift/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 
 /**
  * Thrift parser.
@@ -817,11 +830,10 @@ FieldList:
     {
       pdebug("FieldList -> FieldList , Field");
       $$ = $1;
-      if (!($$->validate_field($2))) {
+      if (!($$->append($2))) {
         yyerror("Field identifier %d for \"%s\" has already been used", $2->get_key(), $2->get_name().c_str());
         exit(1);
       }
-      $$->append($2);
     }
 |
     {
@@ -835,7 +847,7 @@ Field:
     {
       pdebug("tok_int_constant : Field -> FieldType tok_identifier");
       if ($2 < 0) {
-        pwarning(2, "No field key specified for %s, resulting protocol may have conflicts or not be backwards compatible!\n", $5);
+        pwarning(1, "No field key specified for %s, resulting protocol may have conflicts or not be backwards compatible!\n", $5);
       }
       $$ = new t_field($4, $5, $2);
       $$->set_req($3);
