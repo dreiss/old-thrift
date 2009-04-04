@@ -1,8 +1,21 @@
-// Copyright (c) 2006- Facebook
-// Distributed under the Thrift Software License
-//
-// See accompanying file LICENSE or visit the Thrift site at:
-// http://developers.facebook.com/thrift/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 
 #include <string>
 #include <fstream>
@@ -142,7 +155,6 @@ class t_rb_generator : public t_oop_generator {
    */
 
   std::string rb_autogen_comment();
-  std::string rb_imports();
   std::string render_includes();
   std::string declare_field(t_field* tfield);
   std::string type_name(t_type* ttype);
@@ -201,13 +213,11 @@ void t_rb_generator::init_generator() {
   // Print header
   f_types_ <<
     rb_autogen_comment() << endl <<
-    rb_imports() << endl <<
     render_includes() << endl;
     begin_namespace(f_types_, ruby_modules(program_));
 
   f_consts_ <<
     rb_autogen_comment() << endl <<
-    rb_imports() << endl <<
     "require File.dirname(__FILE__) + '/" << program_name_ << "_types'" << endl <<
     endl;
     begin_namespace(f_consts_, ruby_modules(program_));
@@ -239,14 +249,6 @@ string t_rb_generator::rb_autogen_comment() {
     "#\n" +
     "# DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING\n" +
     "#\n";
-}
-
-/**
- * Prints standard thrift imports
- */
-string t_rb_generator::rb_imports() {
-  return
-    string("require 'thrift/protocol'");
 }
 
 /**
@@ -625,8 +627,7 @@ void t_rb_generator::generate_service(t_service* tservice) {
 
   f_service_ <<
     rb_autogen_comment() << endl <<
-    "require 'thrift'" << endl <<
-    rb_imports() << endl;
+    "require 'thrift'" << endl;
 
   if (tservice->get_extends() != NULL) {
     f_service_ <<

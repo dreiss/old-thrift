@@ -1,3 +1,22 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 namespace cpp thrift.test.debug
 namespace java thrift.test
 
@@ -78,25 +97,6 @@ struct Base64 {
   7: binary b6,
 }
 
-service Srv {
-  i32 Janky(i32 arg)
-}
-
-service Inherited extends Srv {
-  i32 identity(i32 arg)
-}
-
-service EmptyService {}
-
-// The only purpose of this thing is to increase the size of the generated code
-// so that ZlibTest has more highly compressible data to play with.
-struct BlowUp {
-  1: map<list<i32>,set<map<i32,string>>> b1;
-  2: map<list<i32>,set<map<i32,string>>> b2;
-  3: map<list<i32>,set<map<i32,string>>> b3;
-  4: map<list<i32>,set<map<i32,string>>> b4;
-}
-
 struct CompactProtoTestStruct {
   // primitive fields
   1: byte   a_byte = 127;
@@ -159,3 +159,31 @@ struct CompactProtoTestStruct {
   48: map<byte, set<byte>>        byte_set_map = {0 : [], 1 : [1], 2 : [1, 2]};
   49: map<byte, list<byte>>       byte_list_map = {0 : [], 1 : [1], 2 : [1, 2]};
 }
+
+
+
+service Srv {
+  i32 Janky(1: i32 arg);
+  
+  // return type only methods
+  
+  void voidMethod();
+  i32 primitiveMethod();
+  CompactProtoTestStruct structMethod();
+}
+
+service Inherited extends Srv {
+  i32 identity(1: i32 arg)
+}
+
+service EmptyService {}
+
+// The only purpose of this thing is to increase the size of the generated code
+// so that ZlibTest has more highly compressible data to play with.
+struct BlowUp {
+  1: map<list<i32>,set<map<i32,string>>> b1;
+  2: map<list<i32>,set<map<i32,string>>> b2;
+  3: map<list<i32>,set<map<i32,string>>> b3;
+  4: map<list<i32>,set<map<i32,string>>> b4;
+}
+

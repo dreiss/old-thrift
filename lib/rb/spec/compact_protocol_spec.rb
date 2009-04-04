@@ -1,5 +1,23 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements. See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership. The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License. You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
 require File.dirname(__FILE__) + '/spec_helper'
-require "thrift/protocol/compact_protocol"
 
 describe Thrift::CompactProtocol do
   TESTS = {
@@ -17,7 +35,7 @@ describe Thrift::CompactProtocol do
     TESTS.each_pair do |primitive_type, test_values|
       test_values.each do |value|
         # puts "testing #{value}" if primitive_type == :i64
-        trans = Thrift::MemoryBuffer.new
+        trans = Thrift::MemoryBufferTransport.new
         proto = Thrift::CompactProtocol.new(trans)
         
         proto.send(writer(primitive_type), value)
@@ -34,7 +52,7 @@ describe Thrift::CompactProtocol do
       thrift_type = Thrift::Types.const_get(final_primitive_type.to_s.upcase)
       # puts primitive_type
       test_values.each do |value|
-        trans = Thrift::MemoryBuffer.new
+        trans = Thrift::MemoryBufferTransport.new
         proto = Thrift::CompactProtocol.new(trans)
 
         proto.write_field_begin(nil, thrift_type, 15)
@@ -53,7 +71,7 @@ describe Thrift::CompactProtocol do
   end
 
   it "should encode and decode a monster struct correctly" do
-    trans = Thrift::MemoryBuffer.new
+    trans = Thrift::MemoryBufferTransport.new
     proto = Thrift::CompactProtocol.new(trans)
 
     struct = CompactProtoTestStruct.new
@@ -77,10 +95,10 @@ describe Thrift::CompactProtocol do
   end
 
   it "should make method calls correctly" do
-    client_out_trans = Thrift::MemoryBuffer.new
+    client_out_trans = Thrift::MemoryBufferTransport.new
     client_out_proto = Thrift::CompactProtocol.new(client_out_trans)
     
-    client_in_trans = Thrift::MemoryBuffer.new
+    client_in_trans = Thrift::MemoryBufferTransport.new
     client_in_proto = Thrift::CompactProtocol.new(client_in_trans)
     
     processor = Srv::Processor.new(JankyHandler.new)

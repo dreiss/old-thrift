@@ -1,4 +1,24 @@
 #!/usr/bin/env python
+
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements. See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership. The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License. You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
 r"""
 thrift --gen py DebugProtoTest.thrift
 ./FastbinaryTest.py
@@ -84,7 +104,6 @@ rshuge = RandomStuff()
 rshuge.myintlist=range(10000)
 
 my_zero = Srv.Janky_result({"arg":5})
-my_nega = Srv.Janky_args({"success":6})
 
 def checkWrite(o):
   trans_fast = TTransport.TMemoryBuffer()
@@ -139,12 +158,6 @@ def doTest():
   checkWrite(my_zero)
   checkRead(my_zero)
   checkRead(Backwards({"first_tag2":4, "second_tag1":2}))
-  try:
-    checkWrite(my_nega)
-    print "Hey, did this get fixed?"
-  except AttributeError:
-    # Sorry, doesn't work with negative tags.
-    pass
 
   # One case where the serialized form changes, but only superficially.
   o = Backwards({"first_tag2":4, "second_tag1":2})

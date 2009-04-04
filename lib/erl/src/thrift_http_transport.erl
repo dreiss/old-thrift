@@ -1,17 +1,29 @@
-%%%-------------------------------------------------------------------
-%%% File    : thrift_http_transport.erl
-%%% Author  : <dreiss@facebook.com>
-%%% Description : Client-only HTTP-based transport for thrift
-%%%
-%%% Created : 24 May 2008 by <dreiss@facebook.com>
-%%%-------------------------------------------------------------------
+%%
+%% Licensed to the Apache Software Foundation (ASF) under one
+%% or more contributor license agreements. See the NOTICE file
+%% distributed with this work for additional information
+%% regarding copyright ownership. The ASF licenses this file
+%% to you under the Apache License, Version 2.0 (the
+%% "License"); you may not use this file except in compliance
+%% with the License. You may obtain a copy of the License at
+%%
+%%   http://www.apache.org/licenses/LICENSE-2.0
+%%
+%% Unless required by applicable law or agreed to in writing,
+%% software distributed under the License is distributed on an
+%% "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+%% KIND, either express or implied. See the License for the
+%% specific language governing permissions and limitations
+%% under the License.
+%%
+
 -module(thrift_http_transport).
 
 -behaviour(gen_server).
 -behaviour(thrift_transport).
 
 %% API
--export([new/2, set_http_options/2]).
+-export([new/2, new/3]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -28,30 +40,32 @@
                          path, % string()
                          read_buffer, % iolist()
                          write_buffer, % iolist()
-                         http_options
+                         http_options, % see http(3)
+                         extra_headers % [{str(), str()}, ...]
                         }).
 
 %%====================================================================
 %% API
 %%====================================================================
 %%--------------------------------------------------------------------
-%% Function: new() -> {ok,Pid} | ignore | {error,Error}
+%% Function: new() -> {ok, Transport} | ignore | {error,Error}
 %% Description: Starts the server
 %%--------------------------------------------------------------------
 new(Host, Path) ->
-    case gen_server:start_link(?MODULE, {Host, Path}, []) of
+    new(Host, Path, _Options = []).
+
+%%--------------------------------------------------------------------
+%% Options include:
+%%   {http_options, HttpOptions}  = See http(3)
+%%   {extra_headers, ExtraHeaders}  = List of extra HTTP headers
+%%--------------------------------------------------------------------
+new(Host, Path, Options) ->
+    case gen_server:start_link(?MODULE, {Host, Path, Options}, []) of
         {ok, Pid} ->
             thrift_transport:new(?MODULE, Pid);
         Else ->
             Else
     end.
-
-%%--------------------------------------------------------------------
-%% Function: set_http_options() -> ok | {error,Error}
-%% Description: Set HTTP options
-%%--------------------------------------------------------------------
-set_http_options(Transport, HTTPOptions) ->
-    gen_server:call(Transport, {set_http_options, HTTPOptions}).
 
 %%--------------------------------------------------------------------
 %% Function: write(Transport, Data) -> ok
@@ -93,12 +107,30 @@ read(Transport, Len) when is_integer(Len) ->
 %% gen_server callbacks
 %%====================================================================
 
-init({Host, Path}) ->
-    {ok, #http_transport{host = Host,
-                         path = Path,
-                         read_buffer = [],
-                         write_buffer = [],
-                         http_options = []}}.
+init({Host, Path, Options}) ->
+    State1 = #http_transport{host = Host,
+                             path = Path,
+                             read_buffer = [],
+                             write_buffer = [],
+                             http_options = [],
+                             extra_headers = []},
+    ApplyOption =
+        fun
+            ({http_options, HttpOpts}, State = #http_transport{}) ->
+                State#http_transport{http_options = HttpOpts};
+            ({extra_headers, ExtraHeaders}, State = #http_transport{}) ->
+                State#http_transport{extra_headers = ExtraHeaders};
+            (Other, #http_transport{}) ->
+                {invalid_option, Other};
+            (_, Error) ->
+                Error
+        end,
+    case lists:foldl(ApplyOption, State1, Options) of
+        State2 = #http_transport{} ->
+            {ok, State2};
+        Else ->
+            {stop, Else}
+    end.
 
 handle_call({write, Data}, _From, State = #http_transport{write_buffer = WBuf}) ->
     {reply, ok, State#http_transport{write_buffer = [WBuf, Data]}};
@@ -114,9 +146,6 @@ handle_call({read, Len}, _From, State = #http_transport{read_buffer = RBuf}) ->
         _ ->
             {reply, {error, 'EOF'}, State}
     end;
-
-handle_call({set_http_options, HTTPOptions}, _From, State) ->
-    {reply, ok, State#http_transport{http_options = HTTPOptions}};
 
 handle_call(flush, _From, State) ->
     {Response, State1} = do_flush(State),
@@ -145,7 +174,8 @@ do_flush(State = #http_transport{host = Host,
                                  path = Path,
                                  read_buffer = Rbuf,
                                  write_buffer = Wbuf,
-                                 http_options = HttpOptions}) ->
+                                 http_options = HttpOptions,
+                                 extra_headers = ExtraHeaders}) ->
     case iolist_to_binary(Wbuf) of
         <<>> ->
             %% Don't bother flushing empty buffers.
@@ -154,7 +184,7 @@ do_flush(State = #http_transport{host = Host,
             {ok, {{_Version, 200, _ReasonPhrase}, _Headers, Body}} =
               http:request(post,
                            {"http://" ++ Host ++ Path,
-                            [{"User-Agent", "Erlang/thrift_http_transport"}],
+                            [{"User-Agent", "Erlang/thrift_http_transport"} | ExtraHeaders],
                             "application/x-thrift",
                             WBinary},
                            HttpOptions,
