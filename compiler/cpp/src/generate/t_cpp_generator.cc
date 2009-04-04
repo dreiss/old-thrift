@@ -863,9 +863,10 @@ void t_cpp_generator::generate_cpp_struct_constructor(ofstream& out,
   indent_down();
   indent(out) << ": \n";
   indent_up();
-  for (m_iter = sorted_members.begin(); m_iter != sorted_members.end(); 
+  vector<t_field*> members = tstruct->get_members();
+  for (m_iter = members.begin(); m_iter != members.end(); 
        ++m_iter) {
-    if (m_iter != sorted_members.begin()) {
+    if (m_iter != members.begin()) {
       out << ",\n";
     }
     indent(out) << (*m_iter)->get_name() << "(" << init_prefix
