@@ -62,13 +62,13 @@ handle_function(State=#thrift_processor{in_protocol = IProto,
 
 handle_function_catch(State = #thrift_processor{service = Service},
                       Function, ErrType, ErrData) ->
-    IsAsync = Service:function_info(Function, reply_type) =:= async_void,
+    IsOneway = Service:function_info(Function, reply_type) =:= oneway_void,
 
     case {ErrType, ErrData} of
-        _ when IsAsync ->
+        _ when IsOneway ->
             Stack = erlang:get_stacktrace(),
             error_logger:warning_msg(
-              "async void ~p threw error which must be ignored: ~p",
+              "oneway void ~p threw error which must be ignored: ~p",
               [Function, {ErrType, ErrData, Stack}]),
             ok;
 
@@ -96,8 +96,8 @@ handle_success(State = #thrift_processor{out_protocol = OProto,
              ok when ReplyType == {struct, []} ->
                  send_reply(OProto, Function, ?tMessageType_REPLY, {ReplyType, {StructName}});
 
-             ok when ReplyType == async_void ->
-                 %% no reply for async void
+             ok when ReplyType == oneway_void ->
+                 %% no reply for oneway void
                  ok
          end.
 

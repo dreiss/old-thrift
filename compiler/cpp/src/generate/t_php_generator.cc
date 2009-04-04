@@ -51,6 +51,7 @@ class t_php_generator : public t_oop_generator {
     }
 
     out_dir_base_ = (binary_inline_ ? "gen-phpi" : "gen-php");
+    escape_['$'] = "\\$";
   }
 
   /**
@@ -371,7 +372,7 @@ string t_php_generator::render_const_value(t_type* type, t_const_value* value) {
     t_base_type::t_base tbase = ((t_base_type*)type)->get_base();
     switch (tbase) {
     case t_base_type::TYPE_STRING:
-      out << "'" << value->get_string() << "'";
+      out << '"' << get_escaped_string(value) << '"';
       break;
     case t_base_type::TYPE_BOOL:
       out << (value->get_integer() > 0 ? "true" : "false");
@@ -1057,8 +1058,8 @@ void t_php_generator::generate_process_function(t_service* tservice,
   const std::vector<t_field*>& xceptions = xs->get_members();
   vector<t_field*>::const_iterator x_iter;
 
-  // Declare result for non async function
-  if (!tfunction->is_async()) {
+  // Declare result for non oneway function
+  if (!tfunction->is_oneway()) {
     f_service_ <<
       indent() << "$result = new " << resultname << "();" << endl;
   }
@@ -1076,7 +1077,7 @@ void t_php_generator::generate_process_function(t_service* tservice,
   vector<t_field*>::const_iterator f_iter;
 
   f_service_ << indent();
-  if (!tfunction->is_async() && !tfunction->get_returntype()->is_void()) {
+  if (!tfunction->is_oneway() && !tfunction->get_returntype()->is_void()) {
     f_service_ << "$result->success = ";
   }
   f_service_ <<
@@ -1092,12 +1093,12 @@ void t_php_generator::generate_process_function(t_service* tservice,
   }
   f_service_ << ");" << endl;
 
-  if (!tfunction->is_async() && xceptions.size() > 0) {
+  if (!tfunction->is_oneway() && xceptions.size() > 0) {
     indent_down();
     for (x_iter = xceptions.begin(); x_iter != xceptions.end(); ++x_iter) {
       f_service_ <<
         indent() << "} catch (" << php_namespace((*x_iter)->get_type()->get_program()) << (*x_iter)->get_type()->get_name() << " $" << (*x_iter)->get_name() << ") {" << endl;
-      if (!tfunction->is_async()) {
+      if (!tfunction->is_oneway()) {
         indent_up();
         f_service_ <<
           indent() << "$result->" << (*x_iter)->get_name() << " = $" << (*x_iter)->get_name() << ";" << endl;
@@ -1108,8 +1109,8 @@ void t_php_generator::generate_process_function(t_service* tservice,
     f_service_ << "}" << endl;
   }
 
-  // Shortcut out here for async functions
-  if (tfunction->is_async()) {
+  // Shortcut out here for oneway functions
+  if (tfunction->is_oneway()) {
     f_service_ <<
       indent() << "return;" << endl;
     indent_down();
@@ -1169,7 +1170,7 @@ void t_php_generator::generate_service_helpers(t_service* tservice) {
  * @param tfunction The function
  */
 void t_php_generator::generate_php_function_helpers(t_function* tfunction) {
-  if (!tfunction->is_async()) {
+  if (!tfunction->is_oneway()) {
     t_struct result(program_, service_name_ + "_" + tfunction->get_name() + "_result");
     t_field success(tfunction->get_returntype(), "success", 0);
     if (!tfunction->get_returntype()->is_void()) {
@@ -1376,7 +1377,7 @@ void t_php_generator::_generate_service_client(ofstream& out, t_service* tservic
       }
       out << ");" << endl;
 
-      if (!(*f_iter)->is_async()) {
+      if (!(*f_iter)->is_oneway()) {
         out << indent();
         if (!(*f_iter)->get_returntype()->is_void()) {
           out << "return ";
@@ -1446,7 +1447,7 @@ void t_php_generator::_generate_service_client(ofstream& out, t_service* tservic
     scope_down(out);
 
 
-    if (!(*f_iter)->is_async()) {
+    if (!(*f_iter)->is_oneway()) {
       std::string resultname = php_namespace(tservice->get_program()) + service_name_ + "_" + (*f_iter)->get_name() + "_result";
       t_struct noargs(program_);
 

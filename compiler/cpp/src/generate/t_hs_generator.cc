@@ -43,7 +43,6 @@ class t_hs_generator : public t_oop_generator {
   /**
    * Program-level generation functions
    */
-  void generate_program  ();
   void generate_typedef  (t_typedef*  ttypedef);
   void generate_enum     (t_enum*     tenum);
   void generate_const    (t_const*    tconst);
@@ -131,7 +130,7 @@ class t_hs_generator : public t_oop_generator {
   std::string type_name(t_type* ttype);
   std::string function_type(t_function* tfunc, bool options = false, bool io = false, bool method = false);
   std::string type_to_enum(t_type* ttype);
-  std::string render_hs_type(t_type* type);
+  std::string render_hs_type(t_type* type, bool needs_parens = true);
 
 
  private:
@@ -147,59 +146,6 @@ class t_hs_generator : public t_oop_generator {
   std::ofstream f_client_;
 
 };
-
-
-/*
- * This is necessary because we want typedefs to appear later,
- * after all the types have been declared.
- */
-void t_hs_generator::generate_program() {
-  // Initialize the generator
-  init_generator();
-
-  // Generate enums
-  vector<t_enum*> enums = program_->get_enums();
-  vector<t_enum*>::iterator en_iter;
-  for (en_iter = enums.begin(); en_iter != enums.end(); ++en_iter) {
-    generate_enum(*en_iter);
-  }
-
-  // Generate structs
-  vector<t_struct*> structs = program_->get_structs();
-  vector<t_struct*>::iterator st_iter;
-  for (st_iter = structs.begin(); st_iter != structs.end(); ++st_iter) {
-    generate_struct(*st_iter);
-  }
-
-  // Generate xceptions
-  vector<t_struct*> xceptions = program_->get_xceptions();
-  vector<t_struct*>::iterator x_iter;
-  for (x_iter = xceptions.begin(); x_iter != xceptions.end(); ++x_iter) {
-    generate_xception(*x_iter);
-  }
-
-  // Generate typedefs
-  vector<t_typedef*> typedefs = program_->get_typedefs();
-  vector<t_typedef*>::iterator td_iter;
-  for (td_iter = typedefs.begin(); td_iter != typedefs.end(); ++td_iter) {
-    generate_typedef(*td_iter);
-  }
-
-  // Generate services
-  vector<t_service*> services = program_->get_services();
-  vector<t_service*>::iterator sv_iter;
-  for (sv_iter = services.begin(); sv_iter != services.end(); ++sv_iter) {
-    service_name_ = get_service_name(*sv_iter);
-    generate_service(*sv_iter);
-  }
-
-  // Generate constants
-  vector<t_const*> consts = program_->get_consts();
-  generate_consts(consts);
-
-  // Close the generator
-  close_generator();
-}
 
 
 /**
@@ -271,7 +217,7 @@ void t_hs_generator::close_generator() {
  */
 void t_hs_generator::generate_typedef(t_typedef* ttypedef) {
   f_types_ <<
-    indent() << "type "<< capitalize(ttypedef->get_symbolic()) << " = " << render_hs_type(ttypedef->get_type()) << endl << endl;
+    indent() << "type "<< capitalize(ttypedef->get_symbolic()) << " = " << render_hs_type(ttypedef->get_type(), false) << endl << endl;
 }
 
 /**
@@ -341,6 +287,7 @@ void t_hs_generator::generate_const(t_const* tconst) {
   string name = decapitalize(tconst->get_name());
   t_const_value* value = tconst->get_value();
 
+  indent(f_consts_) << name << " :: " << render_hs_type(type, false) << endl;
   indent(f_consts_) << name << " = " << render_const_value(type, value) << endl << endl;
 }
 
@@ -356,7 +303,7 @@ string t_hs_generator::render_const_value(t_type* type, t_const_value* value) {
     t_base_type::t_base tbase = ((t_base_type*)type)->get_base();
     switch (tbase) {
     case t_base_type::TYPE_STRING:
-      out << "\"" << value->get_string() << "\"";
+      out << '"' << get_escaped_string(value) << '"';
       break;
     case t_base_type::TYPE_BOOL:
       out << (value->get_integer() > 0 ? "True" : "False");
@@ -437,13 +384,24 @@ string t_hs_generator::render_const_value(t_type* type, t_const_value* value) {
       out << "(" << key << ","<< val << ")";
     }
     out << "])";
-  } else if (type->is_list()) {
+  } else if (type->is_list() || type->is_set()) {
     t_type* etype;
-    etype = ((t_list*)type)->get_elem_type();
-    out << "[";
+
+    if (type->is_list()) {
+        etype = ((t_list*) type)->get_elem_type();
+    } else  {
+        etype = ((t_set*) type)->get_elem_type();
+    }
+
     const vector<t_const_value*>& val = value->get_list();
     vector<t_const_value*>::const_iterator v_iter;
-    bool first=true;
+    bool first = true;
+
+    if (type->is_set())
+        out << "(Set.fromList ";
+
+    out << "[";
+
     for (v_iter = val.begin(); v_iter != val.end(); ++v_iter) {
       if(first)
         first=false;
@@ -451,17 +409,10 @@ string t_hs_generator::render_const_value(t_type* type, t_const_value* value) {
         out << ",";
       out << render_const_value(etype, *v_iter);
     }
+
     out << "]";
-  } else if (type->is_set()) {
-    t_type* etype = ((t_set*)type)->get_elem_type();
-    const vector<t_const_value*>& val = value->get_list();
-    vector<t_const_value*>::const_iterator v_iter;
-    out << "(mkSet [";
-    for (v_iter = val.begin(); v_iter != val.end(); ++v_iter) {
-      string val = render_const_value(etype, *v_iter);
-      out << val;
-    }
-    out << "])";
+    if (type->is_set())
+        out << ")";
   } else {
     throw "CANNOT GENERATE CONSTANT FOR TYPE: " + type->get_name();
   }
@@ -517,7 +468,7 @@ void t_hs_generator::generate_hs_struct_definition(ofstream& out,
       else
         out << ",";
       string mname = (*m_iter)->get_name();
-      out << "f_" << tname << "_" << mname << " :: Maybe (" << render_hs_type((*m_iter)->get_type()) << ")";
+      out << "f_" << tname << "_" << mname << " :: Maybe " << render_hs_type((*m_iter)->get_type());
     }
     out << "}";
   }
@@ -815,7 +766,7 @@ void t_hs_generator::generate_service_client(t_service* tservice) {
 
     f_client_ << endl;
 
-    if (!(*f_iter)->is_async()) {
+    if (!(*f_iter)->is_oneway()) {
       f_client_ << indent();
       f_client_ <<
         "recv_" << funname << " ip" << endl;
@@ -850,7 +801,7 @@ void t_hs_generator::generate_service_client(t_service* tservice) {
 
     indent_down();
 
-    if (!(*f_iter)->is_async()) {
+    if (!(*f_iter)->is_oneway()) {
       std::string resultname = capitalize((*f_iter)->get_name() + "_result");
       t_struct noargs(program_);
 
@@ -1007,7 +958,7 @@ void t_hs_generator::generate_process_function(t_service* tservice,
   const std::vector<t_field*>& xceptions = xs->get_members();
   vector<t_field*>::const_iterator x_iter;
   int n = xceptions.size();
-  if (!tfunction->is_async()){
+  if (!tfunction->is_oneway()){
     if(!tfunction->get_returntype()->is_void()){
       n++;
     }
@@ -1032,7 +983,7 @@ void t_hs_generator::generate_process_function(t_service* tservice,
   f_service_ << "(do" << endl;
   indent_up();
   f_service_ << indent();
-  if (!tfunction->is_async() && !tfunction->get_returntype()->is_void()){
+  if (!tfunction->is_oneway() && !tfunction->get_returntype()->is_void()){
     f_service_ << "res <- ";
   }
   f_service_ << "Iface." << tfunction->get_name() << " handler";
@@ -1041,21 +992,21 @@ void t_hs_generator::generate_process_function(t_service* tservice,
   }
 
 
-  if (!tfunction->is_async() && !tfunction->get_returntype()->is_void()){
+  if (!tfunction->is_oneway() && !tfunction->get_returntype()->is_void()){
     f_service_ << endl;
     indent(f_service_) << "return rs{f_"<<resultname<<"_success= Just res}";
-  } else if (!tfunction->is_async()){
+  } else if (!tfunction->is_oneway()){
     f_service_ << endl;
     indent(f_service_) << "return rs";
   }
   f_service_ << ")" << endl;
   indent_down();
 
-  if (xceptions.size() > 0 && !tfunction->is_async()) {
+  if (xceptions.size() > 0 && !tfunction->is_oneway()) {
     for (x_iter = xceptions.begin(); x_iter != xceptions.end(); ++x_iter) {
       indent(f_service_) << "(\\e  -> " <<endl;
       indent_up();
-      if(!tfunction->is_async()){
+      if(!tfunction->is_oneway()){
         f_service_ <<
           indent() << "return rs{f_"<<resultname<<"_" << (*x_iter)->get_name() << " =Just e}";
       } else {
@@ -1069,8 +1020,8 @@ void t_hs_generator::generate_process_function(t_service* tservice,
 
 
 
-  // Shortcut out here for async functions
-  if (tfunction->is_async()) {
+  // Shortcut out here for oneway functions
+  if (tfunction->is_oneway()) {
     f_service_ <<
       indent() << "return ()" << endl;
     indent_down();
@@ -1355,19 +1306,15 @@ string t_hs_generator::function_type(t_function* tfunc, bool options, bool io, b
   const vector<t_field*>& fields = tfunc->get_arglist()->get_members();
   vector<t_field*>::const_iterator f_iter;
   for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
-    if(options)
-      result += "Maybe (";
-    result += render_hs_type((*f_iter)->get_type());
-    if(options)
-      result+=")";
+    if(options) result += "Maybe ";
+    result += render_hs_type((*f_iter)->get_type(), options);
     result += " -> ";
   }
   if(fields.empty() && !method){
     result += "() -> ";
   }
-  if(io) result += "IO (";
-  result += render_hs_type(tfunc->get_returntype());
-  if(io) result += ")";
+  if(io) result += "IO ";
+  result += render_hs_type(tfunc->get_returntype(), io);
   return result;
 }
 
@@ -1434,8 +1381,9 @@ string t_hs_generator::type_to_enum(t_type* type) {
 /**
  * Converts the parse type to an haskell type
  */
-string t_hs_generator::render_hs_type(t_type* type) {
+string t_hs_generator::render_hs_type(t_type* type, bool needs_parens) {
   type = get_true_type(type);
+  string type_repr;
 
   if (type->is_base_type()) {
     t_base_type::t_base tbase = ((t_base_type*)type)->get_base();
@@ -1443,7 +1391,7 @@ string t_hs_generator::render_hs_type(t_type* type) {
     case t_base_type::TYPE_VOID:
       return "()";
     case t_base_type::TYPE_STRING:
-      return "[Char]";
+      return "String";
     case t_base_type::TYPE_BOOL:
       return "Bool";
     case t_base_type::TYPE_BYTE:
@@ -1453,7 +1401,7 @@ string t_hs_generator::render_hs_type(t_type* type) {
     case t_base_type::TYPE_I32:
       return "Int";
     case t_base_type::TYPE_I64:
-      return "Int";
+      return "Int64";
     case t_base_type::TYPE_DOUBLE:
       return "Double";
     }
@@ -1464,16 +1412,20 @@ string t_hs_generator::render_hs_type(t_type* type) {
   } else if (type->is_map()) {
     t_type* ktype = ((t_map*)type)->get_key_type();
     t_type* vtype = ((t_map*)type)->get_val_type();
-    return "Map.Map ("+ render_hs_type(ktype)+") ("+render_hs_type(vtype)+")";
+
+    type_repr = "Map.Map " + render_hs_type(ktype, true) + " " + render_hs_type(vtype, true);
   } else if (type->is_set()) {
     t_type* etype = ((t_set*)type)->get_elem_type();
-    return "Set.Set ("+render_hs_type(etype)+")";
+
+    type_repr = "Set.Set " + render_hs_type(etype, true) ;
   } else if (type->is_list()) {
     t_type* etype = ((t_list*)type)->get_elem_type();
-    return "["+render_hs_type(etype)+"]";
+    return "[" + render_hs_type(etype, false) + "]";
+  } else {
+    throw "INVALID TYPE IN type_to_enum: " + type->get_name();
   }
 
-  throw "INVALID TYPE IN type_to_enum: " + type->get_name();
+  return needs_parens ? "(" + type_repr + ")" : type_repr;
 }
 
 

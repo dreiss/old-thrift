@@ -538,7 +538,7 @@ string t_cpp_generator::render_const_value(ofstream& out, string name, t_type* t
     t_base_type::t_base tbase = ((t_base_type*)type)->get_base();
     switch (tbase) {
     case t_base_type::TYPE_STRING:
-      render << "\"" + value->get_string() + "\"";
+      render << '"' << get_escaped_string(value) << '"';
       break;
     case t_base_type::TYPE_BOOL:
       render << ((value->get_integer() > 0) ? "true" : "false");
@@ -1590,7 +1590,7 @@ void t_cpp_generator::generate_service_client(t_service* tservice) {
                              (*f_iter)->get_arglist());
     indent(f_header_) << function_signature(*f_iter) << ";" << endl;
     indent(f_header_) << function_signature(&send_function) << ";" << endl;
-    if (!(*f_iter)->is_async()) {
+    if (!(*f_iter)->is_oneway()) {
       t_struct noargs(program_);
       t_function recv_function((*f_iter)->get_returntype(),
                                string("recv_") + (*f_iter)->get_name(),
@@ -1646,7 +1646,7 @@ void t_cpp_generator::generate_service_client(t_service* tservice) {
     }
     f_service_ << ");" << endl;
 
-    if (!(*f_iter)->is_async()) {
+    if (!(*f_iter)->is_oneway()) {
       f_service_ << indent();
       if (!(*f_iter)->get_returntype()->is_void()) {
         if (is_complex_type((*f_iter)->get_returntype())) {
@@ -1698,8 +1698,8 @@ void t_cpp_generator::generate_service_client(t_service* tservice) {
     scope_down(f_service_);
     f_service_ << endl;
 
-    // Generate recv function only if not an async function
-    if (!(*f_iter)->is_async()) {
+    // Generate recv function only if not an oneway function
+    if (!(*f_iter)->is_oneway()) {
       t_struct noargs(program_);
       t_function recv_function((*f_iter)->get_returntype(),
                                string("recv_") + (*f_iter)->get_name(),
@@ -1965,7 +1965,7 @@ void t_cpp_generator::generate_service_processor(t_service* tservice) {
  */
 void t_cpp_generator::generate_function_helpers(t_service* tservice,
                                                 t_function* tfunction) {
-  if (tfunction->is_async()) {
+  if (tfunction->is_oneway()) {
     return;
   }
 
@@ -2021,7 +2021,7 @@ void t_cpp_generator::generate_process_function(t_service* tservice,
   vector<t_field*>::const_iterator x_iter;
 
   // Declare result
-  if (!tfunction->is_async()) {
+  if (!tfunction->is_oneway()) {
     f_service_ <<
       indent() << resultname << " result;" << endl;
   }
@@ -2038,7 +2038,7 @@ void t_cpp_generator::generate_process_function(t_service* tservice,
 
   bool first = true;
   f_service_ << indent();
-  if (!tfunction->is_async() && !tfunction->get_returntype()->is_void()) {
+  if (!tfunction->is_oneway() && !tfunction->get_returntype()->is_void()) {
     if (is_complex_type(tfunction->get_returntype())) {
       first = false;
       f_service_ << "iface_->" << tfunction->get_name() << "(result.success";
@@ -2060,7 +2060,7 @@ void t_cpp_generator::generate_process_function(t_service* tservice,
   f_service_ << ");" << endl;
 
   // Set isset on success field
-  if (!tfunction->is_async() && !tfunction->get_returntype()->is_void()) {
+  if (!tfunction->is_oneway() && !tfunction->get_returntype()->is_void()) {
     f_service_ <<
       indent() << "result.__isset.success = true;" << endl;
   }
@@ -2068,10 +2068,10 @@ void t_cpp_generator::generate_process_function(t_service* tservice,
   indent_down();
   f_service_ << indent() << "}";
 
-  if (!tfunction->is_async()) {
+  if (!tfunction->is_oneway()) {
     for (x_iter = xceptions.begin(); x_iter != xceptions.end(); ++x_iter) {
       f_service_ << " catch (" << type_name((*x_iter)->get_type()) << " &" << (*x_iter)->get_name() << ") {" << endl;
-      if (!tfunction->is_async()) {
+      if (!tfunction->is_oneway()) {
         indent_up();
         f_service_ <<
           indent() << "result." << (*x_iter)->get_name() << " = " << (*x_iter)->get_name() << ";" << endl <<
@@ -2086,7 +2086,7 @@ void t_cpp_generator::generate_process_function(t_service* tservice,
 
   f_service_ << " catch (const std::exception& e) {" << endl;
 
-  if (!tfunction->is_async()) {
+  if (!tfunction->is_oneway()) {
     indent_up();
     f_service_ <<
       indent() << "apache::thrift::TApplicationException x(e.what());" << endl <<
@@ -2100,8 +2100,8 @@ void t_cpp_generator::generate_process_function(t_service* tservice,
   }
   f_service_ << indent() << "}" << endl;
 
-  // Shortcut out here for async functions
-  if (tfunction->is_async()) {
+  // Shortcut out here for oneway functions
+  if (tfunction->is_oneway()) {
     f_service_ <<
       indent() << "return;" << endl;
     indent_down();

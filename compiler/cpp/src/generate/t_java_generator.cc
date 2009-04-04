@@ -259,16 +259,14 @@ string t_java_generator::java_type_imports() {
 
   return
     string() +
+    hash_builder +
     "import java.util.List;\n" +
     "import java.util.ArrayList;\n" +
     "import java.util.Map;\n" +
     "import java.util.HashMap;\n" +
     "import java.util.Set;\n" +
     "import java.util.HashSet;\n" +
-    "import java.util.Collections;\n" +
-    hash_builder +
-    "import org.apache.thrift.*;\n" +
-    "import org.apache.thrift.meta_data.*;\n\n";
+    "import java.util.Collections;\n\n";
 }
 
 /**
@@ -279,8 +277,9 @@ string t_java_generator::java_type_imports() {
 string t_java_generator::java_thrift_imports() {
   return
     string() +
-    "import org.apache.thrift.protocol.*;\n" +
-    "import org.apache.thrift.transport.*;\n\n";
+    "import org.apache.thrift.*;\n" +
+    "import org.apache.thrift.meta_data.*;\n" +
+    "import org.apache.thrift.protocol.*;\n\n";
 }
 
 /**
@@ -520,7 +519,7 @@ string t_java_generator::render_const_value(ofstream& out, string name, t_type* 
     t_base_type::t_base tbase = ((t_base_type*)type)->get_base();
     switch (tbase) {
     case t_base_type::TYPE_STRING:
-      render << "\"" + value->get_string() + "\"";
+      render << '"' << get_escaped_string(value) << '"';
       break;
     case t_base_type::TYPE_BOOL:
       render << ((value->get_integer() > 0) ? "true" : "false");
@@ -1808,7 +1807,7 @@ void t_java_generator::generate_service_client(t_service* tservice) {
     }
     f_service_ << ");" << endl;
 
-    if (!(*f_iter)->is_async()) {
+    if (!(*f_iter)->is_oneway()) {
       f_service_ << indent();
       if (!(*f_iter)->get_returntype()->is_void()) {
         f_service_ << "return ";
@@ -1848,7 +1847,7 @@ void t_java_generator::generate_service_client(t_service* tservice) {
     scope_down(f_service_);
     f_service_ << endl;
 
-    if (!(*f_iter)->is_async()) {
+    if (!(*f_iter)->is_oneway()) {
       string resultname = (*f_iter)->get_name() + "_result";
 
       t_struct noargs(program_);
@@ -2018,7 +2017,7 @@ void t_java_generator::generate_service_server(t_service* tservice) {
  * @param tfunction The function
  */
 void t_java_generator::generate_function_helpers(t_function* tfunction) {
-  if (tfunction->is_async()) {
+  if (tfunction->is_oneway()) {
     return;
   }
 
@@ -2067,8 +2066,8 @@ void t_java_generator::generate_process_function(t_service* tservice,
   const std::vector<t_field*>& xceptions = xs->get_members();
   vector<t_field*>::const_iterator x_iter;
 
-  // Declare result for non async function
-  if (!tfunction->is_async()) {
+  // Declare result for non oneway function
+  if (!tfunction->is_oneway()) {
     f_service_ <<
       indent() << resultname << " result = new " << resultname << "();" << endl;
   }
@@ -2086,7 +2085,7 @@ void t_java_generator::generate_process_function(t_service* tservice,
   vector<t_field*>::const_iterator f_iter;
 
   f_service_ << indent();
-  if (!tfunction->is_async() && !tfunction->get_returntype()->is_void()) {
+  if (!tfunction->is_oneway() && !tfunction->get_returntype()->is_void()) {
     f_service_ << "result.success = ";
   }
   f_service_ <<
@@ -2103,17 +2102,17 @@ void t_java_generator::generate_process_function(t_service* tservice,
   f_service_ << ");" << endl;
 
   // Set isset on success field
-  if (!tfunction->is_async() && !tfunction->get_returntype()->is_void() && !type_can_be_null(tfunction->get_returntype())) {
+  if (!tfunction->is_oneway() && !tfunction->get_returntype()->is_void() && !type_can_be_null(tfunction->get_returntype())) {
     f_service_ <<
       indent() << "result.__isset.success = true;" << endl;
   }
 
-  if (!tfunction->is_async() && xceptions.size() > 0) {
+  if (!tfunction->is_oneway() && xceptions.size() > 0) {
     indent_down();
     f_service_ << indent() << "}";
     for (x_iter = xceptions.begin(); x_iter != xceptions.end(); ++x_iter) {
       f_service_ << " catch (" << type_name((*x_iter)->get_type(), false, false) << " " << (*x_iter)->get_name() << ") {" << endl;
-      if (!tfunction->is_async()) {
+      if (!tfunction->is_oneway()) {
         indent_up();
         f_service_ <<
           indent() << "result." << (*x_iter)->get_name() << " = " << (*x_iter)->get_name() << ";" << endl;
@@ -2126,8 +2125,8 @@ void t_java_generator::generate_process_function(t_service* tservice,
     f_service_ << endl;
   }
 
-  // Shortcut out here for async functions
-  if (tfunction->is_async()) {
+  // Shortcut out here for oneway functions
+  if (tfunction->is_oneway()) {
     f_service_ <<
       indent() << "return;" << endl;
     scope_down(f_service_);
