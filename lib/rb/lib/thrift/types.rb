@@ -1,3 +1,22 @@
+# 
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements. See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership. The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License. You may obtain a copy of the License at
+# 
+#   http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the License for the
+# specific language governing permissions and limitations
+# under the License.
+# 
+
 require 'set'
 
 module Thrift
@@ -16,7 +35,6 @@ module Thrift
     SET = 14
     LIST = 15
   end
-  deprecate_module! :TType => Types
 
   class << self
     attr_accessor :type_checking
@@ -60,6 +78,8 @@ module Thrift
       value.each do |el|
         check_type(el, field[:element], "#{name}.element", false)
       end
+    when Types::STRUCT
+      raise TypeError, "Expected #{field[:class]}, received #{value.class} for field #{name}" unless field[:class] == value.class
     end
   end
 
@@ -75,7 +95,6 @@ module Thrift
     REPLY = 2
     EXCEPTION = 3
   end
-  deprecate_module! :TMessageType => MessageTypes
 end
 
 Thrift.type_checking = false if Thrift.type_checking.nil?

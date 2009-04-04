@@ -16,6 +16,25 @@
 #include <stdint.h>
 #include <netinet/in.h>
 
+/* Fix endianness issues on Solaris */
+#if defined (__SVR4) && defined (__sun)
+ #if defined(__i386) && !defined(__i386__)
+  #define __i386__
+ #endif
+
+ #ifndef BIG_ENDIAN
+  #define BIG_ENDIAN (4321)
+ #endif
+ #ifndef LITTLE_ENDIAN
+  #define LITTLE_ENDIAN (1234)
+ #endif
+
+ /* I386 is LE, even on Solaris */
+ #if !defined(BYTE_ORDER) && defined(__i386__)
+  #define BYTE_ORDER LITTLE_ENDIAN
+ #endif
+#endif
+
 // TODO(dreiss): defval appears to be unused.  Look into removing it.
 // TODO(dreiss): Make parse_spec_args recursive, and cache the output
 //               permanently in the object.  (Malloc and orphan.)
@@ -49,6 +68,16 @@ typedef enum TType {
   T_UTF8       = 16,
   T_UTF16      = 17
 } TType;
+
+#ifndef __BYTE_ORDER
+# if defined(BYTE_ORDER) && defined(LITTLE_ENDIAN) && defined(BIG_ENDIAN)
+#  define __BYTE_ORDER BYTE_ORDER
+#  define __LITTLE_ENDIAN LITTLE_ENDIAN
+#  define __BIG_ENDIAN BIG_ENDIAN
+# else
+#  error "Cannot determine endianness"
+# endif
+#endif
 
 // Same comment as the enum.  Sorry.
 #if __BYTE_ORDER == __BIG_ENDIAN
@@ -419,7 +448,7 @@ output_val(PyObject* output, PyObject* value, TType type, PyObject* typeargs) {
 
   case T_MAP: {
     PyObject *k, *v;
-    int pos = 0;
+    Py_ssize_t pos = 0;
     Py_ssize_t len;
 
     MapTypeArgs parsedargs;
@@ -450,6 +479,8 @@ output_val(PyObject* output, PyObject* value, TType type, PyObject* typeargs) {
         Py_DECREF(v);
         return false;
       }
+      Py_DECREF(k);
+      Py_DECREF(v);
     }
     break;
   }
@@ -860,8 +891,12 @@ decode_struct(DecodeBuffer* input, PyObject* output, PyObject* spec_seq) {
       return false;
     }
     if (parsedspec.type != type) {
-      PyErr_SetString(PyExc_TypeError, "struct field had wrong type while reading");
-      return false;
+      if (!skip(input, type)) {
+        PyErr_SetString(PyExc_TypeError, "struct field had wrong type while reading and can't be skipped");
+        return false;
+      } else {
+        continue;
+      }
     }
 
     fieldval = decode_val(input, parsedspec.type, parsedspec.typeargs);

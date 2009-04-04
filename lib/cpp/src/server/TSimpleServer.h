@@ -10,7 +10,7 @@
 #include "server/TServer.h"
 #include "transport/TServerTransport.h"
 
-namespace facebook { namespace thrift { namespace server {
+namespace apache { namespace thrift { namespace server {
 
 /**
  * This is the most basic simple server. It is single-threaded and runs a
@@ -18,7 +18,6 @@ namespace facebook { namespace thrift { namespace server {
  * that connection until it closes, and then repeating. It is a good example
  * of how to extend the TServer interface.
  *
- * @author Mark Slee <mcslee@facebook.com>
  */
 class TSimpleServer : public TServer {
  public:
@@ -53,6 +52,6 @@ class TSimpleServer : public TServer {
 
 };
 
-}}} // facebook::thrift::server
+}}} // apache::thrift::server
 
 #endif // #ifndef _THRIFT_SERVER_TSIMPLESERVER_H_

@@ -1,14 +1,21 @@
-//
-//  TField.cs
-//
-//  Begin:  Aug 19, 2007
-//  Authors:
-//		Todd Berman <tberman@imeem.com>
-//
-//  Distributed under the Thrift Software License
-//
-//  See accompanying file LICENSE or visit the Thrift site at:
-//  http://developers.facebook.com/thrift/using
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 
 using System;
 using System.Collections.Generic;
@@ -18,30 +25,34 @@ namespace Thrift.Protocol
 {
 	public struct TField
 	{
+		private string name;
+		private TType type;
+		private short id;
+
 		public TField(string name, TType type, short id)
 			:this()
 		{
-			Name = name;
-			Type = type;
-			ID = id;
+			this.name = name;
+			this.type = type;
+			this.id = id;
 		}
 
 		public string Name
 		{
-			get;
-			set;
+			get { return name; }
+			set { name = value; }
 		}
 
 		public TType Type
 		{
-			get;
-			set;
+			get { return type; }
+			set { type = value; }
 		}
 
 		public short ID
 		{
-			get;
-			set;
+			get { return id; }
+			set { id = value; }
 		}
 	}
 }

@@ -11,13 +11,12 @@
 #include "TTransportException.h"
 #include <boost/shared_ptr.hpp>
 
-namespace facebook { namespace thrift { namespace transport {
+namespace apache { namespace thrift { namespace transport {
 
 /**
  * Server transport framework. A server needs to have some facility for
  * creating base transports to read/write from.
  *
- * @author Mark Slee <mcslee@facebook.com>
  */
 class TServerTransport {
  public:
@@ -75,6 +74,6 @@ class TServerTransport {
 
 };
 
-}}} // facebook::thrift::transport
+}}} // apache::thrift::transport
 
 #endif // #ifndef _THRIFT_TRANSPORT_TSERVERTRANSPORT_H_

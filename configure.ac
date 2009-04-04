@@ -41,15 +41,16 @@ AM_CONDITIONAL([AMX_HAVE_ZLIB], [test "$success" = "yes"])
 
 AX_THRIFT_LIB(csharp, [C#], yes)
 if test "$with_csharp" = "yes";  then
-  PKG_CHECK_MODULES(MONO, mono >= 1.2.6, have_mono=yes, have_mono=no)
+  PKG_CHECK_MODULES(MONO, mono >= 2.0.0, net_3_5=yes, net_3_5=no)
+  PKG_CHECK_MODULES(MONO, mono >= 1.2.4, have_mono=yes, have_mono=no)
 fi
 AM_CONDITIONAL(WITH_MONO, [test "$have_mono" = "yes"])
+AM_CONDITIONAL(NET_2_0, [test "$net_3_5" = "no"])
 
 AX_THRIFT_LIB(java, [Java], yes)
 if test "$with_java" = "yes";  then
+  AX_JAVAC_AND_JAVA
   AC_PATH_PROG([ANT], [ant])
-  AX_PROG_JAVAC
-  AX_PROG_JAVA
 fi
 AM_CONDITIONAL([WITH_JAVA],
                [test -n "$ANT" -a -n "$JAVA" -a -n "$JAVAC"])
@@ -65,6 +66,12 @@ if test "$with_py" = "yes";  then
   AM_PATH_PYTHON(2.4,, :)
 fi
 AM_CONDITIONAL(WITH_PYTHON, [test -n "$PYTHON" -a "$PYTHON" != ":"])
+
+AX_THRIFT_LIB(perl, [Perl], yes)
+if test "$with_perl" = "yes"; then
+  AC_PATH_PROG([PERL], [perl])
+fi
+AM_CONDITIONAL(WITH_PERL, [test -n "$PERL"])
 
 AX_THRIFT_LIB(ruby, [Ruby], yes)
 if test "$with_ruby" = "yes"; then
@@ -154,6 +161,10 @@ AX_THRIFT_GEN(rb, [Ruby], yes)
 AM_CONDITIONAL([THRIFT_GEN_rb], [test "$ax_thrift_gen_rb" = "yes"])
 AX_THRIFT_GEN(perl, [Perl], yes)
 AM_CONDITIONAL([THRIFT_GEN_perl], [test "$ax_thrift_gen_perl" = "yes"])
+AX_THRIFT_GEN(php, [PHP], yes)
+AM_CONDITIONAL([THRIFT_GEN_php], [test "$ax_thrift_gen_php" = "yes"])
+AX_THRIFT_GEN(erl, [Erlang], yes)
+AM_CONDITIONAL([THRIFT_GEN_erl], [test "$ax_thrift_gen_erl" = "yes"])
 AX_THRIFT_GEN(cocoa, [Cocoa], yes)
 AM_CONDITIONAL([THRIFT_GEN_cocoa], [test "$ax_thrift_gen_cocoa" = "yes"])
 AX_THRIFT_GEN(st, [Smalltalk], yes)
@@ -162,6 +173,10 @@ AX_THRIFT_GEN(ocaml, [OCaml], yes)
 AM_CONDITIONAL([THRIFT_GEN_ocaml], [test "$ax_thrift_gen_ocaml" = "yes"])
 AX_THRIFT_GEN(hs, [Haskell], yes)
 AM_CONDITIONAL([THRIFT_GEN_hs], [test "$ax_thrift_gen_hs" = "yes"])
+AX_THRIFT_GEN(xsd, [XSD], yes)
+AM_CONDITIONAL([THRIFT_GEN_xsd], [test "$ax_thrift_gen_xsd" = "yes"])
+AX_THRIFT_GEN(html, [HTML], yes)
+AM_CONDITIONAL([THRIFT_GEN_html], [test "$ax_thrift_gen_html" = "yes"])
 
 AC_CONFIG_HEADERS(config.h:config.hin)
 
@@ -175,12 +190,12 @@ AC_CONFIG_FILES([
   lib/cpp/thrift-z.pc
   lib/csharp/Makefile
   lib/java/Makefile
+  lib/perl/Makefile
+  lib/perl/test/Makefile
   lib/py/Makefile
   lib/rb/Makefile
-  if/Makefile
   test/Makefile
   test/py/Makefile
-  test/java/Makefile
   test/rb/Makefile
 ])
 

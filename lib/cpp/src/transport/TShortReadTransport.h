@@ -11,14 +11,13 @@
 
 #include <transport/TTransport.h>
 
-namespace facebook { namespace thrift { namespace transport { namespace test {
+namespace apache { namespace thrift { namespace transport { namespace test {
 
 /**
  * This class is only meant for testing.  It wraps another transport.
  * Calls to read are passed through with some probability.  Otherwise,
  * the read amount is randomly reduced before being passed through.
  *
- * @author David Reiss <dreiss@facebook.com>
  */
 class TShortReadTransport : public TTransport {
  public:
@@ -79,6 +78,6 @@ class TShortReadTransport : public TTransport {
   double fullProb_;
 };
 
-}}}} // facebook::thrift::transport::test
+}}}} // apache::thrift::transport::test
 
 #endif // #ifndef _THRIFT_TRANSPORT_TSHORTREADTRANSPORT_H_

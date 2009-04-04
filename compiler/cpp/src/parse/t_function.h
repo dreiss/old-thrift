@@ -17,18 +17,17 @@
  * optional modifiers, and an argument list, which is implemented as a thrift
  * struct.
  *
- * @author Mark Slee <mcslee@facebook.com>
  */
 class t_function : public t_doc {
  public:
   t_function(t_type* returntype,
              std::string name,
              t_struct* arglist,
-             bool async=false) :
+             bool oneway=false) :
     returntype_(returntype),
     name_(name),
     arglist_(arglist),
-    async_(async) {
+    oneway_(oneway) {
     xceptions_ = new t_struct(NULL);
   }
 
@@ -36,15 +35,15 @@ class t_function : public t_doc {
              std::string name,
              t_struct* arglist,
              t_struct* xceptions,
-             bool async=false) :
+             bool oneway=false) :
     returntype_(returntype),
     name_(name),
     arglist_(arglist),
     xceptions_(xceptions),
-    async_(async)
+    oneway_(oneway)
   {
-    if (async_ && !xceptions_->get_members().empty()) {
-      throw std::string("Async methods can't throw exceptions.");
+    if (oneway_ && !xceptions_->get_members().empty()) {
+      throw std::string("Oneway methods can't throw exceptions.");
     }
   }
 
@@ -66,8 +65,8 @@ class t_function : public t_doc {
     return xceptions_;
   }
 
-  bool is_async() const {
-    return async_;
+  bool is_oneway() const {
+    return oneway_;
   }
 
  private:
@@ -75,7 +74,7 @@ class t_function : public t_doc {
   std::string name_;
   t_struct* arglist_;
   t_struct* xceptions_;
-  bool async_;
+  bool oneway_;
 };
 
 #endif

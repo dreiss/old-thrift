@@ -16,14 +16,13 @@
 #include <set>
 #include <stdint.h>
 
-namespace facebook { namespace thrift { namespace concurrency { namespace test {
+namespace apache { namespace thrift { namespace concurrency { namespace test {
 
-using namespace facebook::thrift::concurrency;
+using namespace apache::thrift::concurrency;
 
 /**
  * ThreadManagerTests class
  *
- * @author marc
  * @version $Id:$
  */
 class ThreadManagerTests {
@@ -348,7 +347,7 @@ public:
 
 const double ThreadManagerTests::ERROR = .20;
 
-}}}} // facebook::thrift::concurrency
+}}}} // apache::thrift::concurrency
 
-using namespace facebook::thrift::concurrency::test;
+using namespace apache::thrift::concurrency::test;
 

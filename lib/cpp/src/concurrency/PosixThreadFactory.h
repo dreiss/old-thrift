@@ -11,12 +11,11 @@
 
 #include <boost/shared_ptr.hpp>
 
-namespace facebook { namespace thrift { namespace concurrency {
+namespace apache { namespace thrift { namespace concurrency {
 
 /**
  * A thread factory to create posix threads
  *
- * @author marc
  * @version $Id:$
  */
 class PosixThreadFactory : public ThreadFactory {
@@ -113,6 +112,6 @@ class PosixThreadFactory : public ThreadFactory {
   boost::shared_ptr<Impl> impl_;
 };
 
-}}} // facebook::thrift::concurrency
+}}} // apache::thrift::concurrency
 
 #endif // #ifndef _THRIFT_CONCURRENCY_POSIXTHREADFACTORY_H_

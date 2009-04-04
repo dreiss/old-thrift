@@ -9,18 +9,17 @@
 #include <string>
 #include <iostream>
 
-namespace facebook { namespace thrift { namespace server {
+namespace apache { namespace thrift { namespace server {
 
 using namespace std;
-using namespace facebook::thrift;
-using namespace facebook::thrift::protocol;
-using namespace facebook::thrift::transport;
+using namespace apache::thrift;
+using namespace apache::thrift::protocol;
+using namespace apache::thrift::transport;
 using boost::shared_ptr;
 
 /**
  * A simple single-threaded application server. Perfect for unit tests!
  *
- * @author Mark Slee <mcslee@facebook.com>
  */
 void TSimpleServer::serve() {
 
@@ -103,4 +102,4 @@ void TSimpleServer::serve() {
   }
 }
 
-}}} // facebook::thrift::server
+}}} // apache::thrift::server

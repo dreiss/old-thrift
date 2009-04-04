@@ -10,12 +10,11 @@
 #include <vector>
 #include "TSocket.h"
 
-namespace facebook { namespace thrift { namespace transport {
+namespace apache { namespace thrift { namespace transport {
 
  /**
   * Class to hold server information for TSocketPool
   *
-  * @author Akhil Wable <akhil@facebook.com>
   */
 class TSocketPoolServer {
 
@@ -49,7 +48,6 @@ class TSocketPoolServer {
 /**
  * TCP Socket implementation of the TTransport interface.
  *
- * @author Mark Slee <mcslee@facebook.com>
  */
 class TSocketPool : public TSocket {
 
@@ -174,7 +172,7 @@ class TSocketPool : public TSocket {
    bool alwaysTryLast_;
 };
 
-}}} // facebook::thrift::transport
+}}} // apache::thrift::transport
 
 #endif // #ifndef _THRIFT_TRANSPORT_TSOCKETPOOL_H_
 

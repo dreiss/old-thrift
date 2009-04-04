@@ -15,14 +15,13 @@
 #include <map>
 #include <time.h>
 
-namespace facebook { namespace thrift { namespace concurrency {
+namespace apache { namespace thrift { namespace concurrency {
 
 /**
  * Timer Manager
  *
  * This class dispatches timer tasks when they fall due.
  *
- * @author marc
  * @version $Id:$
  */
 class TimerManager {
@@ -103,6 +102,6 @@ class TimerManager {
   boost::shared_ptr<Thread> dispatcherThread_;
 };
 
-}}} // facebook::thrift::concurrency
+}}} // apache::thrift::concurrency
 
 #endif // #ifndef _THRIFT_CONCURRENCY_TIMERMANAGER_H_

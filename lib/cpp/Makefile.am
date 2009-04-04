@@ -22,7 +22,6 @@ AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(srcdir)/src
 # Define the source files for the module
 
 libthrift_la_SOURCES = src/Thrift.cpp \
-                       src/reflection_limited_types.cpp \
                        src/concurrency/Mutex.cpp \
                        src/concurrency/Monitor.cpp \
                        src/concurrency/PosixThreadFactory.cpp \
@@ -37,6 +36,7 @@ libthrift_la_SOURCES = src/Thrift.cpp \
                        src/transport/TTransportException.cpp \
                        src/transport/TFDTransport.cpp \
                        src/transport/TFileTransport.cpp \
+                       src/transport/TSimpleFileTransport.cpp \
                        src/transport/THttpClient.cpp \
                        src/transport/TSocket.cpp \
                        src/transport/TSocketPool.cpp \
@@ -64,7 +64,6 @@ include_thrift_HEADERS = \
                          $(top_builddir)/config.h \
                          src/Thrift.h \
                          src/TReflectionLocal.h \
-                         src/reflection_limited_types.h \
                          src/TProcessor.h \
                          src/TLogging.h
 
@@ -77,6 +76,7 @@ include_concurrency_HEADERS = \
                          src/concurrency/Thread.h \
                          src/concurrency/ThreadManager.h \
                          src/concurrency/TimerManager.h \
+                         src/concurrency/FunctionRunner.h \
                          src/concurrency/Util.h
 
 include_protocoldir = $(include_thriftdir)/protocol
@@ -95,6 +95,7 @@ include_transportdir = $(include_thriftdir)/transport
 include_transport_HEADERS = \
                          src/transport/TFDTransport.h \
                          src/transport/TFileTransport.h \
+                         src/transport/TSimpleFileTransport.h \
                          src/transport/TServerSocket.h \
                          src/transport/TServerTransport.h \
                          src/transport/THttpClient.h \
@@ -104,6 +105,7 @@ include_transport_HEADERS = \
                          src/transport/TTransportException.h \
                          src/transport/TTransportUtils.h \
                          src/transport/TBufferTransports.h \
+                         src/transport/TShortReadTransport.h \
                          src/transport/TZlibTransport.h
 
 include_serverdir = $(include_thriftdir)/server

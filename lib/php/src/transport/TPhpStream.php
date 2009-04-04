@@ -8,7 +8,6 @@
  * http://developers.facebook.com/thrift/
  *
  * @package thrift.transport
- * @author Mark Slee <mcslee@facebook.com>
  */
 
 /**
@@ -16,7 +15,6 @@
  * php://input and php://output
  *
  * @package thrift.transport
- * @author Mark Slee <mcslee@facebook.com>
  */
 class TPhpStream extends TTransport {
 
@@ -38,7 +36,7 @@ class TPhpStream extends TTransport {
 
   public function open() {
     if ($this->read_) {
-      $this->inStream_ = @fopen('php://input', 'r');
+      $this->inStream_ = @fopen(self::inStreamName(), 'r');
       if (!is_resource($this->inStream_)) {
         throw new TException('TPhpStream: Could not open php://input');
       }
@@ -88,6 +86,13 @@ class TPhpStream extends TTransport {
 
   public function flush() {
     @fflush($this->outStream_);
+  }
+
+  private static function inStreamName() {
+    if (php_sapi_name() == 'cli') {
+      return 'php://stdin';
+    }
+    return 'php://input';
   }
 
 }

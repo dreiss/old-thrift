@@ -9,7 +9,7 @@
 
 #include <transport/TBufferTransports.h>
 
-namespace facebook { namespace thrift { namespace transport {
+namespace apache { namespace thrift { namespace transport {
 
 /**
  * HTTP client implementation of the thrift transport. This was irritating
@@ -18,7 +18,6 @@ namespace facebook { namespace thrift { namespace transport {
  * here is a VERY basic HTTP/1.1 client which supports HTTP 100 Continue,
  * chunked transfer encoding, keepalive, etc. Tested against Apache.
  *
- * @author Mark Slee <mcslee@facebook.com>
  */
 class THttpClient : public TTransport {
  public:
@@ -94,6 +93,6 @@ class THttpClient : public TTransport {
 
 };
 
-}}} // facebook::thrift::transport
+}}} // apache::thrift::transport
 
 #endif // #ifndef _THRIFT_TRANSPORT_THTTPCLIENT_H_

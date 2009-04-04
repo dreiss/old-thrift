@@ -13,13 +13,11 @@
 #include "TTransport.h"
 #include "TServerSocket.h"
 
-namespace facebook { namespace thrift { namespace transport {
+namespace apache { namespace thrift { namespace transport {
 
 /**
  * TCP Socket implementation of the TTransport interface.
  *
- * @author Mark Slee <mcslee@facebook.com>
- * @author Aditya Agarwal <aditya@facebook.com>
  */
 class TSocket : public TTransport {
   /**
@@ -225,7 +223,7 @@ class TSocket : public TTransport {
   struct timeval recvTimeval_;
 };
 
-}}} // facebook::thrift::transport
+}}} // apache::thrift::transport
 
 #endif // #ifndef _THRIFT_TRANSPORT_TSOCKET_H_
 

@@ -8,7 +8,6 @@
  * http://developers.facebook.com/thrift/
  *
  * @package thrift.transport
- * @author Mark Slee <mcslee@facebook.com>
  */
 
 /**
@@ -17,7 +16,6 @@
  * read and then serve data out of the internal buffer.
  *
  * @package thrift.transport
- * @author Mark Slee <mcslee@facebook.com>
  */
 class TBufferedTransport extends TTransport {
 
@@ -131,8 +129,13 @@ class TBufferedTransport extends TTransport {
   public function write($buf) {
     $this->wBuf_ .= $buf;
     if (strlen($this->wBuf_) >= $this->wBufSize_) {
-      $this->transport_->write($this->wBuf_);
+      $out = $this->wBuf_;
+
+      // Note that we clear the internal wBuf_ prior to the underlying write
+      // to ensure we're in a sane state (i.e. internal buffer cleaned)
+      // if the underlying write throws up an exception
       $this->wBuf_ = '';
+      $this->transport_->write($out);
     }
   }
 

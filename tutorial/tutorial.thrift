@@ -1,5 +1,3 @@
-#!/usr/local/bin/thrift --gen cpp --gen java --gen py --php --gen rb --gen perl --erl --xsd -r
-#
 # Thrift Tutorial
 # Mark Slee (mcslee@facebook.com)
 #
@@ -21,6 +19,7 @@
  *  i64         Signed 64-bit integer
  *  double      64-bit floating point value
  *  string      String
+ *  binary      Blob (byte array)
  *  map<t1,t2>  Map from one type to another
  *  list<t1>    Ordered list of one type
  *  set<t1>     Set of unique elements of one type
@@ -46,7 +45,7 @@ include "shared.thrift"
  */
 namespace cpp tutorial
 namespace java tutorial
-php_namespace tutorial
+namespace php tutorial
 namespace perl tutorial
 namespace smalltalk.category Thrift.Tutorial
 
@@ -118,11 +117,11 @@ service Calculator extends shared.SharedService {
    i32 calculate(1:i32 logid, 2:Work w) throws (1:InvalidOperation ouch),
 
    /**
-    * This method has an async modifier. That means the client only makes
-    * a request and does not listen for any response at all. Async methods
+    * This method has a oneway modifier. That means the client only makes
+    * a request and does not listen for any response at all. Oneway methods
     * must be void.
     */
-   async void zip()
+   oneway void zip()
 
 }
 

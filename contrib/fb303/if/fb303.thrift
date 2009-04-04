@@ -13,10 +13,7 @@
  * provided in the base implementation, and in other cases they simply define
  * methods that inheriting applications should implement (i.e. status report)
  *
- * @author Mark Slee <mcslee@facebook.com>
  */
-
-include "thrift/if/reflection_limited.thrift"
 
 namespace java com.facebook.fb303
 namespace cpp facebook.fb303
@@ -96,19 +93,13 @@ service FacebookService {
   i64 aliveSince(),
 
   /**
-   * Returns a limited description of this service.
-   */
-  reflection_limited.Service
-  getLimitedReflection(),
-
-  /**
    * Tell the server to reload its configuration, reopen log files, etc
    */
-  async void reinitialize(),
+  oneway void reinitialize(),
 
   /**
    * Suggest a shutdown to the server
    */
-  async void shutdown(),
+  oneway void shutdown(),
 
 }

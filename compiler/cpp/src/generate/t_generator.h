@@ -9,6 +9,7 @@
 
 #include <string>
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include "parse/t_program.h"
 #include "globals.h"
@@ -18,7 +19,6 @@
  * routines for code generation and contains the top level method that
  * dispatches code generation across various components.
  *
- * @author Mark Slee <mcslee@facebook.com>
  */
 class t_generator {
  public:
@@ -27,6 +27,11 @@ class t_generator {
     indent_ = 0;
     program_ = program;
     program_name_ = get_program_name(program);
+    escape_['\n'] = "\\n";
+    escape_['\r'] = "\\r";
+    escape_['\t'] = "\\t";
+    escape_['"']  = "\\\"";
+    escape_['\\'] = "\\\\";
   }
 
   virtual ~t_generator() {}
@@ -39,6 +44,21 @@ class t_generator {
   virtual void generate_program();
 
   const t_program* get_program() const { return program_; }
+
+  void generate_docstring_comment(std::ofstream& out,
+                                  const std::string& comment_start,
+                                  const std::string& line_prefix,
+                                  const std::string& contents,
+                                  const std::string& comment_end);
+
+  /**
+   * Escape string to use one in generated sources.
+   */
+  virtual std::string escape_string(const std::string &in) const;
+
+  std::string get_escaped_string(t_const_value* constval) {
+    return escape_string(constval->get_string());
+  }
 
  protected:
 
@@ -178,6 +198,11 @@ class t_generator {
    * Output type-specifc directory name ("gen-*")
    */
   std::string out_dir_base_;
+
+  /**
+   * Map of characters to escape in string literals.
+   */
+  std::map<char, std::string> escape_;
 
  private:
   /**

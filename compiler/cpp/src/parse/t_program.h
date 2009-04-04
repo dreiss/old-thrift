@@ -40,7 +40,6 @@
  *
  * The program module also contains the definitions of the base types.
  *
- * @author Mark Slee <mcslee@facebook.com>
  */
 class t_program : public t_doc {
  public:
@@ -168,22 +167,6 @@ class t_program : public t_doc {
     return cpp_includes_;
   }
 
-  void set_php_namespace(std::string php_namespace) {
-    php_namespace_ = php_namespace;
-  }
-
-  const std::string& get_php_namespace() const {
-    return php_namespace_;
-  }
-
-  void set_xsd_namespace(std::string xsd_namespace) {
-    xsd_namespace_ = xsd_namespace;
-  }
-
-  const std::string& get_xsd_namespace() const {
-    return xsd_namespace_;
-  }
-
  private:
 
   // File path
@@ -221,12 +204,6 @@ class t_program : public t_doc {
 
   // C++ extra includes
   std::vector<std::string> cpp_includes_;
-
-  // PHP namespace
-  std::string php_namespace_;
-
-  // XSD namespace
-  std::string xsd_namespace_;
 
 };
 

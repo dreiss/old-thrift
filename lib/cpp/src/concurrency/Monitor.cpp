@@ -15,12 +15,11 @@
 
 #include <pthread.h>
 
-namespace facebook { namespace thrift { namespace concurrency {
+namespace apache { namespace thrift { namespace concurrency {
 
 /**
  * Monitor implementation using the POSIX pthread library
  *
- * @author marc
  * @version $Id:$
  */
 class Monitor::Impl {
@@ -66,7 +65,9 @@ class Monitor::Impl {
                                           &pthread_mutex_,
                                           &abstime);
       if (result == ETIMEDOUT) {
-        assert(Util::currentTime() >= (now + timeout));
+        // pthread_cond_timedwait has been observed to return early on
+        // various platforms, so comment out this assert.
+        //assert(Util::currentTime() >= (now + timeout));
         throw TimedOutException();
       }
     }
@@ -120,4 +121,4 @@ void Monitor::notify() const { impl_->notify(); }
 
 void Monitor::notifyAll() const { impl_->notifyAll(); }
 
-}}} // facebook::thrift::concurrency
+}}} // apache::thrift::concurrency

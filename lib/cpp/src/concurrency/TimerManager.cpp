@@ -12,7 +12,7 @@
 #include <iostream>
 #include <set>
 
-namespace facebook { namespace thrift { namespace concurrency {
+namespace apache { namespace thrift { namespace concurrency {
 
 using boost::shared_ptr;
 
@@ -22,7 +22,6 @@ typedef std::pair<task_iterator, task_iterator> task_range;
 /**
  * TimerManager class
  *
- * @author marc
  * @version $Id:$
  */
 class TimerManager::Task : public Runnable {
@@ -268,5 +267,5 @@ void TimerManager::remove(shared_ptr<Runnable> task) {
 
 const TimerManager::STATE TimerManager::state() const { return state_; }
 
-}}} // facebook::thrift::concurrency
+}}} // apache::thrift::concurrency
 

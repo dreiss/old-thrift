@@ -22,6 +22,11 @@ struct Bonk
   2: i32 type
 }
 
+struct Bools {
+  1: bool im_true,
+  2: bool im_false,
+}
+
 struct Xtruct
 {
   1:  string string_thing,
@@ -41,6 +46,12 @@ struct Insanity
 {
   1: map<Numberz, UserId> userMap,
   2: list<Xtruct> xtructs
+}
+
+struct CrazyNesting {
+  1: string string_field,
+  2: optional set<Insanity> set_field,
+  3: required list< map<set<i32>,map<i32,set<list<map<Insanity,string>>>>>> list_field
 }
 
 exception Xception {
@@ -91,8 +102,8 @@ service ThriftTest
 
   Xtruct testMultiException(string arg0, string arg1) throws(Xception err1, Xception2 err2)
 
-  /* Test async void */
-  async void testAsync(1:i32 secondsToSleep)
+  /* Test oneway void */
+  oneway void testOneway(1:i32 secondsToSleep)
 }
 
 service SecondService
@@ -102,6 +113,7 @@ service SecondService
 
 struct VersioningTestV1 {
        1: i32 begin_in_both,
+       3: string old_string,
        12: i32 end_in_both
 }
 

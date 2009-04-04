@@ -2,32 +2,108 @@
 
   <description>Thrift Build File</description>
 
+  <property name="gen" location="gen-java" />
+  <property name="genbean" location="gen-javabean" />
+
   <property name="src" location="src" />
   <property name="build" location="build" />
+  <property name="javadoc" location="${build}/javadoc" />
   <property name="install.path" value="/usr/local/lib" />
+  <property name="src.test" location="test" />
+  <property name="build.test" location="${build}/test" />
+  <property name="test.thrift.home" location="../../test"/>
+
+  <property file="${user.home}/.thrift-build.properties" />
+
+  <property name="cpath" location="libthrift.jar:${thrift.extra.cpath}" />
 
   <target name="init">
     <tstamp />
     <mkdir dir="${build}"/>
+    <mkdir dir="${build.test}" />
   </target>
 
   <target name="compile" depends="init">
-    <javac srcdir="${src}" destdir="${build}" />
+    <javac srcdir="${src}" destdir="${build}" source="1.5" debug="true"/>
+  </target>
+
+  <target name="javadoc" depends="init">
+    <javadoc sourcepath="${src}"
+      destdir="${javadoc}"
+      version="true"
+      windowtitle="Thrift Java API"
+      doctitle="Thrift Java API">
+    </javadoc>
   </target>
 
   <target name="dist" depends="compile">
-    <jar jarfile="libthrift.jar" basedir="${build}"/>
+    <jar jarfile="libthrift.jar">
+      <fileset dir="${build}">
+        <include name="**/*.class" />
+      </fileset>
+      <fileset dir="src">
+        <include name="**/*.java" />
+      </fileset>
+    </jar>
   </target>
 
-  <target name="install" depends="dist">
+  <target name="install" depends="dist,javadoc">
     <exec executable="install">
       <arg line="libthrift.jar ${install.path}" />
     </exec>
+    <copy todir="${install.javadoc.path}">
+      <fileset dir="${javadoc}">
+        <include name="**/*" />
+      </fileset>
+    </copy>
   </target>
 
   <target name="clean">
     <delete dir="${build}" />
+    <delete dir="${gen}"/>
+    <delete dir="${genbean}"/>
+    <delete dir="${javadoc}"/>
     <delete file="libthrift.jar" />
+  </target>
+
+  <target name="compile-test" description="Build the test suite classes" depends="generate,dist">
+    <javac debug="true" srcdir="${gen}" destdir="${build.test}" classpath="${cpath}" />
+    <javac debug="true" srcdir="${genbean}" destdir="${build.test}" classpath="${cpath}" />
+    <javac debug="true" srcdir="${src.test}" destdir="${build.test}" classpath="${cpath}:${gen}" />
+  </target>
+
+  <target name="test" description="Run the full test suite" depends="compile-test">
+    <java classname="org.apache.thrift.test.JSONProtoTest"
+      classpath="${cpath}:${build.test}" failonerror="true" />
+    <java classname="org.apache.thrift.test.TCompactProtocolTest"
+      classpath="${cpath}:${build.test}" failonerror="true" />
+    <java classname="org.apache.thrift.test.IdentityTest"
+      classpath="${cpath}:${build.test}" failonerror="true" />
+    <java classname="org.apache.thrift.test.EqualityTest"
+      classpath="${cpath}:${build.test}" failonerror="true" />
+    <java classname="org.apache.thrift.test.ToStringTest"
+      classpath="${cpath}:${build.test}" failonerror="true" />
+    <java classname="org.apache.thrift.test.DeepCopyTest"
+      classpath="${cpath}:${build.test}" failonerror="true" />
+    <java classname="org.apache.thrift.test.MetaDataTest"
+      classpath="${cpath}:${build.test}" failonerror="true" />
+    <java classname="org.apache.thrift.test.JavaBeansTest"
+      classpath="${cpath}:${build.test}" failonerror="true" />
+  </target>
+
+  <target name="generate">
+    <exec executable="../../compiler/cpp/thrift">
+      <arg line="--gen java:hashcode ${test.thrift.home}/ThriftTest.thrift" />
+    </exec>
+    <exec executable="../../compiler/cpp/thrift">
+      <arg line="--gen java:hashcode ${test.thrift.home}/DebugProtoTest.thrift" />
+    </exec>
+    <exec executable="../../compiler/cpp/thrift">
+      <arg line="--gen java:hashcode ${test.thrift.home}/OptionalRequiredTest.thrift" />
+    </exec>
+    <exec executable="../../compiler/cpp/thrift">
+      <arg line="--gen java:beans,nocamel ${test.thrift.home}/JavaBeansTest.thrift" />
+    </exec>
   </target>
 
 </project>

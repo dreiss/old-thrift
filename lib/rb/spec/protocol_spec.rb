@@ -94,18 +94,23 @@ class ThriftProtocolSpec < Spec::ExampleGroup
         ['field 3', Types::MAP, 3],
         [nil, Types::STOP, 0]
       )
-      @prot.should_receive(:skip).with(Types::STRING).ordered
-      @prot.should_receive(:skip).with(Types::I32).ordered
-      @prot.should_receive(:skip).with(Types::MAP).ordered
       @prot.should_receive(:read_field_end).exactly(3).times
+      @prot.should_receive(:read_string).exactly(3).times
+      @prot.should_receive(:read_i32).ordered
+      @prot.should_receive(:read_map_begin).ordered.and_return([Types::STRING, Types::STRING, 1])
+      # @prot.should_receive(:read_string).exactly(2).times
+      @prot.should_receive(:read_map_end).ordered
       @prot.should_receive(:read_struct_end).ordered
       real_skip.call(Types::STRUCT)
     end
 
     it "should skip maps" do
       real_skip = @prot.method(:skip)
-      @prot.should_receive(:read_map_begin).ordered.and_return([Types::STRING, Types::STRUCT, 7])
-      @prot.should_receive(:skip).ordered.exactly(14).times # once per key and once per value
+      @prot.should_receive(:read_map_begin).ordered.and_return([Types::STRING, Types::STRUCT, 1])
+      @prot.should_receive(:read_string).ordered
+      @prot.should_receive(:read_struct_begin).ordered.and_return(["some_struct"])
+      @prot.should_receive(:read_field_begin).ordered.and_return([nil, Types::STOP, nil]);
+      @prot.should_receive(:read_struct_end).ordered
       @prot.should_receive(:read_map_end).ordered
       real_skip.call(Types::MAP)
     end
@@ -113,7 +118,7 @@ class ThriftProtocolSpec < Spec::ExampleGroup
     it "should skip sets" do
       real_skip = @prot.method(:skip)
       @prot.should_receive(:read_set_begin).ordered.and_return([Types::I64, 9])
-      @prot.should_receive(:skip).with(Types::I64).ordered.exactly(9).times
+      @prot.should_receive(:read_i64).ordered.exactly(9).times
       @prot.should_receive(:read_set_end)
       real_skip.call(Types::SET)
     end
@@ -121,16 +126,16 @@ class ThriftProtocolSpec < Spec::ExampleGroup
     it "should skip lists" do
       real_skip = @prot.method(:skip)
       @prot.should_receive(:read_list_begin).ordered.and_return([Types::DOUBLE, 11])
-      @prot.should_receive(:skip).with(Types::DOUBLE).ordered.exactly(11).times
+      @prot.should_receive(:read_double).ordered.exactly(11).times
       @prot.should_receive(:read_list_end)
       real_skip.call(Types::LIST)
     end
   end
 
   describe ProtocolFactory do
-    it "should return nil" do
+    it "should raise NotImplementedError" do
       # returning nil since Protocol is just an abstract class
-      ProtocolFactory.new.get_protocol(mock("MockTransport")).should be_nil
+      lambda {ProtocolFactory.new.get_protocol(mock("MockTransport"))}.should raise_error(NotImplementedError)
     end
   end
 end

@@ -23,7 +23,6 @@ dnl       but it can be easily modified to allow it.  (grep "cross").
 dnl
 dnl @category InstalledPackages
 dnl @category C
-dnl @author David Reiss <dreiss@facebook.com>
 dnl @version 2007-09-12
 dnl @license AllPermissive
 
@@ -111,9 +110,9 @@ AC_DEFUN([AX_LIB_ZLIB],
           AC_ARG_WITH([zlib],
                       AS_HELP_STRING([--with-zlib@<:@=DIR@:>@], [use zlib (default is yes) - it is possible to specify an alternate root directory for zlib]),
                       [
-                       if test "$withval" = "xno"; then
+                       if test "x$withval" = "xno"; then
                          want_zlib="no"
-                       elif test "$withval" = "xyes"; then
+                       elif test "x$withval" = "xyes"; then
                          want_zlib="yes"
                          ax_zlib_path=""
                        else

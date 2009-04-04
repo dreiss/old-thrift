@@ -11,12 +11,11 @@
 
 using boost::shared_ptr;
 
-namespace facebook { namespace thrift { namespace concurrency {
+namespace apache { namespace thrift { namespace concurrency {
 
 /**
  * Implementation of Mutex class using POSIX mutex
  *
- * @author marc
  * @version $Id:$
  */
 class Mutex::impl {
@@ -99,7 +98,6 @@ void Mutex::RECURSIVE_INITIALIZER(void* arg) {
 /**
  * Implementation of ReadWriteMutex class using POSIX rw lock
  *
- * @author boz
  * @version $Id:$
  */
 class ReadWriteMutex::impl {
@@ -145,5 +143,5 @@ bool ReadWriteMutex::attemptWrite() const { return impl_->attemptWrite(); }
 
 void ReadWriteMutex::release() const { impl_->release(); }
 
-}}} // facebook::thrift::concurrency
+}}} // apache::thrift::concurrency
 

@@ -17,9 +17,9 @@
 #include <string>
 #include <map>
 
-namespace facebook { namespace thrift { namespace protocol {
+namespace apache { namespace thrift { namespace protocol {
 
-using facebook::thrift::transport::TTransport;
+using apache::thrift::transport::TTransport;
 
 #ifdef HAVE_ENDIAN_H
 #include <endian.h>
@@ -100,7 +100,6 @@ enum TMessageType {
  * when parsing an input XML stream, reading should be batched rather than
  * looking ahead character by character for a close tag).
  *
- * @author Mark Slee <mcslee@facebook.com>
  */
 class TProtocol {
  public:
@@ -212,6 +211,13 @@ class TProtocol {
   virtual uint32_t readString(std::string& str) = 0;
 
   virtual uint32_t readBinary(std::string& str) = 0;
+
+  uint32_t readBool(std::vector<bool>::reference ref) {
+    bool value;
+    uint32_t rv = readBool(value);
+    ref = value;
+    return rv;
+  }
 
   /**
    * Method to arbitrarily skip over data.
@@ -352,6 +358,6 @@ class TProtocolFactory {
   virtual boost::shared_ptr<TProtocol> getProtocol(boost::shared_ptr<TTransport> trans) = 0;
 };
 
-}}} // facebook::thrift::protocol
+}}} // apache::thrift::protocol
 
 #endif // #define _THRIFT_PROTOCOL_TPROTOCOL_H_ 1

@@ -9,12 +9,11 @@
 
 #include <boost/shared_ptr.hpp>
 
-namespace facebook { namespace thrift { namespace concurrency {
+namespace apache { namespace thrift { namespace concurrency {
 
 /**
  * A simple mutex class
  *
- * @author marc
  * @version $Id:$
  */
 class Mutex {
@@ -95,6 +94,6 @@ class RWGuard {
 #define RWGuard(m) incorrect_use_of_RWGuard(m)
 
 
-}}} // facebook::thrift::concurrency
+}}} // apache::thrift::concurrency
 
 #endif // #ifndef _THRIFT_CONCURRENCY_MUTEX_H_

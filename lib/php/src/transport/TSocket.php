@@ -8,14 +8,12 @@
  * http://developers.facebook.com/thrift/
  *
  * @package thrift.transport
- * @author Mark Slee <mcslee@facebook.com>
  */
 
 /**
  * Sockets implementation of the TTransport interface.
  *
  * @package thrift.transport
- * @author Mark Slee <mcslee@facebook.com>
  */
 class TSocket extends TTransport {
 
@@ -103,7 +101,7 @@ class TSocket extends TTransport {
   /**
    * Sets the send timeout.
    *
-   * @param int $timeout
+   * @param int $timeout  Timeout in milliseconds.
    */
   public function setSendTimeout($timeout) {
     $this->sendTimeout_ = $timeout;
@@ -112,7 +110,7 @@ class TSocket extends TTransport {
   /**
    * Sets the receive timeout.
    *
-   * @param int $timeout
+   * @param int $timeout  Timeout in milliseconds.
    */
   public function setRecvTimeout($timeout) {
     $this->recvTimeout_ = $timeout;

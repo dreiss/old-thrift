@@ -21,7 +21,6 @@ using namespace std;
 /**
  * PERL code generator.
  *
- * @author Jake Luciani <jakers@gmail.com>
  */
 class t_perl_generator : public t_oop_generator {
  public:
@@ -32,6 +31,8 @@ class t_perl_generator : public t_oop_generator {
     : t_oop_generator(program)
   {
     out_dir_base_ = "gen-perl";
+    escape_['$'] = "\\$";
+    escape_['@'] = "\\@";
   }
 
   /**
@@ -184,6 +185,17 @@ class t_perl_generator : public t_oop_generator {
     return result;
   }
 
+  std::string get_namespace_out_dir() {
+    std::string outdir = get_out_dir();
+    std::list<std::string> dirs;
+    perl_namespace_dirs(program_, dirs);
+    std::list<std::string>::iterator it;
+    for (it = dirs.begin(); it != dirs.end(); it++) {
+      outdir += *it + "/";
+    }
+    return outdir;
+  }
+
  private:
 
   /**
@@ -275,7 +287,7 @@ void t_perl_generator::generate_typedef(t_typedef* ttypedef) {}
  * @param tenum The enumeration
  */
 void t_perl_generator::generate_enum(t_enum* tenum) {
-  f_types_ << "package "<<tenum->get_name()<<";"<<endl;
+  f_types_ << "package " << perl_namespace(program_) <<tenum->get_name()<<";"<<endl;
 
   vector<t_enum_value*> constants = tenum->get_constants();
   vector<t_enum_value*>::iterator c_iter;
@@ -318,7 +330,7 @@ string t_perl_generator::render_const_value(t_type* type, t_const_value* value) 
     t_base_type::t_base tbase = ((t_base_type*)type)->get_base();
     switch (tbase) {
     case t_base_type::TYPE_STRING:
-      out << "'" << value->get_string() << "'";
+      out << '"' << get_escaped_string(value) << '"';
       break;
     case t_base_type::TYPE_BOOL:
       out << (value->get_integer() > 0 ? "1" : "0");
@@ -448,6 +460,7 @@ void t_perl_generator::generate_perl_struct_definition(ofstream& out,
   }
 
   //Create simple acessor methods
+  out << "use Class::Accessor;\n";
   out << "use base('Class::Accessor');\n";
 
   if (members.size() > 0) {
@@ -656,7 +669,7 @@ void t_perl_generator::generate_perl_struct_writer(ofstream& out,
  * @param tservice The service definition
  */
 void t_perl_generator::generate_service(t_service* tservice) {
-  string f_service_name = get_out_dir()+service_name_+".pm";
+  string f_service_name = get_namespace_out_dir()+service_name_+".pm";
   f_service_.open(f_service_name.c_str());
 
   f_service_ <<
@@ -667,9 +680,10 @@ void t_perl_generator::generate_service(t_service* tservice) {
   f_service_ <<
     "use " << perl_namespace(tservice->get_program()) << "Types;" << endl;
 
-  if (tservice->get_extends() != NULL) {
+  t_service* extends_s = tservice->get_extends();
+  if (extends_s != NULL) {
     f_service_ <<
-      "use " << tservice->get_extends()->get_name() << ";" << endl;
+      "use " << perl_namespace(extends_s->get_program()) << extends_s->get_name() << ";" << endl;
   }
 
   f_service_ <<
@@ -699,8 +713,9 @@ void t_perl_generator::generate_service_processor(t_service* tservice) {
 
   string extends = "";
   string extends_processor = "";
-  if (tservice->get_extends() != NULL) {
-    extends = tservice->get_extends()->get_name();
+  t_service* extends_s = tservice->get_extends();
+  if (extends_s != NULL) {
+    extends = perl_namespace(extends_s->get_program()) + extends_s->get_name();
     extends_processor = "use base('" + extends + "Processor');";
   }
 
@@ -708,7 +723,7 @@ void t_perl_generator::generate_service_processor(t_service* tservice) {
 
   // Generate the header portion
   f_service_ <<
-      "package " << service_name_ << "Processor;" << endl << extends_processor << endl;
+      "package " << perl_namespace(program_) << service_name_ << "Processor;" << endl << extends_processor << endl;
 
 
   if (extends.empty()) {
@@ -811,8 +826,8 @@ void t_perl_generator::generate_process_function(t_service* tservice,
   const std::vector<t_field*>& xceptions = xs->get_members();
   vector<t_field*>::const_iterator x_iter;
 
-  // Declare result for non async function
-  if (!tfunction->is_async()) {
+  // Declare result for non oneway function
+  if (!tfunction->is_oneway()) {
     f_service_ <<
       indent() << "my $result = new " << resultname << "();" << endl;
   }
@@ -830,7 +845,7 @@ void t_perl_generator::generate_process_function(t_service* tservice,
   vector<t_field*>::const_iterator f_iter;
 
   f_service_ << indent();
-  if (!tfunction->is_async() && !tfunction->get_returntype()->is_void()) {
+  if (!tfunction->is_oneway() && !tfunction->get_returntype()->is_void()) {
     f_service_ << "$result->{success} = ";
   }
   f_service_ <<
@@ -846,13 +861,13 @@ void t_perl_generator::generate_process_function(t_service* tservice,
   }
   f_service_ << ");" << endl;
 
-  if (!tfunction->is_async() && xceptions.size() > 0) {
+  if (!tfunction->is_oneway() && xceptions.size() > 0) {
     indent_down();
     for (x_iter = xceptions.begin(); x_iter != xceptions.end(); ++x_iter) {
       f_service_ <<
         indent() << "}; if( UNIVERSAL::isa($@,'"<<(*x_iter)->get_type()->get_name()<<"') ){ "<<endl;
 
-      if (!tfunction->is_async()) {
+      if (!tfunction->is_oneway()) {
         indent_up();
         f_service_ <<
           indent() << "$result->{" << (*x_iter)->get_name() << "} = $@;" << endl;
@@ -864,8 +879,8 @@ void t_perl_generator::generate_process_function(t_service* tservice,
     f_service_ << "}" << endl;
   }
 
-  // Shortcut out here for async functions
-  if (tfunction->is_async()) {
+  // Shortcut out here for oneway functions
+  if (tfunction->is_oneway()) {
     f_service_ <<
       indent() << "return;" << endl;
     indent_down();
@@ -937,15 +952,14 @@ void t_perl_generator::generate_perl_function_helpers(t_function* tfunction) {
  * @param tservice The service to generate a header definition for
  */
 void t_perl_generator::generate_service_interface(t_service* tservice) {
-  string extends = "";
   string extends_if = "";
-  if (tservice->get_extends() != NULL) {
-    extends = "use base('" + tservice->get_extends()->get_name() + "');";
-    extends_if = "use base('" + tservice->get_extends()->get_name() + "If');";
+  t_service* extends_s = tservice->get_extends();
+  if (extends_s != NULL) {
+    extends_if = "use base('" + perl_namespace(extends_s->get_program()) + extends_s->get_name() + "If');";
   }
 
   f_service_ <<
-    "package " << service_name_ << "If;"<<endl<<
+    "package " << perl_namespace(program_) << service_name_ << "If;"<<endl<<
     extends_if<<endl;
 
 
@@ -966,12 +980,13 @@ void t_perl_generator::generate_service_interface(t_service* tservice) {
 void t_perl_generator::generate_service_rest(t_service* tservice) {
   string extends = "";
   string extends_if = "";
-  if (tservice->get_extends() != NULL) {
-    extends    =  tservice->get_extends()->get_name();
-    extends_if = "use base('" + tservice->get_extends()->get_name() + "Rest');";
+  t_service* extends_s = tservice->get_extends();
+  if (extends_s != NULL) {
+    extends    =  extends_s->get_name();
+    extends_if = "use base('" + perl_namespace(extends_s->get_program()) + extends_s->get_name() + "Rest');";
   }
   f_service_ <<
-    "package " << service_name_ << "Rest;"<<endl<<
+    "package " << perl_namespace(program_) << service_name_ << "Rest;"<<endl<<
     extends_if << endl;
 
 
@@ -1037,17 +1052,18 @@ void t_perl_generator::generate_service_rest(t_service* tservice) {
 void t_perl_generator::generate_service_client(t_service* tservice) {
   string extends = "";
   string extends_client = "";
-  if (tservice->get_extends() != NULL) {
-    extends = tservice->get_extends()->get_name();
+  t_service* extends_s = tservice->get_extends();
+  if (extends_s != NULL) {
+    extends = perl_namespace(extends_s->get_program()) + extends_s->get_name();
     extends_client = "use base('" + extends + "Client');";
   }
 
   f_service_ <<
-      "package " << service_name_ << "Client;"<<endl;
+      "package " << perl_namespace(program_) << service_name_ << "Client;"<<endl;
 
   f_service_ <<
       extends_client << endl <<
-      "use base('" << service_name_ << "If');" << endl;
+      "use base('" << perl_namespace(program_) << service_name_ << "If');" << endl;
 
   // Constructor function
   f_service_ << "sub new {"<<endl;
@@ -1106,7 +1122,7 @@ void t_perl_generator::generate_service_client(t_service* tservice) {
     }
     f_service_ << ");" << endl;
 
-    if (!(*f_iter)->is_async()) {
+    if (!(*f_iter)->is_oneway()) {
       f_service_ << indent();
       if (!(*f_iter)->get_returntype()->is_void()) {
         f_service_ << "return ";
@@ -1150,7 +1166,7 @@ void t_perl_generator::generate_service_client(t_service* tservice) {
     f_service_ << "}" << endl;
 
 
-    if (!(*f_iter)->is_async()) {
+    if (!(*f_iter)->is_oneway()) {
       std::string resultname = perl_namespace(tservice->get_program()) + service_name_ + "_" + (*f_iter)->get_name() + "_result";
       t_struct noargs(program_);
 
@@ -1781,6 +1797,5 @@ string t_perl_generator ::type_to_enum(t_type* type) {
 
   throw "INVALID TYPE IN type_to_enum: " + type->get_name();
 }
-
 
 THRIFT_REGISTER_GENERATOR(perl, "Perl", "");

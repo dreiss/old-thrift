@@ -9,16 +9,15 @@
 
 #include <protocol/TOneWayProtocol.h>
 
-namespace facebook { namespace thrift { namespace protocol {
+namespace apache { namespace thrift { namespace protocol {
 
-using facebook::thrift::transport::TTransport;
+using apache::thrift::transport::TTransport;
 
 /**
  * Puts a wiretap on a protocol object.  Any reads to this class are passed
  * through to an enclosed protocol object, but also mirrored as write to a
  * second protocol object.
  *
- * @author David Reiss <dreiss@facebook.com>
  */
 class TProtocolTap : public TReadOnlyProtocol {
  public:
@@ -170,6 +169,6 @@ class TProtocolTap : public TReadOnlyProtocol {
   boost::shared_ptr<TProtocol> sink_;
 };
 
-}}} // facebook::thrift::protocol
+}}} // apache::thrift::protocol
 
 #endif // #define _THRIFT_PROTOCOL_TPROTOCOLTAP_H_ 1

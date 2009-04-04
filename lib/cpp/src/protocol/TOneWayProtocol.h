@@ -9,13 +9,12 @@
 
 #include "TProtocol.h"
 
-namespace facebook { namespace thrift { namespace protocol {
+namespace apache { namespace thrift { namespace protocol {
 
 /**
  * Abstract class for implementing a protocol that can only be written,
  * not read.
  *
- * @author David Reiss <dreiss@facebook.com>
  */
 class TWriteOnlyProtocol : public TProtocol {
  public:
@@ -151,7 +150,6 @@ class TWriteOnlyProtocol : public TProtocol {
  * Abstract class for implementing a protocol that can only be read,
  * not written.
  *
- * @author David Reiss <dreiss@facebook.com>
  */
 class TReadOnlyProtocol : public TProtocol {
  public:
@@ -288,6 +286,6 @@ class TReadOnlyProtocol : public TProtocol {
   std::string subclass_;
 };
 
-}}} // facebook::thrift::protocol
+}}} // apache::thrift::protocol
 
 #endif // #ifndef _THRIFT_PROTOCOL_TBINARYPROTOCOL_H_

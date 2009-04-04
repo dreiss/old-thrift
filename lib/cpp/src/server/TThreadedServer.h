@@ -14,13 +14,13 @@
 
 #include <boost/shared_ptr.hpp>
 
-namespace facebook { namespace thrift { namespace server {
+namespace apache { namespace thrift { namespace server {
 
-using facebook::thrift::TProcessor;
-using facebook::thrift::transport::TServerTransport;
-using facebook::thrift::transport::TTransportFactory;
-using facebook::thrift::concurrency::Monitor;
-using facebook::thrift::concurrency::ThreadFactory;
+using apache::thrift::TProcessor;
+using apache::thrift::transport::TServerTransport;
+using apache::thrift::transport::TTransportFactory;
+using apache::thrift::concurrency::Monitor;
+using apache::thrift::concurrency::ThreadFactory;
 
 class TThreadedServer : public TServer {
 
@@ -31,6 +31,12 @@ class TThreadedServer : public TServer {
                   boost::shared_ptr<TServerTransport> serverTransport,
                   boost::shared_ptr<TTransportFactory> transportFactory,
                   boost::shared_ptr<TProtocolFactory> protocolFactory);
+
+  TThreadedServer(boost::shared_ptr<TProcessor> processor,
+                  boost::shared_ptr<TServerTransport> serverTransport,
+                  boost::shared_ptr<TTransportFactory> transportFactory,
+                  boost::shared_ptr<TProtocolFactory> protocolFactory,
+                  boost::shared_ptr<ThreadFactory> threadFactory);
 
   virtual ~TThreadedServer();
 
@@ -50,6 +56,6 @@ class TThreadedServer : public TServer {
 
 };
 
-}}} // facebook::thrift::server
+}}} // apache::thrift::server
 
 #endif // #ifndef _THRIFT_SERVER_TTHREADEDSERVER_H_

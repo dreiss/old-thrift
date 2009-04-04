@@ -10,14 +10,13 @@
 #include "THttpClient.h"
 #include "TSocket.h"
 
-namespace facebook { namespace thrift { namespace transport {
+namespace apache { namespace thrift { namespace transport {
 
 using namespace std;
 
 /**
  * Http client implementation.
  *
- * @author Mark Slee <mcslee@facebook.com>
  */
 
 // Yeah, yeah, hacky to put these here, I know.
@@ -333,4 +332,4 @@ void THttpClient::flush() {
   readHeaders_ = true;
 }
 
-}}} // facebook::thrift::transport
+}}} // apache::thrift::transport

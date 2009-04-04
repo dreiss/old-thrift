@@ -1,24 +1,54 @@
-#
-# Copyright (c) 2006- Facebook
-# Distributed under the Apache Software License
-#
-# See accompanying file LICENSE or visit the Thrift site at:
-# http://developers.facebook.com/thrift/
-#
-# Author: Mark Slee <mcslee@facebook.com>
-#
+# 
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements. See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership. The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License. You may obtain a copy of the License at
+# 
+#   http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the License for the
+# specific language governing permissions and limitations
+# under the License.
+# 
+
 require 'thrift/protocol'
 
 module Thrift
   class BinaryProtocol < Protocol
     VERSION_MASK = 0xffff0000
     VERSION_1 = 0x80010000
+    TYPE_MASK = 0x000000ff
+    
+    attr_reader :strict_read, :strict_write
+
+    def initialize(trans, strict_read=true, strict_write=true)
+      super(trans)
+      @strict_read = strict_read
+      @strict_write = strict_write
+    end
 
     def write_message_begin(name, type, seqid)
-      write_i32(VERSION_1 | type)
-      write_string(name)
-      write_i32(seqid)
+      # this is necessary because we added (needed) bounds checking to 
+      # write_i32, and 0x80010000 is too big for that.
+      if strict_write
+        write_i16(VERSION_1 >> 16)
+        write_i16(type)
+        write_string(name)
+        write_i32(seqid)
+      else
+        write_string(name)
+        write_byte(type)
+        write_i32(seqid)
+      end
     end
+
+    def write_struct_begin(name); nil; end
 
     def write_field_begin(name, type, id)
       write_byte(type)
@@ -50,6 +80,7 @@ module Thrift
     end
 
     def write_byte(byte)
+      raise RangeError if byte < -2**31 || byte >= 2**32
       trans.write([byte].pack('c'))
     end
 
@@ -58,10 +89,12 @@ module Thrift
     end
 
     def write_i32(i32)
+      raise RangeError if i32 < -2**31 || i32 >= 2**31
       trans.write([i32].pack('N'))
     end
 
     def write_i64(i64)
+      raise RangeError if i64 < -2**63 || i64 >= 2**64
       hi = i64 >> 32
       lo = i64 & 0xffffffff
       trans.write([hi, lo].pack('N2'))
@@ -78,14 +111,26 @@ module Thrift
 
     def read_message_begin
       version = read_i32
-      if (version & VERSION_MASK != VERSION_1)
-        raise ProtocolException.new(ProtocolException::BAD_VERSION, 'Missing version identifier')
+      if version < 0
+        if (version & VERSION_MASK != VERSION_1)
+          raise ProtocolException.new(ProtocolException::BAD_VERSION, 'Missing version identifier')
+        end
+        type = version & TYPE_MASK
+        name = read_string
+        seqid = read_i32
+        [name, type, seqid]
+      else
+        if strict_read
+          raise ProtocolException.new(ProtocolException::BAD_VERSION, 'No version identifier, old protocol client?')
+        end
+        name = trans.read_all(version)
+        type = read_byte
+        seqid = read_i32
+        [name, type, seqid]
       end
-      type = version & 0x000000ff
-      name = read_string
-      seqid = read_i32
-      [name, type, seqid]
     end
+
+    def read_struct_begin; nil; end
 
     def read_field_begin
       type = read_byte
@@ -123,7 +168,7 @@ module Thrift
 
     def read_byte
       dat = trans.read_all(1)
-      val = dat[0]
+      val = dat[0].ord
       if (val > 0x7f)
         val = 0 - ((val - 1) ^ 0xff)
       end
@@ -173,12 +218,10 @@ module Thrift
     end
 
   end
-  deprecate_class! :TBinaryProtocol => BinaryProtocol
 
   class BinaryProtocolFactory < ProtocolFactory
     def get_protocol(trans)
       return Thrift::BinaryProtocol.new(trans)
     end
   end
-  deprecate_class! :TBinaryProtocolFactory => BinaryProtocolFactory
 end

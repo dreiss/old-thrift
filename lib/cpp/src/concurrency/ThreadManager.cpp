@@ -18,7 +18,7 @@
 #include <iostream>
 #endif //defined(DEBUG)
 
-namespace facebook { namespace thrift { namespace concurrency {
+namespace apache { namespace thrift { namespace concurrency {
 
 using boost::shared_ptr;
 using boost::dynamic_pointer_cast;
@@ -31,7 +31,6 @@ using boost::dynamic_pointer_cast;
  * it maintains statistics on number of idle threads, number of active threads,
  * task backlog, and average wait and service times.
  *
- * @author marc
  * @version $Id:$
  */
 class ThreadManager::Impl : public ThreadManager  {
@@ -477,5 +476,5 @@ shared_ptr<ThreadManager> ThreadManager::newSimpleThreadManager(size_t count, si
   return shared_ptr<ThreadManager>(new SimpleThreadManager(count, pendingTaskCountMax));
 }
 
-}}} // facebook::thrift::concurrency
+}}} // apache::thrift::concurrency
 

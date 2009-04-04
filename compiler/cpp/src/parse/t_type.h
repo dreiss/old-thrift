@@ -8,6 +8,7 @@
 #define T_TYPE_H
 
 #include <string>
+#include <map>
 #include <cstring>
 #include "t_doc.h"
 
@@ -23,7 +24,6 @@ class t_program;
  * used by the code generator to branch based upon different handling for the
  * various types.
  *
- * @author Mark Slee <mcslee@facebook.com>
  */
 class t_type : public t_doc {
  public:
@@ -114,6 +114,7 @@ class t_type : public t_doc {
     return rv;
   }
 
+  std::map<std::string, std::string> annotations_;
 
  protected:
   t_type() :
@@ -146,6 +147,16 @@ class t_type : public t_doc {
   std::string name_;
 
   uint8_t fingerprint_[fingerprint_len];
+};
+
+
+/**
+ * Placeholder struct for returning the key and value of an annotation
+ * during parsing.
+ */
+struct t_annotation {
+  std::string key;
+  std::string val;
 };
 
 #endif

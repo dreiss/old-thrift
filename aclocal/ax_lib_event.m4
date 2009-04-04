@@ -25,7 +25,6 @@ dnl       but it can be easily modified to allow it.  (grep "cross").
 dnl
 dnl @category InstalledPackages
 dnl @category C
-dnl @author David Reiss <dreiss@facebook.com>
 dnl @version 2007-09-12
 dnl @license AllPermissive
 
@@ -141,7 +140,7 @@ AC_DEFUN([AX_LIB_EVENT],
             if test -n "$ax_libevent_path"; then
               AX_LIB_EVENT_DO_CHECK
             else
-              for ax_libevent_path in "" /usr /usr/local /opt /opt/libevent "$LIBEVENT_ROOT" ; do
+              for ax_libevent_path in "" /usr /usr/local /opt /opt/local /opt/libevent "$LIBEVENT_ROOT" ; do
                 AX_LIB_EVENT_DO_CHECK
                 if test "$success" = "yes"; then
                   break;

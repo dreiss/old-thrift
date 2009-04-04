@@ -1,19 +1,26 @@
-//
-//  TServer.cs
-//
-//  Begin:  Dec 3, 2007
-//  Authors:
-//		Will Palmeri <wpalmeri@imeem.com>
-//
-//  Distributed under the Thrift Software License
-//
-//  See accompanying file LICENSE or visit the Thrift site at:
-//  http://developers.facebook.com/thrift/using
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 
 using System;
-using System.Collections.Generic;
 using Thrift.Protocol;
 using Thrift.Transport;
+using System.IO;
 
 namespace Thrift.Server
 {
@@ -48,6 +55,8 @@ namespace Thrift.Server
 		 * Output Protocol Factory
 		 */
 		protected TProtocolFactory outputProtocolFactory;
+		public delegate void LogDelegate(string str);
+		protected LogDelegate logDelegate;
 
 		/**
 		 * Default constructors.
@@ -55,7 +64,14 @@ namespace Thrift.Server
 
 		public TServer(TProcessor processor,
 						  TServerTransport serverTransport)
-			:this(processor, serverTransport, new TTransportFactory(), new TTransportFactory(), new TBinaryProtocol.Factory(), new TBinaryProtocol.Factory())
+			:this(processor, serverTransport, new TTransportFactory(), new TTransportFactory(), new TBinaryProtocol.Factory(), new TBinaryProtocol.Factory(), DefaultLogDelegate)
+		{
+		}
+
+		public TServer(TProcessor processor,
+						TServerTransport serverTransport,
+						LogDelegate logDelegate)
+			: this(processor, serverTransport, new TTransportFactory(), new TTransportFactory(), new TBinaryProtocol.Factory(), new TBinaryProtocol.Factory(), DefaultLogDelegate)
 		{
 		}
 
@@ -67,7 +83,8 @@ namespace Thrift.Server
 				 transportFactory,
 				 transportFactory,
 				 new TBinaryProtocol.Factory(),
-				 new TBinaryProtocol.Factory())
+				 new TBinaryProtocol.Factory(),
+				 DefaultLogDelegate)
 		{
 		}
 
@@ -80,7 +97,8 @@ namespace Thrift.Server
 				 transportFactory,
 				 transportFactory,
 				 protocolFactory,
-				 protocolFactory)
+				 protocolFactory,
+			     DefaultLogDelegate)
 		{
 		}
 
@@ -89,7 +107,8 @@ namespace Thrift.Server
 						  TTransportFactory inputTransportFactory,
 						  TTransportFactory outputTransportFactory,
 						  TProtocolFactory inputProtocolFactory,
-						  TProtocolFactory outputProtocolFactory)
+						  TProtocolFactory outputProtocolFactory,
+						  LogDelegate logDelegate)
 		{
 			this.processor = processor;
 			this.serverTransport = serverTransport;
@@ -97,6 +116,7 @@ namespace Thrift.Server
 			this.outputTransportFactory = outputTransportFactory;
 			this.inputProtocolFactory = inputProtocolFactory;
 			this.outputProtocolFactory = outputProtocolFactory;
+			this.logDelegate = logDelegate;
 		}
 
 		/**
@@ -105,6 +125,11 @@ namespace Thrift.Server
 		public abstract void Serve();
 
 		public abstract void Stop();
+
+		protected static void DefaultLogDelegate(string s)
+		{
+			Console.Error.WriteLine(s);
+		}
 	}
 }
 

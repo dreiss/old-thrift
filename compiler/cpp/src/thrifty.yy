@@ -10,7 +10,6 @@
  *
  * This parser is used on a thrift definition file.
  *
- * @author Mark Slee <mcslee@facebook.com>
  */
 
 #define __STDC_LIMIT_MACROS
@@ -56,6 +55,7 @@ int g_arglist = 0;
   t_field*       tfield;
   char*          dtext;
   t_field::e_req ereq;
+  t_annotation*  tannot;
 }
 
 /**
@@ -120,7 +120,7 @@ int g_arglist = 0;
 /**
  * Function modifiers
  */
-%token tok_async
+%token tok_oneway
 
 /**
  * Thrift language keywords
@@ -142,6 +142,7 @@ int g_arglist = 0;
 
 %type<ttype>     BaseType
 %type<ttype>     ContainerType
+%type<ttype>     SimpleContainerType
 %type<ttype>     MapType
 %type<ttype>     SetType
 %type<ttype>     ListType
@@ -151,6 +152,10 @@ int g_arglist = 0;
 
 %type<ttypedef>  Typedef
 %type<ttype>     DefinitionType
+
+%type<ttype>     TypeAnnotations
+%type<ttype>     TypeAnnotationList
+%type<tannot>    TypeAnnotation
 
 %type<tfield>    Field
 %type<iconst>    FieldIdentifier
@@ -184,7 +189,7 @@ int g_arglist = 0;
 
 %type<tstruct>   Throws
 %type<tservice>  Extends
-%type<tbool>     Async
+%type<tbool>     Oneway
 %type<tbool>     XsdAll
 %type<tbool>     XsdOptional
 %type<tbool>     XsdNillable
@@ -276,9 +281,10 @@ Header:
     }
 | tok_php_namespace tok_identifier
     {
+      pwarning(1, "'php_namespace' is deprecated. Use 'namespace php' instead");
       pdebug("Header -> tok_php_namespace tok_identifier");
       if (g_parse_mode == PROGRAM) {
-        g_program->set_php_namespace($2);
+        g_program->set_namespace("php", $2);
       }
     }
 /* TODO(dreiss): Get rid of this once everyone is using the new hotness. */
@@ -344,11 +350,13 @@ Header:
         g_program->set_namespace("cocoa", $2);
       }
     }
+/* TODO(dreiss): Get rid of this once everyone is using the new hotness. */
 | tok_xsd_namespace tok_literal
     {
+      pwarning(1, "'xsd_namespace' is deprecated. Use 'namespace xsd' instead");
       pdebug("Header -> tok_xsd_namespace tok_literal");
       if (g_parse_mode == PROGRAM) {
-        g_program->set_xsd_namespace($2);
+        g_program->set_namespace("cocoa", $2);
       }
     }
 /* TODO(dreiss): Get rid of this once everyone is using the new hotness. */
@@ -658,13 +666,16 @@ ConstMapContents:
     }
 
 Struct:
-  tok_struct tok_identifier XsdAll '{' FieldList '}'
+  tok_struct tok_identifier XsdAll '{' FieldList '}' TypeAnnotations
     {
       pdebug("Struct -> tok_struct tok_identifier { FieldList }");
-      $5->set_name($2);
       $5->set_xsd_all($3);
       $$ = $5;
-      y_field_val = -1;
+      $$->set_name($2);
+      if ($7 != NULL) {
+        $$->annotations_ = $7->annotations_;
+        delete $7;
+      }
     }
 
 XsdAll:
@@ -714,7 +725,6 @@ Xception:
       $4->set_name($2);
       $4->set_xception(true);
       $$ = $4;
-      y_field_val = -1;
     }
 
 Service:
@@ -768,18 +778,17 @@ FunctionList:
     }
 
 Function:
-  CaptureDocText Async FunctionType tok_identifier '(' FieldList ')' Throws CommaOrSemicolonOptional
+  CaptureDocText Oneway FunctionType tok_identifier '(' FieldList ')' Throws CommaOrSemicolonOptional
     {
       $6->set_name(std::string($4) + "_args");
       $$ = new t_function($3, $4, $6, $8, $2);
       if ($1 != NULL) {
         $$->set_doc($1);
       }
-      y_field_val = -1;
     }
 
-Async:
-  tok_async
+Oneway:
+  tok_oneway
     {
       $$ = true;
     }
@@ -817,6 +826,7 @@ FieldList:
 |
     {
       pdebug("FieldList -> ");
+      y_field_val = -1;
       $$ = new t_struct(g_program);
     }
 
@@ -997,20 +1007,30 @@ BaseType:
       $$ = g_type_double;
     }
 
-ContainerType:
+ContainerType: SimpleContainerType TypeAnnotations
+    {
+      pdebug("ContainerType -> SimpleContainerType TypeAnnotations");
+      $$ = $1;
+      if ($2 != NULL) {
+        $$->annotations_ = $2->annotations_;
+        delete $2;
+      }
+    }
+
+SimpleContainerType:
   MapType
     {
-      pdebug("ContainerType -> MapType");
+      pdebug("SimpleContainerType -> MapType");
       $$ = $1;
     }
 | SetType
     {
-      pdebug("ContainerType -> SetType");
+      pdebug("SimpleContainerType -> SetType");
       $$ = $1;
     }
 | ListType
     {
-      pdebug("ContainerType -> ListType");
+      pdebug("SimpleContainerType -> ListType");
       $$ = $1;
     }
 
@@ -1052,6 +1072,40 @@ CppType:
 |
     {
       $$ = NULL;
+    }
+
+TypeAnnotations:
+  '(' TypeAnnotationList ')'
+    {
+      pdebug("TypeAnnotations -> ( TypeAnnotationList )");
+      $$ = $2;
+    }
+|
+    {
+      $$ = NULL;
+    }
+
+TypeAnnotationList:
+  TypeAnnotationList TypeAnnotation
+    {
+      pdebug("TypeAnnotationList -> TypeAnnotationList , TypeAnnotation");
+      $$ = $1;
+      $$->annotations_[$2->key] = $2->val;
+      delete $2;
+    }
+|
+    {
+      /* Just use a dummy structure to hold the annotations. */
+      $$ = new t_struct(g_program);
+    }
+
+TypeAnnotation:
+  tok_identifier '=' tok_literal CommaOrSemicolonOptional
+    {
+      pdebug("TypeAnnotation -> tok_identifier = tok_literal");
+      $$ = new t_annotation;
+      $$->key = $1;
+      $$->val = $3;
     }
 
 %%
