@@ -170,6 +170,7 @@ class t_py_generator : public t_generator {
 
   std::string py_autogen_comment();
   std::string py_imports();
+  std::string py_default();
   std::string render_includes();
   std::string render_fastbinary_includes();
   bool can_default(t_field* field);
@@ -269,6 +270,7 @@ void t_py_generator::init_generator() {
   f_types_ <<
     py_autogen_comment() << endl <<
     py_imports() << endl <<
+    py_default() << endl <<
     render_includes() << endl <<
     render_fastbinary_includes() <<
     endl << endl;
@@ -318,6 +320,10 @@ string t_py_generator::py_autogen_comment() {
     "#\n" +
     "# DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING\n" +
     "#\n";
+}
+
+string t_py_generator::py_default() {
+  return "default = object()\n";
 }
 
 /**
@@ -564,19 +570,16 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
                 | (class_name, spec_args_ptr) # For struct/exception
      class_name -> identifier  # Basically a pointer to the class
      spec_args_ptr -> expression  # just class_name.spec_args
-
-     TODO(dreiss): Consider making this work for structs with negative tags.
   */
 
-  // TODO(dreiss): Look into generating an empty tuple instead of None
-  // for structures with no members.
   // TODO(dreiss): Test encoding of structs where some inner structs
   // don't have thrift_spec.
-  if (members.empty() || (members[0]->get_key() >= 0)) {
+  if (!members.empty()) {
+    int sorted_keys_pos = members[0]->get_key();
+    indent(out) << "thrift_offset = " << sorted_keys_pos << endl;
     indent(out) << "thrift_spec = (" << endl;
     indent_up();
 
-    int sorted_keys_pos = 0;
     for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
 
       for (; sorted_keys_pos != (*m_iter)->get_key(); sorted_keys_pos++) {
@@ -619,7 +622,7 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
       // Initialize fields
       if (!can_default(*m_iter) && (*m_iter)->get_value() != NULL) {
         indent(out) <<
-          "if " << (*m_iter)->get_name() << " is None:" << endl;
+          "if " << (*m_iter)->get_name() << " is default:" << endl;
         indent_up();
         indent(out) << (*m_iter)->get_name() << " = " <<
           render_field_default_value(*m_iter) << endl;
@@ -824,6 +827,7 @@ void t_py_generator::generate_service(t_service* tservice) {
 
   f_service_ <<
     py_autogen_comment() << endl <<
+    py_default() << endl <<
     py_imports() << endl;
 
   if (tservice->get_extends() != NULL) {
@@ -2144,10 +2148,15 @@ void t_py_generator::generate_python_docstring(ofstream& out,
 string t_py_generator::declare_argument(t_field* tfield) {
   std::ostringstream result;
   result << tfield->get_name() << "=";
-  if (can_default(tfield) && tfield->get_value() != NULL) {
+  if (tfield->get_value() == NULL) {
+    result << "None";
+    return result.str();
+  }
+
+  if (can_default(tfield)) {
     result << render_field_default_value(tfield);
   } else {
-    result << "None";
+    result << "default";
   }
   return result.str();
 }
