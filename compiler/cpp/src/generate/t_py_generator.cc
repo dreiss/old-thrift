@@ -1,8 +1,21 @@
-// Copyright (c) 2006- Facebook
-// Distributed under the Thrift Software License
-//
-// See accompanying file LICENSE or visit the Thrift site at:
-// http://developers.facebook.com/thrift/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 
 #include <string>
 #include <fstream>
@@ -508,19 +521,6 @@ void t_py_generator::generate_py_struct(t_struct* tstruct,
 }
 
 /**
- * Comparator to sort fields in ascending order by key.
- * Make this a functor instead of a function to help GCC inline it.
- * The arguments are (const) references to const pointers to const t_fields.
- * Unfortunately, we cannot declare it within the function.  Boo!
- * http://www.open-std.org/jtc1/sc22/open/n2356/ (paragraph 9).
- */
-struct FieldKeyCompare {
-  bool operator()(t_field const * const & a, t_field const * const & b) {
-    return a->get_key() < b->get_key();
-  }
-};
-
-/**
  * Generates a struct definition for a thrift data type.
  *
  * @param tstruct The struct definition
@@ -532,8 +532,6 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
 
   const vector<t_field*>& members = tstruct->get_members();
   vector<t_field*>::const_iterator m_iter;
-  vector<t_field*> sorted_members(members);
-  std::sort(sorted_members.begin(), sorted_members.end(), FieldKeyCompare());
 
   out <<
     "class " << tstruct->get_name();
@@ -573,12 +571,12 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
   // for structures with no members.
   // TODO(dreiss): Test encoding of structs where some inner structs
   // don't have thrift_spec.
-  if (sorted_members.empty() || (sorted_members[0]->get_key() >= 0)) {
+  if (members.empty() || (members[0]->get_key() >= 0)) {
     indent(out) << "thrift_spec = (" << endl;
     indent_up();
 
     int sorted_keys_pos = 0;
-    for (m_iter = sorted_members.begin(); m_iter != sorted_members.end(); ++m_iter) {
+    for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
 
       for (; sorted_keys_pos != (*m_iter)->get_key(); sorted_keys_pos++) {
         indent(out) << "None, # " << sorted_keys_pos << endl;
@@ -929,9 +927,11 @@ void t_py_generator::generate_service_interface(t_service* tservice) {
     for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
       f_service_ <<
         indent() << "def " << function_signature_if(*f_iter) << ":" << endl;
+      indent_up();
       generate_python_docstring(f_service_, (*f_iter));
       f_service_ <<
-        indent() << "  pass" << endl << endl;
+        indent() << "pass" << endl << endl;
+      indent_down();
     }
   }
 

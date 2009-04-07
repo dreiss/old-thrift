@@ -1,7 +1,24 @@
-require File.dirname(__FILE__) + '/spec_helper'
-require File.dirname(__FILE__) + '/gen-rb/ThriftSpec_types'
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements. See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership. The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License. You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
 
-# require "binaryprotocolaccelerated"
+require File.dirname(__FILE__) + '/spec_helper'
+require File.dirname(__FILE__) + '/gen-rb/thrift_spec_types'
 
 class ThriftStructSpec < Spec::ExampleGroup
   include Thrift
@@ -48,7 +65,7 @@ class ThriftStructSpec < Spec::ExampleGroup
 
     it "should read itself off the wire" do
       struct = Foo.new
-      prot = Protocol.new(mock("transport"))
+      prot = BaseProtocol.new(mock("transport"))
       prot.should_receive(:read_struct_begin).twice
       prot.should_receive(:read_struct_end).twice
       prot.should_receive(:read_field_begin).and_return(
@@ -94,7 +111,7 @@ class ThriftStructSpec < Spec::ExampleGroup
 
     it "should skip unexpected fields in structs and use default values" do
       struct = Foo.new
-      prot = Protocol.new(mock("transport"))
+      prot = BaseProtocol.new(mock("transport"))
       prot.should_receive(:read_struct_begin)
       prot.should_receive(:read_struct_end)
       prot.should_receive(:read_field_begin).and_return(
@@ -124,7 +141,7 @@ class ThriftStructSpec < Spec::ExampleGroup
     end
 
     it "should write itself to the wire" do
-      prot = Protocol.new(mock("transport")) #mock("Protocol")
+      prot = BaseProtocol.new(mock("transport")) #mock("Protocol")
       prot.should_receive(:write_struct_begin).with("SpecNamespace::Foo")
       prot.should_receive(:write_struct_begin).with("SpecNamespace::Hello")
       prot.should_receive(:write_struct_end).twice
@@ -199,7 +216,7 @@ class ThriftStructSpec < Spec::ExampleGroup
         e.message.should == "something happened"
         e.code.should == 1
         # ensure it gets serialized properly, this is the really important part
-        prot = Protocol.new(mock("trans"))
+        prot = BaseProtocol.new(mock("trans"))
         prot.should_receive(:write_struct_begin).with("SpecNamespace::Xception")
         prot.should_receive(:write_struct_end)
         prot.should_receive(:write_field_begin).with('message', Types::STRING, 1)#, "something happened")
@@ -219,7 +236,7 @@ class ThriftStructSpec < Spec::ExampleGroup
       rescue Thrift::Exception => e
         e.message.should == "something happened"
         e.code.should == 5
-        prot = Protocol.new(mock("trans"))
+        prot = BaseProtocol.new(mock("trans"))
         prot.should_receive(:write_struct_begin).with("SpecNamespace::Xception")
         prot.should_receive(:write_struct_end)
         prot.should_receive(:write_field_begin).with('message', Types::STRING, 1)

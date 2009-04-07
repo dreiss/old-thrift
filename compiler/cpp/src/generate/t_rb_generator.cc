@@ -1,8 +1,21 @@
-// Copyright (c) 2006- Facebook
-// Distributed under the Thrift Software License
-//
-// See accompanying file LICENSE or visit the Thrift site at:
-// http://developers.facebook.com/thrift/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 
 #include <string>
 #include <fstream>
@@ -142,7 +155,6 @@ class t_rb_generator : public t_oop_generator {
    */
 
   std::string rb_autogen_comment();
-  std::string rb_imports();
   std::string render_includes();
   std::string declare_field(t_field* tfield);
   std::string type_name(t_type* ttype);
@@ -192,23 +204,21 @@ void t_rb_generator::init_generator() {
   MKDIR(get_out_dir().c_str());
 
   // Make output file
-  string f_types_name = get_out_dir()+program_name_+"_types.rb";
+  string f_types_name = get_out_dir()+underscore(program_name_)+"_types.rb";
   f_types_.open(f_types_name.c_str());
 
-  string f_consts_name = get_out_dir()+program_name_+"_constants.rb";
+  string f_consts_name = get_out_dir()+underscore(program_name_)+"_constants.rb";
   f_consts_.open(f_consts_name.c_str());
 
   // Print header
   f_types_ <<
     rb_autogen_comment() << endl <<
-    rb_imports() << endl <<
     render_includes() << endl;
     begin_namespace(f_types_, ruby_modules(program_));
 
   f_consts_ <<
     rb_autogen_comment() << endl <<
-    rb_imports() << endl <<
-    "require File.dirname(__FILE__) + '/" << program_name_ << "_types'" << endl <<
+    "require File.dirname(__FILE__) + '/" << underscore(program_name_) << "_types'" << endl <<
     endl;
     begin_namespace(f_consts_, ruby_modules(program_));
 
@@ -221,7 +231,7 @@ string t_rb_generator::render_includes() {
   const vector<t_program*>& includes = program_->get_includes();
   string result = "";
   for (size_t i = 0; i < includes.size(); ++i) {
-    result += "require '" + includes[i]->get_name() + "_types'\n";
+    result += "require '" + underscore(includes[i]->get_name()) + "_types'\n";
   }
   if (includes.size() > 0) {
     result += "\n";
@@ -239,14 +249,6 @@ string t_rb_generator::rb_autogen_comment() {
     "#\n" +
     "# DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING\n" +
     "#\n";
-}
-
-/**
- * Prints standard thrift imports
- */
-string t_rb_generator::rb_imports() {
-  return
-    string("require 'thrift/protocol'");
 }
 
 /**
@@ -458,7 +460,7 @@ void t_rb_generator::generate_rb_struct(std::ofstream& out, t_struct* tstruct, b
   generate_rdoc(out, tstruct);
   indent(out) << "class " << type_name(tstruct);
   if (is_exception) {
-    out << " < Thrift::Exception";
+    out << " < ::Thrift::Exception";
   }
   out << endl;
 
@@ -519,7 +521,7 @@ void t_rb_generator::generate_accessors(std::ofstream& out, t_struct* tstruct) {
   vector<t_field*>::const_iterator m_iter;
 
   if (members.size() > 0) {
-    indent(out) << "Thrift::Struct.field_accessor self";
+    indent(out) << "::Thrift::Struct.field_accessor self";
     for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
       out << ", :" << (*m_iter)->get_name();
     }
@@ -620,21 +622,20 @@ void t_rb_generator::end_namespace(std::ofstream& out, vector<std::string> modul
  * @param tservice The service definition
  */
 void t_rb_generator::generate_service(t_service* tservice) {
-  string f_service_name = get_out_dir()+service_name_+".rb";
+  string f_service_name = get_out_dir()+underscore(service_name_)+".rb";
   f_service_.open(f_service_name.c_str());
 
   f_service_ <<
     rb_autogen_comment() << endl <<
-    "require 'thrift'" << endl <<
-    rb_imports() << endl;
+    "require 'thrift'" << endl;
 
   if (tservice->get_extends() != NULL) {
     f_service_ <<
-      "require '" << tservice->get_extends()->get_name() << "'" << endl;
+      "require '" << underscore(tservice->get_extends()->get_name()) << "'" << endl;
   }
 
   f_service_ <<
-    "require File.dirname(__FILE__) + '/" << program_name_ << "_types'" << endl <<
+    "require File.dirname(__FILE__) + '/" << underscore(program_name_) << "_types'" << endl <<
     endl;
 
   begin_namespace(f_service_, ruby_modules(tservice->get_program()));
@@ -812,7 +813,7 @@ void t_rb_generator::generate_service_client(t_service* tservice) {
           "return" << endl;
       } else {
         f_service_ <<
-          indent() << "raise Thrift::ApplicationException.new(Thrift::ApplicationException::MISSING_RESULT, '" << (*f_iter)->get_name() << " failed: unknown result')" << endl;
+          indent() << "raise ::Thrift::ApplicationException.new(::Thrift::ApplicationException::MISSING_RESULT, '" << (*f_iter)->get_name() << " failed: unknown result')" << endl;
       }
 
       // Close function
@@ -1017,30 +1018,30 @@ string t_rb_generator::type_to_enum(t_type* type) {
     case t_base_type::TYPE_VOID:
       throw "NO T_VOID CONSTRUCT";
     case t_base_type::TYPE_STRING:
-      return "Thrift::Types::STRING";
+      return "::Thrift::Types::STRING";
     case t_base_type::TYPE_BOOL:
-      return "Thrift::Types::BOOL";
+      return "::Thrift::Types::BOOL";
     case t_base_type::TYPE_BYTE:
-      return "Thrift::Types::BYTE";
+      return "::Thrift::Types::BYTE";
     case t_base_type::TYPE_I16:
-      return "Thrift::Types::I16";
+      return "::Thrift::Types::I16";
     case t_base_type::TYPE_I32:
-      return "Thrift::Types::I32";
+      return "::Thrift::Types::I32";
     case t_base_type::TYPE_I64:
-      return "Thrift::Types::I64";
+      return "::Thrift::Types::I64";
     case t_base_type::TYPE_DOUBLE:
-      return "Thrift::Types::DOUBLE";
+      return "::Thrift::Types::DOUBLE";
     }
   } else if (type->is_enum()) {
-    return "Thrift::Types::I32";
+    return "::Thrift::Types::I32";
   } else if (type->is_struct() || type->is_xception()) {
-    return "Thrift::Types::STRUCT";
+    return "::Thrift::Types::STRUCT";
   } else if (type->is_map()) {
-    return "Thrift::Types::MAP";
+    return "::Thrift::Types::MAP";
   } else if (type->is_set()) {
-    return "Thrift::Types::SET";
+    return "::Thrift::Types::SET";
   } else if (type->is_list()) {
-    return "Thrift::Types::LIST";
+    return "::Thrift::Types::LIST";
   }
 
   throw "INVALID TYPE IN type_to_enum: " + type->get_name();
@@ -1065,7 +1066,7 @@ void t_rb_generator::generate_rb_struct_required_validator(std::ofstream& out,
   for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
     t_field* field = (*f_iter);
     if (field->get_req() == t_field::T_REQUIRED) {
-      indent(out) << "raise Thrift::ProtocolException.new(Thrift::ProtocolException::UNKNOWN, 'Required field " << field->get_name() << " is unset!')";
+      indent(out) << "raise ::Thrift::ProtocolException.new(::Thrift::ProtocolException::UNKNOWN, 'Required field " << field->get_name() << " is unset!')";
       if (field->get_type()->is_bool()) {
         out << " if @" << field->get_name() << ".nil?";
       } else {
@@ -1082,7 +1083,7 @@ void t_rb_generator::generate_rb_struct_required_validator(std::ofstream& out,
     if (field->get_type()->is_enum()){      
       indent(out) << "unless @" << field->get_name() << ".nil? || " << field->get_type()->get_name() << "::VALID_VALUES.include?(@" << field->get_name() << ")" << endl;      
       indent_up();
-      indent(out) << "raise Thrift::ProtocolException.new(Thrift::ProtocolException::UNKNOWN, 'Invalid value of field " << field->get_name() << "!')" << endl;  
+      indent(out) << "raise ::Thrift::ProtocolException.new(::Thrift::ProtocolException::UNKNOWN, 'Invalid value of field " << field->get_name() << "!')" << endl;  
       indent_down();
       indent(out) << "end" << endl;
     }
