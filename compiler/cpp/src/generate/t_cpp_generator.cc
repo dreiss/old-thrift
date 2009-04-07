@@ -817,13 +817,7 @@ struct kinda_by_id_less_than {
     if (a->get_key() > 0 && b->get_key() < 0) {
       return true;
     }
-    if (a->get_key() > 0) {
-      return a->get_key() < b->get_key();
-    }
-    if (a->get_key() < 0) {
-      return a->get_key() > b->get_key();
-    }
-    assert(0);
+    return abs(a->get_key()) < abs(b->get_key());
   }
 };
 
