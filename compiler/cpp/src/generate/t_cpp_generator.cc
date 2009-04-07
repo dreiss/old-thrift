@@ -834,7 +834,7 @@ struct kinda_by_id_less_than {
  * @param tstruct The struct
  */
 void t_cpp_generator::generate_cpp_struct_constructor(ofstream& out,
-						      t_struct* tstruct) {
+                                                      t_struct* tstruct) {
   vector<t_field*> sorted_members = tstruct->get_members();
 
   sort(sorted_members.begin(), sorted_members.end(), kinda_by_id_less_than());
@@ -852,15 +852,15 @@ void t_cpp_generator::generate_cpp_struct_constructor(ofstream& out,
 
     ok_prefix = true;
     for (m_iter = sorted_members.begin(); m_iter != sorted_members.end(); 
-	 ++m_iter) {
+         ++m_iter) {
       if ((*m_iter)->get_name().substr(0,init_prefix.size()) ==
-	  init_prefix) {
-	ok_prefix = false;
-	break;
+          init_prefix) {
+        ok_prefix = false;
+        break;
       }
     }
   }
-	
+        
   indent(out) << "explicit " << tstruct->get_name() << "(" << "\n";
   indent_up();
   indent_up();
@@ -870,7 +870,7 @@ void t_cpp_generator::generate_cpp_struct_constructor(ofstream& out,
       out << ",\n";
     }
     indent(out) << "const " << type_name((*m_iter)->get_type()) 
-		<< "& " << init_prefix << (*m_iter)->get_name();
+                << "& " << init_prefix << (*m_iter)->get_name();
   }
   out << ")\n";
   indent_down();
@@ -883,7 +883,7 @@ void t_cpp_generator::generate_cpp_struct_constructor(ofstream& out,
       out << ",\n";
     }
     indent(out) << (*m_iter)->get_name() << "(" << init_prefix
-		<< (*m_iter)->get_name() << ")";
+                << (*m_iter)->get_name() << ")";
   }
   out << "\n";
   indent_down();
