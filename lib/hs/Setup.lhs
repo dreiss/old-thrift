@@ -1,4 +1,4 @@
-#!/bin/bash -v
+#!/usr/bin/env runhaskell
 
 #
 # Licensed to the Apache Software Foundation (ASF) under one
@@ -19,4 +19,5 @@
 # under the License.
 #
 
-java -server -Xmx256m -cp thrifttest.jar:../../lib/java/libthrift.jar org.apache.thrift.test.TestNonblockingServer $*
+> import Distribution.Simple
+> main = defaultMain
