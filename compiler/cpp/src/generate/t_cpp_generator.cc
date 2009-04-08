@@ -838,23 +838,6 @@ void t_cpp_generator::generate_cpp_struct_constructor(ofstream& out,
   }
 
   vector<t_field*>::const_iterator m_iter;
-
-  string init_prefix = "in";
-  bool ok_prefix = false;
-  while(!ok_prefix) {
-    init_prefix.append("_");
-
-    ok_prefix = true;
-    for (m_iter = sorted_members.begin(); m_iter != sorted_members.end(); 
-         ++m_iter) {
-      if ((*m_iter)->get_name().substr(0,init_prefix.size()) ==
-          init_prefix) {
-        ok_prefix = false;
-        break;
-      }
-    }
-  }
-        
   indent(out) << "explicit " << tstruct->get_name() << "(" << "\n";
   indent_up();
   indent_up();
@@ -864,7 +847,7 @@ void t_cpp_generator::generate_cpp_struct_constructor(ofstream& out,
       out << ",\n";
     }
     indent(out) << "const " << type_name((*m_iter)->get_type()) 
-                << "& " << init_prefix << (*m_iter)->get_name();
+                << "& " << (*m_iter)->get_name();
   }
   out << ")\n";
   indent_down();
@@ -876,7 +859,7 @@ void t_cpp_generator::generate_cpp_struct_constructor(ofstream& out,
     if (m_iter != members.begin()) {
       out << ",\n";
     }
-    indent(out) << (*m_iter)->get_name() << "(" << init_prefix
+    indent(out) << (*m_iter)->get_name() << "("
                 << (*m_iter)->get_name() << ")";
   }
   out << "\n";
