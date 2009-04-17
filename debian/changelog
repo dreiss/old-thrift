@@ -1,3 +1,9 @@
+thrift (0.2009.04.17~cloudera.1) intrepid; urgency=low
+
+  * 
+
+ -- Todd Lipcon <todd@todd-laptop>  Fri, 17 Apr 2009 13:28:33 -0700
+
 thrift (0.2009.02.13~amie.1) etch; urgency=low
 
   * Build for etch with some local changes
