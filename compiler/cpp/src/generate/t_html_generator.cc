@@ -1,8 +1,21 @@
-// Copyright (c) 2008 Evernote Corporation
-// Distributed under the Thrift Software License
-//
-// See accompanying file LICENSE or visit the Thrift site at:
-// http://developers.facebook.com/thrift/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 
 #include <string>
 #include <fstream>
@@ -21,7 +34,6 @@ using namespace std;
 /**
  * HTML code generator
  *
- * @author Dave Engberg, although it was
  * mostly copy/pasting/tweaking from mcslee's work.
  */
 class t_html_generator : public t_generator {
@@ -33,6 +45,12 @@ class t_html_generator : public t_generator {
     : t_generator(program)
   {
     out_dir_base_ = "gen-html";
+    escape_.clear();
+    escape_['&']  = "&amp;";
+    escape_['<']  = "&lt;";
+    escape_['>']  = "&gt;";
+    escape_['"']  = "&quot;";
+    escape_['\''] = "&apos;";
   }
 
   void generate_program();
@@ -317,7 +335,7 @@ void t_html_generator::generate_css() {
 void t_html_generator::print_doc(t_doc* tdoc) {
   if (tdoc->has_doc()) {
     string doc = tdoc->get_doc();
-    unsigned int index;
+    size_t index;
     while ((index = doc.find_first_of("\r\n")) != string::npos) {
       if (index == 0) {
 	f_out_ << "<p/>" << endl;
@@ -397,7 +415,7 @@ void t_html_generator::print_const_value(t_const_value* tvalue) {
     f_out_ << tvalue->get_double();
     break;
   case t_const_value::CV_STRING:
-    f_out_ << "\"" << tvalue->get_string() << "\"";
+    f_out_ << '"' << get_escaped_string(tvalue) << '"';
     break;
   case t_const_value::CV_MAP:
     {

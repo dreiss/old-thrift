@@ -1,8 +1,21 @@
-// Copyright (c) 2006- Facebook
-// Distributed under the Thrift Software License
-//
-// See accompanying file LICENSE or visit the Thrift site at:
-// http://developers.facebook.com/thrift/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 
 #include <string>
 #include <fstream>
@@ -21,7 +34,6 @@ using namespace std;
 /**
  * OCaml code generator.
  *
- * @author Iain Proctor <iproctor@facebook.com>
  */
 class t_ocaml_generator : public t_oop_generator {
  public:
@@ -362,7 +374,7 @@ string t_ocaml_generator::render_const_value(t_type* type, t_const_value* value)
     t_base_type::t_base tbase = ((t_base_type*)type)->get_base();
     switch (tbase) {
     case t_base_type::TYPE_STRING:
-      out << "\"" << value->get_string() << "\"";
+      out << '"' << get_escaped_string(value) << '"';
       break;
     case t_base_type::TYPE_BOOL:
       out << (value->get_integer() > 0 ? "true" : "false");
@@ -658,7 +670,7 @@ void t_ocaml_generator::generate_ocaml_struct_reader(ofstream& out, t_struct* ts
 void t_ocaml_generator::generate_ocaml_struct_writer(ofstream& out,
                                                t_struct* tstruct) {
   string name = tstruct->get_name();
-  const vector<t_field*>& fields = tstruct->get_members();
+  const vector<t_field*>& fields = tstruct->get_sorted_members();
   vector<t_field*>::const_iterator f_iter;
   string str = tmp("_str");
   string f = tmp("_f");
@@ -862,7 +874,7 @@ void t_ocaml_generator::generate_service_client(t_service* tservice) {
     }
     f_service_ << ";" << endl;
 
-    if (!(*f_iter)->is_async()) {
+    if (!(*f_iter)->is_oneway()) {
       f_service_ << indent();
       f_service_ <<
         "self#recv_" << funname << endl;
@@ -897,7 +909,7 @@ void t_ocaml_generator::generate_service_client(t_service* tservice) {
     indent_down();
     indent_down();
 
-    if (!(*f_iter)->is_async()) {
+    if (!(*f_iter)->is_oneway()) {
       std::string resultname = decapitalize((*f_iter)->get_name() + "_result");
       t_struct noargs(program_);
 
@@ -1097,8 +1109,8 @@ void t_ocaml_generator::generate_process_function(t_service* tservice,
   const std::vector<t_field*>& xceptions = xs->get_members();
   vector<t_field*>::const_iterator x_iter;
 
-  // Declare result for non async function
-  if (!tfunction->is_async()) {
+  // Declare result for non oneway function
+  if (!tfunction->is_oneway()) {
     f_service_ <<
       indent() << "let result = new " << resultname << " in" << endl;
     indent_up();
@@ -1115,7 +1127,7 @@ void t_ocaml_generator::generate_process_function(t_service* tservice,
 
 
   f_service_ << indent();
-  if (!tfunction->is_async() && !tfunction->get_returntype()->is_void()) {
+  if (!tfunction->is_oneway() && !tfunction->get_returntype()->is_void()) {
     f_service_ << "result#set_success ";
   }
   f_service_ <<
@@ -1135,7 +1147,7 @@ void t_ocaml_generator::generate_process_function(t_service* tservice,
         indent() << "| " << capitalize(type_name((*x_iter)->get_type())) << " " << (*x_iter)->get_name() << " -> " << endl;
       indent_up();
       indent_up();
-      if(!tfunction->is_async()){
+      if(!tfunction->is_oneway()){
            f_service_ <<
              indent() << "result#set_" << (*x_iter)->get_name() << " " << (*x_iter)->get_name() << endl;
       } else {
@@ -1150,8 +1162,8 @@ void t_ocaml_generator::generate_process_function(t_service* tservice,
 
 
 
-  // Shortcut out here for async functions
-  if (tfunction->is_async()) {
+  // Shortcut out here for oneway functions
+  if (tfunction->is_oneway()) {
     f_service_ <<
       indent() << "()" << endl;
     indent_down();

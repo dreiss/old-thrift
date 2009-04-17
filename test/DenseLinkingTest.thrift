@@ -1,6 +1,25 @@
 /*
-../compiler/cpp/thrift -cpp -dense DebugProtoTest.thrift
-../compiler/cpp/thrift -cpp -dense DenseLinkingTest.thrift
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+/*
+../compiler/cpp/thrift -gen cpp:dense DebugProtoTest.thrift
+../compiler/cpp/thrift -gen cpp:dense DenseLinkingTest.thrift
 g++ -Wall -g -I../lib/cpp/src -I/usr/local/include/boost-1_33_1 \
   DebugProtoTest.cpp gen-cpp/DebugProtoTest_types.cpp \
   gen-cpp/DenseLinkingTest_types.cpp \
@@ -69,5 +88,5 @@ struct RandomStuffZZ {
 }
 
 service Srv {
-  i32 Janky(i32 arg)
+  i32 Janky(1: i32 arg)
 }

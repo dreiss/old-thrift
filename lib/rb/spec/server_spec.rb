@@ -1,13 +1,32 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements. See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership. The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License. You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
 require File.dirname(__FILE__) + '/spec_helper'
 
 class ThriftServerSpec < Spec::ExampleGroup
   include Thrift
 
-  describe Server do
-    it "should default to TransportFactory and BinaryProtocolFactory when not specified" do
-      server = Server.new(mock("Processor"), mock("ServerTransport"))
-      server.instance_variable_get(:'@transportFactory').should be_an_instance_of(TransportFactory)
-      server.instance_variable_get(:'@protocolFactory').should be_an_instance_of(BinaryProtocolFactory)
+  describe BaseServer do
+    it "should default to BaseTransportFactory and BinaryProtocolFactory when not specified" do
+      server = BaseServer.new(mock("Processor"), mock("BaseServerTransport"))
+      server.instance_variable_get(:'@transport_factory').should be_an_instance_of(BaseTransportFactory)
+      server.instance_variable_get(:'@protocol_factory').should be_an_instance_of(BinaryProtocolFactory)
     end
 
     # serve is a noop, so can't test that
@@ -17,8 +36,8 @@ class ThriftServerSpec < Spec::ExampleGroup
     before(:each) do
       @processor = mock("Processor")
       @serverTrans = mock("ServerTransport")
-      @trans = mock("Transport")
-      @prot = mock("Protocol")
+      @trans = mock("BaseTransport")
+      @prot = mock("BaseProtocol")
       @client = mock("Client")
       @server = server_type.new(@processor, @serverTrans, @trans, @prot)
     end
@@ -39,9 +58,9 @@ class ThriftServerSpec < Spec::ExampleGroup
       x = 0
       @processor.should_receive(:process).exactly(3).times.with(@prot, @prot).and_return do
         case (x += 1)
-        when 1: raise Thrift::TransportException
-        when 2: raise Thrift::ProtocolException
-        when 3: throw :stop
+        when 1 then raise Thrift::TransportException
+        when 2 then raise Thrift::ProtocolException
+        when 3 then throw :stop
         end
       end
       @trans.should_receive(:close).exactly(3).times
@@ -66,9 +85,9 @@ class ThriftServerSpec < Spec::ExampleGroup
       x = 0
       @processor.should_receive(:process).exactly(3).times.with(@prot, @prot).and_return do
         case (x += 1)
-        when 1: raise Thrift::TransportException
-        when 2: raise Thrift::ProtocolException
-        when 3: throw :stop
+        when 1 then raise Thrift::TransportException
+        when 2 then raise Thrift::ProtocolException
+        when 3 then throw :stop
         end
       end
       @trans.should_receive(:close).exactly(3).times
@@ -127,9 +146,9 @@ class ThriftServerSpec < Spec::ExampleGroup
       error = RuntimeError.new("Stopped")
       @processor.should_receive(:process).exactly(3).times.with(@prot, @prot).and_return do
         case (x += 1)
-        when 1: raise Thrift::TransportException
-        when 2: raise Thrift::ProtocolException
-        when 3: raise error
+        when 1 then raise Thrift::TransportException
+        when 2 then raise Thrift::ProtocolException
+        when 3 then raise error
         end
       end
       @trans.should_receive(:close).exactly(3).times

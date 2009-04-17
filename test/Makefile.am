@@ -1,3 +1,22 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements. See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership. The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License. You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
 SUBDIRS =
 
 if WITH_PYTHON
@@ -13,14 +32,15 @@ libtestgencpp_la_SOURCES = \
 	gen-cpp/DebugProtoTest_types.cpp \
 	gen-cpp/OptionalRequiredTest_types.cpp \
 	gen-cpp/DebugProtoTest_types.cpp \
-	gen-cpp/Service.cpp \
-	gen-cpp/StressTest_types.cpp \
-	gen-cpp/SecondService.cpp \
-	gen-cpp/ThriftTest_constants.cpp \
-	gen-cpp/ThriftTest.cpp \
 	gen-cpp/ThriftTest_types.cpp \
+	gen-cpp/DebugProtoTest_types.h \
+	gen-cpp/OptionalRequiredTest_types.h \
+	gen-cpp/ThriftTest_types.h \
 	ThriftTest_extras.cpp \
 	DebugProtoTest_extras.cpp
+
+ThriftTest_extras.o: gen-cpp/ThriftTest_types.h
+DebugProtoTest_extras.o: gen-cpp/DebugProtoTest_types.h
 
 libtestgencpp_la_LIBADD = $(top_builddir)/lib/cpp/libthrift.la
 
@@ -37,6 +57,7 @@ check_PROGRAMS = \
 	DebugProtoTest \
 	JSONProtoTest \
 	OptionalRequiredTest \
+	AllProtocolsTest \
 	UnitTests
 
 TESTS = \
@@ -69,6 +90,14 @@ TPipedTransportTest_LDADD = \
 	$(top_builddir)/lib/cpp/libthrift.la
 
 #
+# AllProtocolsTest
+#
+AllProtocolsTest_SOURCES = \
+	AllProtocolTests.cpp
+
+AllProtocolsTest_LDADD = libtestgencpp.la
+
+#
 # DebugProtoTest
 #
 DebugProtoTest_SOURCES = \
@@ -99,16 +128,16 @@ OptionalRequiredTest_LDADD = libtestgencpp.la
 #
 THRIFT = $(top_builddir)/compiler/cpp/thrift
 
-gen-cpp/DebugProtoTest_types.cpp: DebugProtoTest.thrift
+gen-cpp/DebugProtoTest_types.cpp gen-cpp/DebugProtoTest_types.h: DebugProtoTest.thrift
 	$(THRIFT) --gen cpp:dense $<
 
-gen-cpp/OptionalRequiredTest_types.cpp: OptionalRequiredTest.thrift
+gen-cpp/OptionalRequiredTest_types.cpp gen-cpp/OptionalRequiredTest_types.h: OptionalRequiredTest.thrift
 	$(THRIFT) --gen cpp:dense $<
 
 gen-cpp/Service.cpp gen-cpp/StressTest_types.cpp: StressTest.thrift
 	$(THRIFT) --gen cpp:dense $<
 
-gen-cpp/SecondService.cpp gen-cpp/ThriftTest_constants.cpp gen-cpp/ThriftTest.cpp gen-cpp/ThriftTest_types.cpp: ThriftTest.thrift
+gen-cpp/SecondService.cpp gen-cpp/ThriftTest_constants.cpp gen-cpp/ThriftTest.cpp gen-cpp/ThriftTest_types.cpp gen-cpp/ThriftTest_types.h: ThriftTest.thrift
 	$(THRIFT) --gen cpp:dense $<
 
 INCLUDES = \
@@ -118,3 +147,30 @@ AM_CPPFLAGS = $(BOOST_CPPFLAGS)
 
 clean-local:
 	$(RM) -r gen-cpp
+
+EXTRA_DIST = \
+	cpp \
+	threads \
+	csharp \
+	py \
+	rb \
+	perl \
+	php \
+	erl \
+	hs \
+	ocaml \
+	AnnotationTest.thrift \
+	BrokenConstants.thrift \
+	ConstantsDemo.thrift \
+	DebugProtoTest.thrift \
+	DenseLinkingTest.thrift \
+	DocTest.thrift \
+	JavaBeansTest.thrift \
+	ManyTypedefs.thrift \
+	OptionalRequiredTest.thrift \
+	SmallTest.thrift \
+	StressTest.thrift \
+	ThriftTest.thrift \
+	ZlibTest.cpp \
+	DenseProtoTest.cpp \
+	FastbinaryTest.py

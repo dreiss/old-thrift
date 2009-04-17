@@ -1,8 +1,21 @@
-// Copyright (c) 2006- Facebook
-// Distributed under the Thrift Software License
-//
-// See accompanying file LICENSE or visit the Thrift site at:
-// http://developers.facebook.com/thrift/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 
 #ifndef _THRIFT_TRANSPORT_TBUFFERTRANSPORTS_H_
 #define _THRIFT_TRANSPORT_TBUFFERTRANSPORTS_H_ 1
@@ -32,7 +45,6 @@ namespace apache { namespace thrift { namespace transport {
  * class.  Subclasses are expected to define the "slow path" operations
  * that have to be done when the buffers are full or empty.
  *
- * @author David Reiss <dreiss@facebook.com>
  */
 class TBufferBase : public TTransport {
 
@@ -156,50 +168,15 @@ class TBufferBase : public TTransport {
 };
 
 
-/**
- * Buffered transport. For reads it will read more data than is requested
- * and will serve future data out of a local buffer. For writes, data is
- * stored to an in memory buffer before being written out.
- *
- * @author Mark Slee <mcslee@facebook.com>
- * @author David Reiss <dreiss@facebook.com>
+/** 
+ * Base class for all transport which wraps transport to new one.
  */
-class TBufferedTransport : public TBufferBase {
+class TUnderlyingTransport : public TBufferBase {
  public:
-
   static const int DEFAULT_BUFFER_SIZE = 512;
 
-  /// Use default buffer sizes.
-  TBufferedTransport(boost::shared_ptr<TTransport> transport)
-    : transport_(transport)
-    , rBufSize_(DEFAULT_BUFFER_SIZE)
-    , wBufSize_(DEFAULT_BUFFER_SIZE)
-    , rBuf_(new uint8_t[rBufSize_])
-    , wBuf_(new uint8_t[wBufSize_])
-  {
-    initPointers();
-  }
-
-  /// Use specified buffer sizes.
-  TBufferedTransport(boost::shared_ptr<TTransport> transport, uint32_t sz)
-    : transport_(transport)
-    , rBufSize_(sz)
-    , wBufSize_(sz)
-    , rBuf_(new uint8_t[rBufSize_])
-    , wBuf_(new uint8_t[wBufSize_])
-  {
-    initPointers();
-  }
-
-  /// Use specified read and write buffer sizes.
-  TBufferedTransport(boost::shared_ptr<TTransport> transport, uint32_t rsz, uint32_t wsz)
-    : transport_(transport)
-    , rBufSize_(rsz)
-    , wBufSize_(wsz)
-    , rBuf_(new uint8_t[rBufSize_])
-    , wBuf_(new uint8_t[wBufSize_])
-  {
-    initPointers();
+  virtual bool peek() {
+    return (rBase_ < rBound_) || transport_->peek();
   }
 
   void open() {
@@ -210,18 +187,82 @@ class TBufferedTransport : public TBufferBase {
     return transport_->isOpen();
   }
 
-  bool peek() {
-    if (rBase_ == rBound_) {
-      setReadBuffer(rBuf_.get(), transport_->read(rBuf_.get(), rBufSize_));
-    }
-    return (rBound_ > rBase_);
-  }
-
   void close() {
     flush();
     transport_->close();
   }
 
+  boost::shared_ptr<TTransport> getUnderlyingTransport() {
+    return transport_;
+  }
+
+ protected:
+  boost::shared_ptr<TTransport> transport_;
+
+  uint32_t rBufSize_;
+  uint32_t wBufSize_;
+  boost::scoped_array<uint8_t> rBuf_;
+  boost::scoped_array<uint8_t> wBuf_;
+
+  TUnderlyingTransport(boost::shared_ptr<TTransport> transport, uint32_t sz)
+    : transport_(transport)
+    , rBufSize_(sz)
+    , wBufSize_(sz)
+    , rBuf_(new uint8_t[rBufSize_])
+    , wBuf_(new uint8_t[wBufSize_]) {}
+
+  TUnderlyingTransport(boost::shared_ptr<TTransport> transport)
+    : transport_(transport)
+    , rBufSize_(DEFAULT_BUFFER_SIZE)
+    , wBufSize_(DEFAULT_BUFFER_SIZE)
+    , rBuf_(new uint8_t[rBufSize_])
+    , wBuf_(new uint8_t[wBufSize_]) {}
+
+  TUnderlyingTransport(boost::shared_ptr<TTransport> transport, uint32_t rsz, uint32_t wsz)
+    : transport_(transport)
+    , rBufSize_(rsz)
+    , wBufSize_(wsz)
+    , rBuf_(new uint8_t[rBufSize_])
+    , wBuf_(new uint8_t[wBufSize_]) {}
+};
+
+/**
+ * Buffered transport. For reads it will read more data than is requested
+ * and will serve future data out of a local buffer. For writes, data is
+ * stored to an in memory buffer before being written out.
+ *
+ */
+class TBufferedTransport : public TUnderlyingTransport {
+ public:
+
+  /// Use default buffer sizes.
+  TBufferedTransport(boost::shared_ptr<TTransport> transport)
+    : TUnderlyingTransport(transport)
+  {
+    initPointers();
+  }
+
+  /// Use specified buffer sizes.
+  TBufferedTransport(boost::shared_ptr<TTransport> transport, uint32_t sz)
+    : TUnderlyingTransport(transport, sz)
+  {
+    initPointers();
+  }
+
+  /// Use specified read and write buffer sizes.
+  TBufferedTransport(boost::shared_ptr<TTransport> transport, uint32_t rsz, uint32_t wsz)
+    : TUnderlyingTransport(transport, rsz, wsz)
+  {
+    initPointers();
+  }
+
+  virtual bool peek() {
+    /* shigin: see THRIFT-96 discussion */
+    if (rBase_ == rBound_) {
+      setReadBuffer(rBuf_.get(), transport_->read(rBuf_.get(), rBufSize_));
+    }
+    return (rBound_ > rBase_);
+  }
   virtual uint32_t readSlow(uint8_t* buf, uint32_t len);
 
   virtual void writeSlow(const uint8_t* buf, uint32_t len);
@@ -242,30 +283,18 @@ class TBufferedTransport : public TBufferBase {
    */
   virtual const uint8_t* borrowSlow(uint8_t* buf, uint32_t* len);
 
-  boost::shared_ptr<TTransport> getUnderlyingTransport() {
-    return transport_;
-  }
-
  protected:
   void initPointers() {
     setReadBuffer(rBuf_.get(), 0);
     setWriteBuffer(wBuf_.get(), wBufSize_);
     // Write size never changes.
   }
-
-  boost::shared_ptr<TTransport> transport_;
-
-  uint32_t rBufSize_;
-  uint32_t wBufSize_;
-  boost::scoped_array<uint8_t> rBuf_;
-  boost::scoped_array<uint8_t> wBuf_;
 };
 
 
 /**
  * Wraps a transport into a buffered one.
  *
- * @author Mark Slee <mcslee@facebook.com>
  */
 class TBufferedTransportFactory : public TTransportFactory {
  public:
@@ -289,50 +318,21 @@ class TBufferedTransportFactory : public TTransportFactory {
  * binary chunk followed by the data payload. This allows the receiver on the
  * other end to always do fixed-length reads.
  *
- * @author Mark Slee <mcslee@facebook.com>
- * @author David Reiss <dreiss@facebook.com>
  */
-class TFramedTransport : public TBufferBase {
+class TFramedTransport : public TUnderlyingTransport {
  public:
-
-  static const int DEFAULT_BUFFER_SIZE = 512;
 
   /// Use default buffer sizes.
   TFramedTransport(boost::shared_ptr<TTransport> transport)
-    : transport_(transport)
-    , rBufSize_(0)
-    , wBufSize_(DEFAULT_BUFFER_SIZE)
-    , rBuf_()
-    , wBuf_(new uint8_t[wBufSize_])
+    : TUnderlyingTransport(transport)
   {
     initPointers();
   }
 
   TFramedTransport(boost::shared_ptr<TTransport> transport, uint32_t sz)
-    : transport_(transport)
-    , rBufSize_(0)
-    , wBufSize_(sz)
-    , rBuf_()
-    , wBuf_(new uint8_t[wBufSize_])
+    : TUnderlyingTransport(transport, sz)
   {
     initPointers();
-  }
-
-  void open() {
-    transport_->open();
-  }
-
-  bool isOpen() {
-    return transport_->isOpen();
-  }
-
-  bool peek() {
-    return (rBase_ < rBound_) || transport_->peek();
-  }
-
-  void close() {
-    flush();
-    transport_->close();
   }
 
   virtual uint32_t readSlow(uint8_t* buf, uint32_t len);
@@ -342,10 +342,6 @@ class TFramedTransport : public TBufferBase {
   virtual void flush();
 
   const uint8_t* borrowSlow(uint8_t* buf, uint32_t* len);
-
-  boost::shared_ptr<TTransport> getUnderlyingTransport() {
-    return transport_;
-  }
 
  protected:
   /**
@@ -361,19 +357,11 @@ class TFramedTransport : public TBufferBase {
     int32_t pad = 0;
     this->write((uint8_t*)&pad, sizeof(pad));
   }
-
-  boost::shared_ptr<TTransport> transport_;
-
-  uint32_t rBufSize_;
-  uint32_t wBufSize_;
-  boost::scoped_array<uint8_t> rBuf_;
-  boost::scoped_array<uint8_t> wBuf_;
 };
 
 /**
  * Wraps a transport into a framed one.
  *
- * @author Dave Simpson <dave@powerset.com>
  */
 class TFramedTransportFactory : public TTransportFactory {
  public:
@@ -399,8 +387,6 @@ class TFramedTransportFactory : public TTransportFactory {
  * The buffers are allocated using C constructs malloc,realloc, and the size
  * doubles as necessary.  We've considered using scoped
  *
- * @author Mark Slee <mcslee@facebook.com>
- * @author David Reiss <dreiss@facebook.com>
  */
 class TMemoryBuffer : public TBufferBase {
  private:
@@ -552,7 +538,23 @@ class TMemoryBuffer : public TBufferBase {
     str.append((char*)buf, sz);
   }
 
-  void resetBuffer() {
+  void resetBuffer(bool reset_capacity = false) {
+    if (reset_capacity)
+    {
+      assert(owner_);
+
+      void* new_buffer = std::realloc(buffer_, defaultSize);
+
+      if (new_buffer == NULL) {
+        throw TTransportException("Out of memory.");
+      }
+
+      buffer_ = (uint8_t*) new_buffer;
+      bufferSize_ = defaultSize;
+
+      wBound_ = buffer_ + bufferSize_;
+    }
+
     rBase_ = buffer_;
     rBound_ = buffer_;
     wBase_ = buffer_;

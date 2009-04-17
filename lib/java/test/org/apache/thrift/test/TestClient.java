@@ -1,3 +1,22 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 package org.apache.thrift.test;
 
 // Generated code
@@ -25,7 +44,6 @@ import java.util.ArrayList;
  * this makes a variety of requests to enable testing for both performance and
  * correctness of the output.
  *
- * @author Mark Slee <mcslee@facebook.com>
  */
 public class TestClient {
   public static void main(String [] args) {
@@ -354,18 +372,18 @@ public class TestClient {
         }
         System.out.print("}\n");
 
-        // Test async
-        System.out.print("testAsync(3)...");
-        long startAsync = System.nanoTime();
-        testClient.testAsync(3);
-        long asyncElapsedMillis = (System.nanoTime() - startAsync) / 1000000;
-        if (asyncElapsedMillis > 200) {
-          throw new Exception("Async test failed: took " +
-                              Long.toString(asyncElapsedMillis) +
+        // Test oneway
+        System.out.print("testOneway(3)...");
+        long startOneway = System.nanoTime();
+        testClient.testOneway(3);
+        long onewayElapsedMillis = (System.nanoTime() - startOneway) / 1000000;
+        if (onewayElapsedMillis > 200) {
+          throw new Exception("Oneway test failed: took " +
+                              Long.toString(onewayElapsedMillis) +
                               "ms");
         } else {
           System.out.println("Success - took " +
-                             Long.toString(asyncElapsedMillis) +
+                             Long.toString(onewayElapsedMillis) +
                              "ms");
         }
 

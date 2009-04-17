@@ -1,7 +1,21 @@
-// Distributed under the Thrift Software License
-//
-// See accompanying file LICENSE or visit the Thrift site at:
-// http://developers.facebook.com/thrift/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 
 #include <string>
 #include <fstream>
@@ -330,7 +344,7 @@ std::string t_csharp_generator::render_const_value(ofstream& out, string name, t
     t_base_type::t_base tbase = ((t_base_type*)type)->get_base();
     switch (tbase) {
       case t_base_type::TYPE_STRING:
-        render << "\"" + value->get_string() + "\"";
+        render << '"' << get_escaped_string(value) << '"';
         break;
       case t_base_type::TYPE_BOOL:
         render << ((value->get_integer() > 0) ? "true" : "false");
@@ -551,7 +565,7 @@ void t_csharp_generator::generate_csharp_struct_writer(ofstream& out, t_struct* 
   indent_up();
 
   string name = tstruct->get_name();
-  const vector<t_field*>& fields = tstruct->get_members();
+  const vector<t_field*>& fields = tstruct->get_sorted_members();
   vector<t_field*>::const_iterator f_iter;
 
   indent(out) <<
@@ -611,7 +625,7 @@ void t_csharp_generator::generate_csharp_struct_result_writer(ofstream& out, t_s
   indent_up();
 
   string name = tstruct->get_name();
-  const vector<t_field*>& fields = tstruct->get_members();
+  const vector<t_field*>& fields = tstruct->get_sorted_members();
   vector<t_field*>::const_iterator f_iter;
 
   indent(out) <<
@@ -859,7 +873,7 @@ void t_csharp_generator::generate_service_client(t_service* tservice) {
     }
     f_service_ << ");" << endl;
 
-    if (!(*f_iter)->is_async()) {
+    if (!(*f_iter)->is_oneway()) {
       f_service_ << indent();
       if (!(*f_iter)->get_returntype()->is_void()) {
         f_service_ << "return ";
@@ -897,7 +911,7 @@ void t_csharp_generator::generate_service_client(t_service* tservice) {
     scope_down(f_service_);
     f_service_ << endl;
 
-    if (!(*f_iter)->is_async()) {
+    if (!(*f_iter)->is_oneway()) {
       string resultname = (*f_iter)->get_name() + "_result";
 
       t_struct noargs(program_);
@@ -1066,7 +1080,7 @@ void t_csharp_generator::generate_service_server(t_service* tservice) {
 }
 
 void t_csharp_generator::generate_function_helpers(t_function* tfunction) {
-  if (tfunction->is_async()) {
+  if (tfunction->is_oneway()) {
     return;
   }
 
@@ -1103,7 +1117,7 @@ void t_csharp_generator::generate_process_function(t_service* tservice, t_functi
   const std::vector<t_field*>& xceptions = xs->get_members();
   vector<t_field*>::const_iterator x_iter;
 
-  if (!tfunction->is_async()) {
+  if (!tfunction->is_oneway()) {
     f_service_ <<
       indent() << resultname << " result = new " << resultname << "();" << endl;
   }
@@ -1119,7 +1133,7 @@ void t_csharp_generator::generate_process_function(t_service* tservice, t_functi
   vector<t_field*>::const_iterator f_iter;
 
   f_service_ << indent();
-  if (!tfunction->is_async() && !tfunction->get_returntype()->is_void()) {
+  if (!tfunction->is_oneway() && !tfunction->get_returntype()->is_void()) {
     f_service_ << "result.Success = ";
   }
   f_service_ <<
@@ -1135,12 +1149,12 @@ void t_csharp_generator::generate_process_function(t_service* tservice, t_functi
   }
   f_service_ << ");" << endl;
 
-  if (!tfunction->is_async() && xceptions.size() > 0) {
+  if (!tfunction->is_oneway() && xceptions.size() > 0) {
     indent_down();
     f_service_ << indent() << "}";
     for (x_iter = xceptions.begin(); x_iter != xceptions.end(); ++x_iter) {
       f_service_ << " catch (" << type_name((*x_iter)->get_type(), false, false) << " " << (*x_iter)->get_name() << ") {" << endl;
-      if (!tfunction->is_async()) {
+      if (!tfunction->is_oneway()) {
         indent_up();
         f_service_ <<
           indent() << "result." << prop_name(*x_iter) << " = " << (*x_iter)->get_name() << ";" << endl;
@@ -1153,7 +1167,7 @@ void t_csharp_generator::generate_process_function(t_service* tservice, t_functi
     f_service_ << endl;
   }
 
-  if (tfunction->is_async()) {
+  if (tfunction->is_oneway()) {
     f_service_ <<
       indent() << "return;" << endl;
     scope_down(f_service_);
@@ -1510,7 +1524,7 @@ void t_csharp_generator::generate_property(ofstream& out, t_field* tfield, bool 
     indent(out) << "set" << endl;
     scope_up(out);
     indent(out) << "__isset." << tfield->get_name() << " = true;" << endl;
-    indent(out) << tfield->get_name() << " = value;" << endl;
+    indent(out) << "this." << tfield->get_name() << " = value;" << endl;
     scope_down(out);
     scope_down(out);
     out << endl;

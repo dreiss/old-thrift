@@ -1,15 +1,26 @@
-// Copyright (c) 2006- Facebook
-// Distributed under the Thrift Software License
-//
-// See accompanying file LICENSE or visit the Thrift site at:
-// http://developers.facebook.com/thrift/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 
 #ifndef T_OOP_GENERATOR_H
 #define T_OOP_GENERATOR_H
 
-#include <sstream>
 #include <string>
-#include <fstream>
 #include <iostream>
 
 #include "globals.h"
@@ -21,7 +32,6 @@
  * Class with utility methods shared across common object oriented languages.
  * Specifically, most of this stuff is for C++/Java.
  *
- * @author Mark Slee <mcslee@facebook.com>
  */
 class t_oop_generator : public t_generator {
  public:
@@ -45,23 +55,6 @@ class t_oop_generator : public t_generator {
   std::string upcase_string(std::string original) {
     std::transform(original.begin(), original.end(), original.begin(), (int(*)(int)) toupper);
     return original;
-  }
-
-  void generate_docstring_comment(std::ofstream& out,
-                                  std::string comment_start,
-                                  std::string line_prefix,
-                                  std::string contents,
-                                  std::string comment_end) {
-    if (comment_start != "") indent(out) << comment_start;
-    std::stringstream docs(contents, std::ios_base::in);
-    while (!docs.eof()) {
-      char line[1024];
-      docs.getline(line, 1024);
-      if (strlen(line) > 0 || !docs.eof()) {  // skip the empty last line
-        indent(out) << line_prefix << line << std::endl;
-      }
-    }
-    if (comment_end != "") indent(out) << comment_end;
   }
 
   /**

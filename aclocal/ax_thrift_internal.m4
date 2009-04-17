@@ -7,9 +7,13 @@ dnl
 dnl These macros have poor error handling and are poorly documented.
 dnl They are intended only for internal use by the Thrift compiler.
 dnl
-dnl @author David Reiss <dreiss@facebook.com>
 dnl @version 2008-02-20
 dnl @license AllPermissive
+dnl
+dnl Copyright (C) 2009 David Reiss
+dnl Copying and distribution of this file, with or without modification,
+dnl are permitted in any medium without royalty provided the copyright
+dnl notice and this notice are preserved.
 
 AC_DEFUN([AX_THRIFT_GEN],
          [

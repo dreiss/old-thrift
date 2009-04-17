@@ -1,8 +1,21 @@
-// Copyright (c) 2006- Facebook
-// Distributed under the Thrift Software License
-//
-// See accompanying file LICENSE or visit the Thrift site at:
-// http://developers.facebook.com/thrift/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 
 #include <string>
 #include <fstream>
@@ -24,7 +37,6 @@ using namespace std;
 /**
  * Ruby code generator.
  *
- * @author Mark Slee <mcslee@facebook.com>
  */
 class t_rb_generator : public t_oop_generator {
  public:
@@ -143,7 +155,6 @@ class t_rb_generator : public t_oop_generator {
    */
 
   std::string rb_autogen_comment();
-  std::string rb_imports();
   std::string render_includes();
   std::string declare_field(t_field* tfield);
   std::string type_name(t_type* ttype);
@@ -160,7 +171,7 @@ class t_rb_generator : public t_oop_generator {
     std::vector<std::string> modules;
 
     for(boost::tokenizer<>::iterator beg=tok.begin(); beg != tok.end(); ++beg) {
-      modules.push_back(*beg);
+      modules.push_back(capitalize(*beg));
     }
 
     return modules;
@@ -193,23 +204,21 @@ void t_rb_generator::init_generator() {
   MKDIR(get_out_dir().c_str());
 
   // Make output file
-  string f_types_name = get_out_dir()+program_name_+"_types.rb";
+  string f_types_name = get_out_dir()+underscore(program_name_)+"_types.rb";
   f_types_.open(f_types_name.c_str());
 
-  string f_consts_name = get_out_dir()+program_name_+"_constants.rb";
+  string f_consts_name = get_out_dir()+underscore(program_name_)+"_constants.rb";
   f_consts_.open(f_consts_name.c_str());
 
   // Print header
   f_types_ <<
     rb_autogen_comment() << endl <<
-    rb_imports() << endl <<
     render_includes() << endl;
     begin_namespace(f_types_, ruby_modules(program_));
 
   f_consts_ <<
     rb_autogen_comment() << endl <<
-    rb_imports() << endl <<
-    "require File.dirname(__FILE__) + '/" << program_name_ << "_types'" << endl <<
+    "require File.dirname(__FILE__) + '/" << underscore(program_name_) << "_types'" << endl <<
     endl;
     begin_namespace(f_consts_, ruby_modules(program_));
 
@@ -222,7 +231,7 @@ string t_rb_generator::render_includes() {
   const vector<t_program*>& includes = program_->get_includes();
   string result = "";
   for (size_t i = 0; i < includes.size(); ++i) {
-    result += "require File.dirname(__FILE__) + '/" + includes[i]->get_name() + "_types'\n";
+    result += "require '" + underscore(includes[i]->get_name()) + "_types'\n";
   }
   if (includes.size() > 0) {
     result += "\n";
@@ -240,14 +249,6 @@ string t_rb_generator::rb_autogen_comment() {
     "#\n" +
     "# DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING\n" +
     "#\n";
-}
-
-/**
- * Prints standard thrift imports
- */
-string t_rb_generator::rb_imports() {
-  return
-    string("require 'thrift/protocol'");
 }
 
 /**
@@ -303,10 +304,8 @@ void t_rb_generator::generate_enum(t_enum* tenum) {
   bool first = true;
   for (c_iter = constants.begin(); c_iter != constants.end(); ++c_iter) {
     // Populate the set
-    if ((*c_iter)->has_value()){
-      first ? first = false: f_types_ << ", ";
-      f_types_ << capitalize((*c_iter)->get_name());
-    }          
+    first ? first = false: f_types_ << ", ";
+    f_types_ << capitalize((*c_iter)->get_name());
   }
   f_types_ << "]).freeze" << endl;
 
@@ -341,7 +340,7 @@ string t_rb_generator::render_const_value(t_type* type, t_const_value* value) {
     t_base_type::t_base tbase = ((t_base_type*)type)->get_base();
     switch (tbase) {
     case t_base_type::TYPE_STRING:
-      out << "%q\"" << value->get_string() << '"';
+      out << "%q\"" << get_escaped_string(value) << '"';
       break;
     case t_base_type::TYPE_BOOL:
       out << (value->get_integer() > 0 ? "true" : "false");
@@ -461,7 +460,7 @@ void t_rb_generator::generate_rb_struct(std::ofstream& out, t_struct* tstruct, b
   generate_rdoc(out, tstruct);
   indent(out) << "class " << type_name(tstruct);
   if (is_exception) {
-    out << " < Thrift::Exception";
+    out << " < ::Thrift::Exception";
   }
   out << endl;
 
@@ -522,7 +521,7 @@ void t_rb_generator::generate_accessors(std::ofstream& out, t_struct* tstruct) {
   vector<t_field*>::const_iterator m_iter;
 
   if (members.size() > 0) {
-    indent(out) << "Thrift::Struct.field_accessor self";
+    indent(out) << "::Thrift::Struct.field_accessor self";
     for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
       out << ", :" << (*m_iter)->get_name();
     }
@@ -594,6 +593,10 @@ void t_rb_generator::generate_field_data(std::ofstream& out, t_type* field_type,
     out << ", :optional => true";
   }
 
+  if (field_type->is_enum()) {
+    out << ", :enum_class => " << full_type_name(field_type);
+  }
+
   // End of this field's defn
   out << "}";
 }
@@ -619,26 +622,25 @@ void t_rb_generator::end_namespace(std::ofstream& out, vector<std::string> modul
  * @param tservice The service definition
  */
 void t_rb_generator::generate_service(t_service* tservice) {
-  string f_service_name = get_out_dir()+service_name_+".rb";
+  string f_service_name = get_out_dir()+underscore(service_name_)+".rb";
   f_service_.open(f_service_name.c_str());
 
   f_service_ <<
     rb_autogen_comment() << endl <<
-    "require 'thrift'" << endl <<
-    rb_imports() << endl;
+    "require 'thrift'" << endl;
 
   if (tservice->get_extends() != NULL) {
     f_service_ <<
-      "require '" << tservice->get_extends()->get_name() << "'" << endl;
+      "require '" << underscore(tservice->get_extends()->get_name()) << "'" << endl;
   }
 
   f_service_ <<
-    "require File.dirname(__FILE__) + '/" << program_name_ << "_types'" << endl <<
+    "require File.dirname(__FILE__) + '/" << underscore(program_name_) << "_types'" << endl <<
     endl;
 
   begin_namespace(f_service_, ruby_modules(tservice->get_program()));
 
-  indent(f_service_) << "module " << tservice->get_name() << endl;
+  indent(f_service_) << "module " << capitalize(tservice->get_name()) << endl;
   indent_up();
 
   // Generate the three main parts of the service (well, two for now in PHP)
@@ -705,7 +707,7 @@ void t_rb_generator::generate_service_client(t_service* tservice) {
   string extends = "";
   string extends_client = "";
   if (tservice->get_extends() != NULL) {
-    extends = type_name(tservice->get_extends());
+    extends = full_type_name(tservice->get_extends());
     extends_client = " < " + extends + "::Client ";
   }
 
@@ -743,7 +745,7 @@ void t_rb_generator::generate_service_client(t_service* tservice) {
       }
       f_service_ << ")" << endl;
 
-      if (!(*f_iter)->is_async()) {
+      if (!(*f_iter)->is_oneway()) {
         f_service_ << indent();
         if (!(*f_iter)->get_returntype()->is_void()) {
           f_service_ << "return ";
@@ -772,7 +774,7 @@ void t_rb_generator::generate_service_client(t_service* tservice) {
     indent_down();
     indent(f_service_) << "end" << endl;
 
-    if (!(*f_iter)->is_async()) {
+    if (!(*f_iter)->is_oneway()) {
       std::string resultname = capitalize((*f_iter)->get_name() + "_result");
       t_struct noargs(program_);
 
@@ -811,7 +813,7 @@ void t_rb_generator::generate_service_client(t_service* tservice) {
           "return" << endl;
       } else {
         f_service_ <<
-          indent() << "raise Thrift::ApplicationException.new(Thrift::ApplicationException::MISSING_RESULT, '" << (*f_iter)->get_name() << " failed: unknown result')" << endl;
+          indent() << "raise ::Thrift::ApplicationException.new(::Thrift::ApplicationException::MISSING_RESULT, '" << (*f_iter)->get_name() << " failed: unknown result')" << endl;
       }
 
       // Close function
@@ -837,7 +839,7 @@ void t_rb_generator::generate_service_server(t_service* tservice) {
   string extends = "";
   string extends_processor = "";
   if (tservice->get_extends() != NULL) {
-    extends = type_name(tservice->get_extends());
+    extends = full_type_name(tservice->get_extends());
     extends_processor = " < " + extends + "::Processor ";
   }
 
@@ -882,8 +884,8 @@ void t_rb_generator::generate_process_function(t_service* tservice,
   const std::vector<t_field*>& xceptions = xs->get_members();
   vector<t_field*>::const_iterator x_iter;
 
-  // Declare result for non async function
-  if (!tfunction->is_async()) {
+  // Declare result for non oneway function
+  if (!tfunction->is_oneway()) {
     f_service_ <<
       indent() << "result = " << resultname << ".new()" << endl;
   }
@@ -901,7 +903,7 @@ void t_rb_generator::generate_process_function(t_service* tservice,
   vector<t_field*>::const_iterator f_iter;
 
   f_service_ << indent();
-  if (!tfunction->is_async() && !tfunction->get_returntype()->is_void()) {
+  if (!tfunction->is_oneway() && !tfunction->get_returntype()->is_void()) {
     f_service_ << "result.success = ";
   }
   f_service_ <<
@@ -917,12 +919,12 @@ void t_rb_generator::generate_process_function(t_service* tservice,
   }
   f_service_ << ")" << endl;
 
-  if (!tfunction->is_async() && xceptions.size() > 0) {
+  if (!tfunction->is_oneway() && xceptions.size() > 0) {
     indent_down();
     for (x_iter = xceptions.begin(); x_iter != xceptions.end(); ++x_iter) {
       f_service_ <<
         indent() << "rescue " << full_type_name((*x_iter)->get_type()) << " => " << (*x_iter)->get_name() << endl;
-      if (!tfunction->is_async()) {
+      if (!tfunction->is_oneway()) {
         indent_up();
         f_service_ <<
           indent() << "result." << (*x_iter)->get_name() << " = " << (*x_iter)->get_name() << endl;
@@ -932,8 +934,8 @@ void t_rb_generator::generate_process_function(t_service* tservice,
     indent(f_service_) << "end" << endl;
   }
 
-  // Shortcut out here for async functions
-  if (tfunction->is_async()) {
+  // Shortcut out here for oneway functions
+  if (tfunction->is_oneway()) {
     f_service_ <<
       indent() << "return" << endl;
     indent_down();
@@ -987,7 +989,7 @@ string t_rb_generator::type_name(t_type* ttype) {
   string prefix = "";
 
   string name = ttype->get_name();
-  if (ttype->is_struct() || ttype->is_xception()) {
+  if (ttype->is_struct() || ttype->is_xception() || ttype->is_enum()) {
     name = capitalize(ttype->get_name());
   }
 
@@ -1016,30 +1018,30 @@ string t_rb_generator::type_to_enum(t_type* type) {
     case t_base_type::TYPE_VOID:
       throw "NO T_VOID CONSTRUCT";
     case t_base_type::TYPE_STRING:
-      return "Thrift::Types::STRING";
+      return "::Thrift::Types::STRING";
     case t_base_type::TYPE_BOOL:
-      return "Thrift::Types::BOOL";
+      return "::Thrift::Types::BOOL";
     case t_base_type::TYPE_BYTE:
-      return "Thrift::Types::BYTE";
+      return "::Thrift::Types::BYTE";
     case t_base_type::TYPE_I16:
-      return "Thrift::Types::I16";
+      return "::Thrift::Types::I16";
     case t_base_type::TYPE_I32:
-      return "Thrift::Types::I32";
+      return "::Thrift::Types::I32";
     case t_base_type::TYPE_I64:
-      return "Thrift::Types::I64";
+      return "::Thrift::Types::I64";
     case t_base_type::TYPE_DOUBLE:
-      return "Thrift::Types::DOUBLE";
+      return "::Thrift::Types::DOUBLE";
     }
   } else if (type->is_enum()) {
-    return "Thrift::Types::I32";
+    return "::Thrift::Types::I32";
   } else if (type->is_struct() || type->is_xception()) {
-    return "Thrift::Types::STRUCT";
+    return "::Thrift::Types::STRUCT";
   } else if (type->is_map()) {
-    return "Thrift::Types::MAP";
+    return "::Thrift::Types::MAP";
   } else if (type->is_set()) {
-    return "Thrift::Types::SET";
+    return "::Thrift::Types::SET";
   } else if (type->is_list()) {
-    return "Thrift::Types::LIST";
+    return "::Thrift::Types::LIST";
   }
 
   throw "INVALID TYPE IN type_to_enum: " + type->get_name();
@@ -1064,7 +1066,7 @@ void t_rb_generator::generate_rb_struct_required_validator(std::ofstream& out,
   for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
     t_field* field = (*f_iter);
     if (field->get_req() == t_field::T_REQUIRED) {
-      indent(out) << "raise Thrift::ProtocolException.new(Thrift::ProtocolException::UNKNOWN, 'Required field " << field->get_name() << " is unset!')";
+      indent(out) << "raise ::Thrift::ProtocolException.new(::Thrift::ProtocolException::UNKNOWN, 'Required field " << field->get_name() << " is unset!')";
       if (field->get_type()->is_bool()) {
         out << " if @" << field->get_name() << ".nil?";
       } else {
@@ -1081,7 +1083,7 @@ void t_rb_generator::generate_rb_struct_required_validator(std::ofstream& out,
     if (field->get_type()->is_enum()){      
       indent(out) << "unless @" << field->get_name() << ".nil? || " << field->get_type()->get_name() << "::VALID_VALUES.include?(@" << field->get_name() << ")" << endl;      
       indent_up();
-      indent(out) << "raise Thrift::ProtocolException.new(Thrift::ProtocolException::UNKNOWN, 'Invalid value of field " << field->get_name() << "!')" << endl;  
+      indent(out) << "raise ::Thrift::ProtocolException.new(::Thrift::ProtocolException::UNKNOWN, 'Invalid value of field " << field->get_name() << "!')" << endl;  
       indent_down();
       indent(out) << "end" << endl;
     }

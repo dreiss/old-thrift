@@ -1,3 +1,22 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements. See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership. The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License. You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
 AC_PREREQ(2.59)
 
 AC_INIT([thrift], [20080411])
@@ -49,9 +68,8 @@ AM_CONDITIONAL(NET_2_0, [test "$net_3_5" = "no"])
 
 AX_THRIFT_LIB(java, [Java], yes)
 if test "$with_java" = "yes";  then
+  AX_JAVAC_AND_JAVA
   AC_PATH_PROG([ANT], [ant])
-  AX_PROG_JAVAC
-  AX_PROG_JAVA
 fi
 AM_CONDITIONAL([WITH_JAVA],
                [test -n "$ANT" -a -n "$JAVA" -a -n "$JAVAC"])
@@ -77,8 +95,11 @@ AM_CONDITIONAL(WITH_PERL, [test -n "$PERL"])
 AX_THRIFT_LIB(ruby, [Ruby], yes)
 if test "$with_ruby" = "yes"; then
   AC_PATH_PROG([RUBY], [ruby])
+  AC_PATH_PROG([RSPEC], [spec])
 fi
 AM_CONDITIONAL(WITH_RUBY, [test -n "$RUBY"])
+AM_CONDITIONAL(HAVE_RSPEC, [test -n "$RSPEC"])
+
 
 AC_C_CONST
 AC_C_INLINE
@@ -150,6 +171,8 @@ AC_CHECK_FUNCS([strstr])
 AC_CHECK_FUNCS([strtol])
 AC_CHECK_FUNCS([sqrt])
 
+AX_SIGNED_RIGHT_SHIFT
+
 AX_THRIFT_GEN(cpp, [C++], yes)
 AM_CONDITIONAL([THRIFT_GEN_cpp], [test "$ax_thrift_gen_cpp" = "yes"])
 AX_THRIFT_GEN(java, [Java], yes)
@@ -164,6 +187,10 @@ AX_THRIFT_GEN(rb, [Ruby], yes)
 AM_CONDITIONAL([THRIFT_GEN_rb], [test "$ax_thrift_gen_rb" = "yes"])
 AX_THRIFT_GEN(perl, [Perl], yes)
 AM_CONDITIONAL([THRIFT_GEN_perl], [test "$ax_thrift_gen_perl" = "yes"])
+AX_THRIFT_GEN(php, [PHP], yes)
+AM_CONDITIONAL([THRIFT_GEN_php], [test "$ax_thrift_gen_php" = "yes"])
+AX_THRIFT_GEN(erl, [Erlang], yes)
+AM_CONDITIONAL([THRIFT_GEN_erl], [test "$ax_thrift_gen_erl" = "yes"])
 AX_THRIFT_GEN(cocoa, [Cocoa], yes)
 AM_CONDITIONAL([THRIFT_GEN_cocoa], [test "$ax_thrift_gen_cocoa" = "yes"])
 AX_THRIFT_GEN(st, [Smalltalk], yes)
@@ -172,6 +199,8 @@ AX_THRIFT_GEN(ocaml, [OCaml], yes)
 AM_CONDITIONAL([THRIFT_GEN_ocaml], [test "$ax_thrift_gen_ocaml" = "yes"])
 AX_THRIFT_GEN(hs, [Haskell], yes)
 AM_CONDITIONAL([THRIFT_GEN_hs], [test "$ax_thrift_gen_hs" = "yes"])
+AX_THRIFT_GEN(xsd, [XSD], yes)
+AM_CONDITIONAL([THRIFT_GEN_xsd], [test "$ax_thrift_gen_xsd" = "yes"])
 AX_THRIFT_GEN(html, [HTML], yes)
 AM_CONDITIONAL([THRIFT_GEN_html], [test "$ax_thrift_gen_html" = "yes"])
 

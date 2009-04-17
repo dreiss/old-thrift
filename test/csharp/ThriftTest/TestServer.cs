@@ -1,3 +1,22 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 // Distributed under the Thrift Software License
 //
 // See accompanying file LICENSE or visit the Thrift site at:
@@ -269,11 +288,11 @@ namespace Test
 				}
 			}
 
-			public void testAsync(int arg)
+			public void testOneway(int arg)
 			{
-				Console.WriteLine("testAsync(" + arg + "), sleeping...");
+				Console.WriteLine("testOneway(" + arg + "), sleeping...");
 				System.Threading.Thread.Sleep(arg * 1000);
-				Console.WriteLine("testAsync finished");
+				Console.WriteLine("testOneway finished");
 			}
 
 		} // class TestHandler

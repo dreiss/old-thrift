@@ -1,3 +1,22 @@
+"
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements. See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership. The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+License); you may not use this file except in compliance
+with the License. You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+AS IS BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied. See the License for the
+specific language governing permissions and limitations
+under the License.
+"
+
 SystemOrganization addCategory: #Thrift!
 SystemOrganization addCategory: #'Thrift-Protocol'!
 SystemOrganization addCategory: #'Thrift-Transport'!
@@ -269,9 +288,12 @@ readSetBegin
 		elemType: self readByte;
 		size: self readI32! !
 
-!TBinaryProtocol methodsFor: 'reading' stamp: 'pc 10/26/2007 04:48'!
+!TBinaryProtocol methodsFor: 'reading' stamp: 'pc 02/07/2009 19:00'!
 readString
-	^ (transport read: self readI32) asString! !
+readString
+	| sz |
+	sz := self readI32.
+	^ sz > 0 ifTrue: [(transport read: sz) asString] ifFalse: ['']! !
 
 !TBinaryProtocol methodsFor: 'reading' stamp: 'pc 11/1/2007 04:22'!
 unsignedInt: val size: size

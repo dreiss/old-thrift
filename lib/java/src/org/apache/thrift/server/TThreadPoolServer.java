@@ -1,8 +1,21 @@
-// Copyright (c) 2006- Facebook
-// Distributed under the Thrift Software License
-//
-// See accompanying file LICENSE or visit the Thrift site at:
-// http://developers.facebook.com/thrift/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 
 package org.apache.thrift.server;
 
@@ -16,21 +29,20 @@ import org.apache.thrift.transport.TServerTransport;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
 import org.apache.thrift.transport.TTransportFactory;
+import org.apache.log4j.Logger;
+import org.apache.log4j.Level;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 
 /**
  * Server which uses Java's built in ThreadPool management to spawn off
  * a worker pool that
  *
- * @author Mark Slee <mcslee@facebook.com>
  */
 public class TThreadPoolServer extends TServer {
 
@@ -160,7 +172,7 @@ public class TThreadPoolServer extends TServer {
     try {
       serverTransport_.listen();
     } catch (TTransportException ttx) {
-      LOGGER.log(Level.SEVERE, "Error occurred during listening.", ttx);
+      LOGGER.error("Error occurred during listening.", ttx);
       return;
     }
 
@@ -174,7 +186,7 @@ public class TThreadPoolServer extends TServer {
       } catch (TTransportException ttx) {
         if (!stopped_) {
           ++failureCount;
-          LOGGER.log(Level.WARNING, "Transport error occurred during acceptance of message.", ttx);
+          LOGGER.warn("Transport error occurred during acceptance of message.", ttx);
         }
       }
     }
@@ -241,9 +253,9 @@ public class TThreadPoolServer extends TServer {
       } catch (TTransportException ttx) {
         // Assume the client died and continue silently
       } catch (TException tx) {
-        LOGGER.log(Level.SEVERE, "Thrift error occurred during processing of message.", tx);
+        LOGGER.error("Thrift error occurred during processing of message.", tx);
       } catch (Exception x) {
-        LOGGER.log(Level.SEVERE, "Error occurred during processing of message.", x);
+        LOGGER.error("Error occurred during processing of message.", x);
       }
 
       if (inputTransport != null) {

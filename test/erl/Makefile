@@ -1,3 +1,22 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements. See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership. The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License. You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
 GENDIR=gen
 GEN_INCLUDEDIR=$(GENDIR)/include
 GEN_SRCDIR=$(GENDIR)/src
@@ -10,7 +29,7 @@ SRCDIR=src
 ALL_INCLUDEDIR=$(GEN_INCLUDEDIR) $(INCLUDEDIR) ../../lib/erl/include
 INCLUDEFLAGS=$(patsubst %,-I%, ${ALL_INCLUDEDIR})
 
-MODULES = stress_server test_server test_disklog
+MODULES = stress_server test_server test_disklog test_membuffer
 
 INCLUDES = 
 TARGETS = $(patsubst %,${TARGETDIR}/%.beam,${MODULES})
@@ -24,8 +43,8 @@ THRIFT = ../../compiler/cpp/thrift
 
 ${GENDIR}/: ${RPCFILE}
 	rm -rf ${GENDIR}
-	${THRIFT} -erl ${TEST_RPCFILE}
-	${THRIFT} -erl ${STRESS_RPCFILE}
+	${THRIFT} --gen erl ${TEST_RPCFILE}
+	${THRIFT} --gen erl ${STRESS_RPCFILE}
 	mkdir -p ${GEN_INCLUDEDIR}
 	mkdir -p ${GEN_SRCDIR}
 	mkdir -p ${GEN_TARGETDIR}

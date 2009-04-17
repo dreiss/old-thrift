@@ -1,5 +1,22 @@
-#!/usr/local/bin/thrift --gen cpp --gen java --gen py --php --gen rb --gen perl --erl --xsd -r
-#
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 # Thrift Tutorial
 # Mark Slee (mcslee@facebook.com)
 #
@@ -47,7 +64,7 @@ include "shared.thrift"
  */
 namespace cpp tutorial
 namespace java tutorial
-php_namespace tutorial
+namespace php tutorial
 namespace perl tutorial
 namespace smalltalk.category Thrift.Tutorial
 
@@ -119,11 +136,11 @@ service Calculator extends shared.SharedService {
    i32 calculate(1:i32 logid, 2:Work w) throws (1:InvalidOperation ouch),
 
    /**
-    * This method has an async modifier. That means the client only makes
-    * a request and does not listen for any response at all. Async methods
+    * This method has a oneway modifier. That means the client only makes
+    * a request and does not listen for any response at all. Oneway methods
     * must be void.
     */
-   async void zip()
+   oneway void zip()
 
 }
 

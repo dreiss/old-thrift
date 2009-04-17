@@ -1,8 +1,21 @@
-// Copyright (c) 2006- Facebook
-// Distributed under the Thrift Software License
-//
-// See accompanying file LICENSE or visit the Thrift site at:
-// http://developers.facebook.com/thrift/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 
 #include "t_generator.h"
 using namespace std;
@@ -13,7 +26,6 @@ using namespace std;
  * program to perform the correct actions.
  *
  * @param program The thrift program to compile into C++ source
- * @author Mark Slee <mcslee@facebook.com>
  */
 void t_generator::generate_program() {
   // Initialize the generator
@@ -60,11 +72,41 @@ void t_generator::generate_program() {
   close_generator();
 }
 
+string t_generator::escape_string(const string &in) const {
+  string result = "";
+  for (string::const_iterator it = in.begin(); it < in.end(); it++) {
+    std::map<char, std::string>::const_iterator res = escape_.find(*it);
+    if (res != escape_.end()) {
+      result.append(res->second);
+    } else {
+      result.push_back(*it);
+    }
+  }
+  return result;
+}
+
 void t_generator::generate_consts(vector<t_const*> consts) {
   vector<t_const*>::iterator c_iter;
   for (c_iter = consts.begin(); c_iter != consts.end(); ++c_iter) {
     generate_const(*c_iter);
   }
+}
+
+void t_generator::generate_docstring_comment(ofstream& out,
+                                             const string& comment_start,
+                                             const string& line_prefix,
+                                             const string& contents,
+                                             const string& comment_end) {
+  if (comment_start != "") indent(out) << comment_start;
+  stringstream docs(contents, ios_base::in);
+  while (!docs.eof()) {
+    char line[1024];
+    docs.getline(line, 1024);
+    if (strlen(line) > 0 || !docs.eof()) {  // skip the empty last line
+      indent(out) << line_prefix << line << std::endl;
+    }
+  }
+  if (comment_end != "") indent(out) << comment_end;
 }
 
 

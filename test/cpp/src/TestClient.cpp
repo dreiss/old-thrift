@@ -1,3 +1,22 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/time.h>
@@ -420,12 +439,12 @@ int main(int argc, char** argv) {
       printf("  exception\nFAILURE\n");
     }
 
-    /* test async void */
+    /* test oneway void */
     {
-        printf("testClient.testAsync(3) =>");
-        uint64_t startAsync = now();
-        testClient.testAsync(3);
-        uint64_t elapsed = now() - startAsync;
+        printf("testClient.testOneway(3) =>");
+        uint64_t startOneway = now();
+        testClient.testOneway(3);
+        uint64_t elapsed = now() - startOneway;
         if (elapsed > 200 * 1000) { // 0.2 seconds
             printf("  FAILURE - took %.2f ms\n", (double)elapsed/1000.0);
         } else {
@@ -434,8 +453,8 @@ int main(int argc, char** argv) {
     }
 
     /**
-     * redo a simple test after the async to make sure we aren't "off by one" --
-     * if the server treated async void like normal void, this next test will
+     * redo a simple test after the oneway to make sure we aren't "off by one" --
+     * if the server treated oneway void like normal void, this next test will
      * fail since it will get the void confirmation rather than the correct
      * result. In this circumstance, the client will throw the exception:
      *

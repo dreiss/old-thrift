@@ -1,8 +1,21 @@
-// Copyright (c) 2006- Facebook
-// Distributed under the Thrift Software License
-//
-// See accompanying file LICENSE or visit the Thrift site at:
-// http://developers.facebook.com/thrift/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 
 #ifndef T_FUNCTION_H
 #define T_FUNCTION_H
@@ -17,18 +30,17 @@
  * optional modifiers, and an argument list, which is implemented as a thrift
  * struct.
  *
- * @author Mark Slee <mcslee@facebook.com>
  */
 class t_function : public t_doc {
  public:
   t_function(t_type* returntype,
              std::string name,
              t_struct* arglist,
-             bool async=false) :
+             bool oneway=false) :
     returntype_(returntype),
     name_(name),
     arglist_(arglist),
-    async_(async) {
+    oneway_(oneway) {
     xceptions_ = new t_struct(NULL);
   }
 
@@ -36,15 +48,15 @@ class t_function : public t_doc {
              std::string name,
              t_struct* arglist,
              t_struct* xceptions,
-             bool async=false) :
+             bool oneway=false) :
     returntype_(returntype),
     name_(name),
     arglist_(arglist),
     xceptions_(xceptions),
-    async_(async)
+    oneway_(oneway)
   {
-    if (async_ && !xceptions_->get_members().empty()) {
-      throw std::string("Async methods can't throw exceptions.");
+    if (oneway_ && !xceptions_->get_members().empty()) {
+      throw std::string("Oneway methods can't throw exceptions.");
     }
   }
 
@@ -66,8 +78,8 @@ class t_function : public t_doc {
     return xceptions_;
   }
 
-  bool is_async() const {
-    return async_;
+  bool is_oneway() const {
+    return oneway_;
   }
 
  private:
@@ -75,7 +87,7 @@ class t_function : public t_doc {
   std::string name_;
   t_struct* arglist_;
   t_struct* xceptions_;
-  bool async_;
+  bool oneway_;
 };
 
 #endif

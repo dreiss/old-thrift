@@ -1,3 +1,22 @@
+;;
+;; Licensed to the Apache Software Foundation (ASF) under one
+;; or more contributor license agreements. See the NOTICE file
+;; distributed with this work for additional information
+;; regarding copyright ownership. The ASF licenses this file
+;; to you under the Apache License, Version 2.0 (the
+;; "License"); you may not use this file except in compliance
+;; with the License. You may obtain a copy of the License at
+;;
+;;   http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing,
+;; software distributed under the License is distributed on an
+;; "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+;; KIND, either express or implied. See the License for the
+;; specific language governing permissions and limitations
+;; under the License.
+;;
+
 (require 'font-lock)
 
 (defvar thrift-mode-hook nil)
@@ -10,7 +29,7 @@
 (defconst thrift-font-lock-keywords
   (list
    '("#.*$" . font-lock-comment-face)  ;; perl style comments
-   '("\\<\\(include\\|struct\\|exception\\|typedef\\|php_namespace\\|const\\|enum\\|service\\|extends\\|void\\|async\\|throws\\|optional\\|required\\)\\>" . font-lock-keyword-face)  ;; keywords
+   '("\\<\\(include\\|struct\\|exception\\|typedef\\|const\\|enum\\|service\\|extends\\|void\\|oneway\\|throws\\|optional\\|required\\)\\>" . font-lock-keyword-face)  ;; keywords
    '("\\<\\(bool\\|byte\\|i16\\|i32\\|i64\\|double\\|string\\|binary\\|map\\|list\\|set\\)\\>" . font-lock-type-face)  ;; built-in types
    '("\\<\\([0-9]+\\)\\>" . font-lock-variable-name-face)   ;; ordinals
    '("\\<\\(\\w+\\)\\s-*(" (1 font-lock-function-name-face))  ;; functions
@@ -87,7 +106,7 @@
 (defvar thrift-mode-syntax-table
   (let ((thrift-mode-syntax-table (make-syntax-table)))
     (modify-syntax-entry ?_ "w" thrift-mode-syntax-table)
-    (modify-syntax-entry ?/ ". 124b" thrift-mode-syntax-table)
+    (modify-syntax-entry ?/ ". 1456" thrift-mode-syntax-table)
     (modify-syntax-entry ?* ". 23" thrift-mode-syntax-table)
     (modify-syntax-entry ?\n "> b" thrift-mode-syntax-table)
     thrift-mode-syntax-table)

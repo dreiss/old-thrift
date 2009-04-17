@@ -1,28 +1,59 @@
-#
-# Copyright (c) 2006- Facebook
-# Distributed under the Apache Software License
-#
-# See accompanying file LICENSE or visit the Thrift site at:
-# http://developers.facebook.com/thrift/
-#
-# Author: Mark Slee <mcslee@facebook.com>
-#
+# 
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements. See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership. The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License. You may obtain a copy of the License at
+# 
+#   http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the License for the
+# specific language governing permissions and limitations
+# under the License.
+# 
 
 $:.unshift File.dirname(__FILE__)
 
-module Thrift
-  # prevent the deprecation layer from being loaded if you require 'thrift'
-  DEPRECATION = false unless const_defined? :DEPRECATION
-end
-
-require 'thrift/deprecation'
+require 'thrift/core_ext'
 require 'thrift/exceptions'
 require 'thrift/types'
 require 'thrift/processor'
 require 'thrift/client'
 require 'thrift/struct'
-require 'thrift/protocol'
-require 'thrift/protocol/binaryprotocol'
-require 'thrift/transport'
+
+# serializer
+require 'thrift/serializer/serializer'
+require 'thrift/serializer/deserializer'
+
+# protocol
+require 'thrift/protocol/base_protocol'
+require 'thrift/protocol/binary_protocol'
+require 'thrift/protocol/binary_protocol_accelerated'
+require 'thrift/protocol/compact_protocol'
+
+# transport
+require 'thrift/transport/base_transport'
+require 'thrift/transport/base_server_transport'
 require 'thrift/transport/socket'
-require 'thrift/server'
+require 'thrift/transport/server_socket'
+require 'thrift/transport/unix_socket'
+require 'thrift/transport/unix_server_socket'
+require 'thrift/transport/buffered_transport'
+require 'thrift/transport/framed_transport'
+require 'thrift/transport/http_client_transport'
+require 'thrift/transport/io_stream_transport'
+require 'thrift/transport/memory_buffer_transport'
+
+# server
+require 'thrift/server/base_server'
+require 'thrift/server/nonblocking_server'
+require 'thrift/server/simple_server'
+require 'thrift/server/threaded_server'
+require 'thrift/server/thread_pool_server'
+
+require 'thrift/thrift_native'

@@ -1,8 +1,21 @@
-// Copyright (c) 2006- Facebook
-// Distributed under the Thrift Software License
-//
-// See accompanying file LICENSE or visit the Thrift site at:
-// http://developers.facebook.com/thrift/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 
 #include "TNonblockingServer.h"
 #include <concurrency/Exception.h>
@@ -216,8 +229,24 @@ void TConnection::transition() {
   case APP_READ_REQUEST:
     // We are done reading the request, package the read buffer into transport
     // and get back some data from the dispatch function
+    // If we've used these transport buffers enough times, reset them to avoid bloating
+
     inputTransport_->resetBuffer(readBuffer_, readBufferPos_);
-    outputTransport_->resetBuffer();
+    ++numReadsSinceReset_;
+    if (numWritesSinceReset_ < 512) {
+      outputTransport_->resetBuffer();
+    } else {
+      // reset the capacity of the output transport if we used it enough times that it might be bloated
+      try {
+        outputTransport_->resetBuffer(true);
+        numWritesSinceReset_ = 0;
+      } catch (TTransportException &ttx) {
+        GlobalOutput.printf("TTransportException: TMemoryBuffer::resetBuffer() %s", ttx.what());
+        close();
+        return;
+      }
+    }
+
     // Prepend four bytes of blank space to the buffer so we can
     // write the frame size there later.
     outputTransport_->getWritePtr(4);
@@ -321,16 +350,32 @@ void TConnection::transition() {
       return;
     }
 
-    // In this case, the request was asynchronous and we should fall through
+    // In this case, the request was oneway and we should fall through
     // right back into the read frame header state
     goto LABEL_APP_INIT;
 
   case APP_SEND_RESULT:
 
+    ++numWritesSinceReset_;
+
     // N.B.: We also intentionally fall through here into the INIT state!
 
   LABEL_APP_INIT:
   case APP_INIT:
+
+    // reset the input buffer if we used it enough times that it might be bloated
+    if (numReadsSinceReset_ > 512)
+    {
+      void * new_buffer = std::realloc(readBuffer_, 1024);
+      if (new_buffer == NULL) {
+        GlobalOutput("TConnection::transition() realloc");
+        close();
+        return;
+      }
+      readBuffer_ = (uint8_t*) new_buffer;
+      readBufferSize_ = 1024;
+      numReadsSinceReset_ = 0;
+    }
 
     // Clear write buffer variables
     writeBuffer_ = NULL;
@@ -463,6 +508,17 @@ void TConnection::close() {
   server_->returnConnection(this);
 }
 
+void TConnection::checkIdleBufferMemLimit(uint32_t limit) {
+  if (readBufferSize_ > limit) {
+    readBufferSize_ = limit;
+    readBuffer_ = (uint8_t*)std::realloc(readBuffer_, readBufferSize_);
+    if (readBuffer_ == NULL) {
+      GlobalOutput("TConnection::checkIdleBufferMemLimit() realloc");
+      close();
+    }
+  }
+}
+
 /**
  * Creates a new connection either by reusing an object off the stack or
  * by allocating a new one entirely
@@ -483,7 +539,13 @@ TConnection* TNonblockingServer::createConnection(int socket, short flags) {
  * Returns a connection to the stack
  */
 void TNonblockingServer::returnConnection(TConnection* connection) {
-  connectionStack_.push(connection);
+  if (connectionStackLimit_ &&
+      (connectionStack_.size() >= connectionStackLimit_)) {
+    delete connection;
+  } else {
+    connection->checkIdleBufferMemLimit(idleBufferMemLimit_);
+    connectionStack_.push(connection);
+  }
 }
 
 /**

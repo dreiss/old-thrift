@@ -1,15 +1,96 @@
-// Copyright (c) 2006- Facebook
-// Distributed under the Thrift Software License
-//
-// See accompanying file LICENSE or visit the Thrift site at:
-// http://developers.facebook.com/thrift/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+#include <fstream>
+#include <iostream>
+#include <sstream>
 
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sstream>
-#include "t_xsd_generator.h"
+#include "t_generator.h"
 #include "platform.h"
 using namespace std;
+
+
+/**
+ * XSD generator, creates an XSD for the base types etc.
+ *
+ */
+class t_xsd_generator : public t_generator {
+ public:
+  t_xsd_generator(
+      t_program* program,
+      const std::map<std::string, std::string>& parsed_options,
+      const std::string& option_string)
+    : t_generator(program)
+  {
+    out_dir_base_ = "gen-xsd";
+  }
+
+  virtual ~t_xsd_generator() {}
+
+  /**
+   * Init and close methods
+   */
+
+  void init_generator();
+  void close_generator();
+
+  /**
+   * Program-level generation functions
+   */
+
+  void generate_typedef(t_typedef* ttypedef);
+  void generate_enum(t_enum* tenum) {}
+
+  void generate_service(t_service* tservice);
+  void generate_struct(t_struct* tstruct);
+
+ private:
+
+  void generate_element(std::ostream& out, std::string name, t_type* ttype, t_struct* attrs=NULL, bool optional=false, bool nillable=false, bool list_element=false);
+
+  std::string ns(std::string in, std::string ns) {
+    return ns + ":" + in;
+  }
+
+  std::string xsd(std::string in) {
+    return ns(in, "xsd");
+  }
+
+  std::string type_name(t_type* ttype);
+  std::string base_type_name(t_base_type::t_base tbase);
+
+  /**
+   * Output xsd/php file
+   */
+  std::ofstream f_xsd_;
+  std::ofstream f_php_;
+
+  /**
+   * Output string stream
+   */
+  std::ostringstream s_xsd_types_;
+
+};
+
 
 void t_xsd_generator::init_generator() {
   // Make output directory
@@ -174,7 +255,7 @@ void t_xsd_generator::generate_service(t_service* tservice) {
   string f_xsd_name = get_out_dir()+tservice->get_name()+".xsd";
   f_xsd_.open(f_xsd_name.c_str());
 
-  string ns = program_->get_xsd_namespace();
+  string ns = program_->get_namespace("xsd");
   if (ns.size() > 0) {
     ns = " targetNamespace=\"" + ns + "\" xmlns=\"" + ns + "\" " +
       "elementFormDefault=\"qualified\"";
@@ -269,3 +350,5 @@ string t_xsd_generator::base_type_name(t_base_type::t_base tbase) {
     throw "compiler error: no C++ base type name for base type " + t_base_type::t_base_name(tbase);
   }
 }
+
+THRIFT_REGISTER_GENERATOR(xsd, "XSD", "");

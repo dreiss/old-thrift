@@ -1,16 +1,28 @@
 %{
-// Copyright (c) 2006- Facebook
-// Distributed under the Thrift Software License
-//
-// See accompanying file LICENSE or visit the Thrift site at:
-// http://developers.facebook.com/thrift/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 
 /**
  * Thrift parser.
  *
  * This parser is used on a thrift definition file.
  *
- * @author Mark Slee <mcslee@facebook.com>
  */
 
 #define __STDC_LIMIT_MACROS
@@ -121,7 +133,7 @@ int g_arglist = 0;
 /**
  * Function modifiers
  */
-%token tok_async
+%token tok_oneway
 
 /**
  * Thrift language keywords
@@ -190,7 +202,7 @@ int g_arglist = 0;
 
 %type<tstruct>   Throws
 %type<tservice>  Extends
-%type<tbool>     Async
+%type<tbool>     Oneway
 %type<tbool>     XsdAll
 %type<tbool>     XsdOptional
 %type<tbool>     XsdNillable
@@ -282,9 +294,10 @@ Header:
     }
 | tok_php_namespace tok_identifier
     {
+      pwarning(1, "'php_namespace' is deprecated. Use 'namespace php' instead");
       pdebug("Header -> tok_php_namespace tok_identifier");
       if (g_parse_mode == PROGRAM) {
-        g_program->set_php_namespace($2);
+        g_program->set_namespace("php", $2);
       }
     }
 /* TODO(dreiss): Get rid of this once everyone is using the new hotness. */
@@ -350,11 +363,13 @@ Header:
         g_program->set_namespace("cocoa", $2);
       }
     }
+/* TODO(dreiss): Get rid of this once everyone is using the new hotness. */
 | tok_xsd_namespace tok_literal
     {
+      pwarning(1, "'xsd_namespace' is deprecated. Use 'namespace xsd' instead");
       pdebug("Header -> tok_xsd_namespace tok_literal");
       if (g_parse_mode == PROGRAM) {
-        g_program->set_xsd_namespace($2);
+        g_program->set_namespace("cocoa", $2);
       }
     }
 /* TODO(dreiss): Get rid of this once everyone is using the new hotness. */
@@ -674,7 +689,6 @@ Struct:
         $$->annotations_ = $7->annotations_;
         delete $7;
       }
-      y_field_val = -1;
     }
 
 XsdAll:
@@ -724,7 +738,6 @@ Xception:
       $4->set_name($2);
       $4->set_xception(true);
       $$ = $4;
-      y_field_val = -1;
     }
 
 Service:
@@ -778,18 +791,17 @@ FunctionList:
     }
 
 Function:
-  CaptureDocText Async FunctionType tok_identifier '(' FieldList ')' Throws CommaOrSemicolonOptional
+  CaptureDocText Oneway FunctionType tok_identifier '(' FieldList ')' Throws CommaOrSemicolonOptional
     {
       $6->set_name(std::string($4) + "_args");
       $$ = new t_function($3, $4, $6, $8, $2);
       if ($1 != NULL) {
         $$->set_doc($1);
       }
-      y_field_val = -1;
     }
 
-Async:
-  tok_async
+Oneway:
+  tok_oneway
     {
       $$ = true;
     }
@@ -818,15 +830,15 @@ FieldList:
     {
       pdebug("FieldList -> FieldList , Field");
       $$ = $1;
-      if (!($$->validate_field($2))) {
+      if (!($$->append($2))) {
         yyerror("Field identifier %d for \"%s\" has already been used", $2->get_key(), $2->get_name().c_str());
         exit(1);
       }
-      $$->append($2);
     }
 |
     {
       pdebug("FieldList -> ");
+      y_field_val = -1;
       $$ = new t_struct(g_program);
     }
 
@@ -835,7 +847,11 @@ Field:
     {
       pdebug("tok_int_constant : Field -> FieldType tok_identifier");
       if ($2 < 0) {
-        pwarning(2, "No field key specified for %s, resulting protocol may have conflicts or not be backwards compatible!\n", $5);
+        pwarning(1, "No field key specified for %s, resulting protocol may have conflicts or not be backwards compatible!\n", $5);
+        if (g_strict >= 192) {
+          yyerror("Implicit field keys are deprecated and not allowed with -strict");
+          exit(1);
+        }
       }
       $$ = new t_field($4, $5, $2);
       $$->set_req($3);

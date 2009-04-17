@@ -1,7 +1,29 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements. See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership. The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License. You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
 from zope.interface import implements, Interface, Attribute
-from twisted.internet.protocol import Protocol, ServerFactory, connectionDone
+from twisted.internet.protocol import Protocol, ServerFactory, ClientFactory, \
+    connectionDone
+from twisted.internet import defer
 from twisted.protocols import basic
 from twisted.python import log
+
+
 from thrift.transport import TTransport
 from cStringIO import StringIO
 
@@ -22,6 +44,7 @@ class TMessageSenderTransport(TTransport.TTransportBase):
     def sendMessage(self, message):
         raise NotImplementedError
 
+
 class TCallbackTransport(TMessageSenderTransport):
 
     def __init__(self, func):
@@ -30,6 +53,7 @@ class TCallbackTransport(TMessageSenderTransport):
 
     def sendMessage(self, message):
         self.func(message)
+
 
 class ThriftClientProtocol(basic.Int32StringReceiver):
 
@@ -42,6 +66,7 @@ class ThriftClientProtocol(basic.Int32StringReceiver):
             self._oprot_factory = oprot_factory
 
         self.recv_map = {}
+        self.started = defer.Deferred()
 
     def dispatch(self, msg):
         self.sendString(msg)
@@ -49,6 +74,7 @@ class ThriftClientProtocol(basic.Int32StringReceiver):
     def connectionMade(self):
         tmo = TCallbackTransport(self.dispatch)
         self.client = self._client_class(tmo, self._oprot_factory)
+        self.started.callback(self.client)
 
     def connectionLost(self, reason=connectionDone):
         for k,v in self.client._reqs.iteritems():
@@ -106,6 +132,15 @@ class IThriftServerFactory(Interface):
     oprot_factory = Attribute("Output protocol factory")
 
 
+class IThriftClientFactory(Interface):
+
+    client_class = Attribute("Thrift client class")
+
+    iprot_factory = Attribute("Input protocol factory")
+
+    oprot_factory = Attribute("Output protocol factory")
+
+
 class ThriftServerFactory(ServerFactory):
 
     implements(IThriftServerFactory)
@@ -119,3 +154,24 @@ class ThriftServerFactory(ServerFactory):
             self.oprot_factory = iprot_factory
         else:
             self.oprot_factory = oprot_factory
+
+
+class ThriftClientFactory(ClientFactory):
+
+    implements(IThriftClientFactory)
+
+    protocol = ThriftClientProtocol
+
+    def __init__(self, client_class, iprot_factory, oprot_factory=None):
+        self.client_class = client_class
+        self.iprot_factory = iprot_factory
+        if oprot_factory is None:
+            self.oprot_factory = iprot_factory
+        else:
+            self.oprot_factory = oprot_factory
+
+    def buildProtocol(self, addr):
+        p = self.protocol(self.client_class, self.iprot_factory,
+            self.oprot_factory)
+        p.factory = self
+        return p

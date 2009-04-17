@@ -1,8 +1,21 @@
-// Copyright (c) 2006- Facebook
-// Distributed under the Thrift Software License
-//
-// See accompanying file LICENSE or visit the Thrift site at:
-// http://developers.facebook.com/thrift/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 
 #ifndef T_PROGRAM_H
 #define T_PROGRAM_H
@@ -40,7 +53,6 @@
  *
  * The program module also contains the definitions of the base types.
  *
- * @author Mark Slee <mcslee@facebook.com>
  */
 class t_program : public t_doc {
  public:
@@ -168,22 +180,6 @@ class t_program : public t_doc {
     return cpp_includes_;
   }
 
-  void set_php_namespace(std::string php_namespace) {
-    php_namespace_ = php_namespace;
-  }
-
-  const std::string& get_php_namespace() const {
-    return php_namespace_;
-  }
-
-  void set_xsd_namespace(std::string xsd_namespace) {
-    xsd_namespace_ = xsd_namespace;
-  }
-
-  const std::string& get_xsd_namespace() const {
-    return xsd_namespace_;
-  }
-
  private:
 
   // File path
@@ -221,12 +217,6 @@ class t_program : public t_doc {
 
   // C++ extra includes
   std::vector<std::string> cpp_includes_;
-
-  // PHP namespace
-  std::string php_namespace_;
-
-  // XSD namespace
-  std::string xsd_namespace_;
 
 };
 

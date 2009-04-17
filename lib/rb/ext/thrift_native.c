@@ -1,6 +1,26 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 #include <ruby.h>
 #include <struct.h>
 #include <binary_protocol_accelerated.h>
+#include <compact_protocol.h>
 #include <protocol.h>
 #include <memory_buffer.h>
 
@@ -67,7 +87,7 @@ ID sort_method_id;
 ID write_field_stop_method_id;
 ID skip_method_id;
 ID write_method_id;
-ID read_method_id;
+ID read_all_method_id;
 ID native_qmark_method_id;
 
 // constant ids
@@ -149,7 +169,7 @@ void Init_thrift_native() {
   write_field_stop_method_id = rb_intern("write_field_stop");
   skip_method_id = rb_intern("skip");
   write_method_id = rb_intern("write");
-  read_method_id = rb_intern("read");
+  read_all_method_id = rb_intern("read_all");
   native_qmark_method_id = rb_intern("native?");
   
   // constant ids
@@ -169,5 +189,6 @@ void Init_thrift_native() {
   Init_protocol();
   Init_struct();
   Init_binary_protocol_accelerated();
+  Init_compact_protocol();
   Init_memory_buffer();
 }

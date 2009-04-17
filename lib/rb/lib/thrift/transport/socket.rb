@@ -1,16 +1,27 @@
-# Copyright (c) 2006- Facebook
-# Distributed under the Apache Software License
-#
-# See accompanying file LICENSE or visit the Thrift site at:
-# http://developers.facebook.com/thrift/
-#
-# Author: Mark Slee <mcslee@facebook.com>
-#
-require 'thrift/transport'
+# encoding: ascii-8bit
+# 
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements. See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership. The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License. You may obtain a copy of the License at
+# 
+#   http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the License for the
+# specific language governing permissions and limitations
+# under the License.
+# 
+
 require 'socket'
 
 module Thrift
-  class Socket < Transport
+  class Socket < BaseTransport
     def initialize(host='localhost', port=9090, timeout=nil)
       @host = host
       @port = port
@@ -23,9 +34,23 @@ module Thrift
 
     def open
       begin
-        @handle = TCPSocket.new(@host, @port)
-      rescue StandardError
-        raise TransportException.new(TransportException::NOT_OPEN, "Could not connect to #{@desc}")
+        addrinfo = ::Socket::getaddrinfo(@host, @port).first
+        @handle = ::Socket.new(addrinfo[4], ::Socket::SOCK_STREAM, 0)
+        sockaddr = ::Socket.sockaddr_in(addrinfo[1], addrinfo[3])
+        begin
+          @handle.connect_nonblock(sockaddr)
+        rescue Errno::EINPROGRESS
+          unless IO.select(nil, [ @handle ], nil, @timeout)
+            raise TransportException.new(TransportException::NOT_OPEN, "Connection timeout to #{@desc}")
+          end
+          begin
+            @handle.connect_nonblock(sockaddr)
+          rescue Errno::EISCONN
+          end
+        end
+        @handle
+      rescue StandardError => e
+        raise TransportException.new(TransportException::NOT_OPEN, "Could not connect to #{@desc}: #{e}")
       end
     end
 
@@ -108,46 +133,4 @@ module Thrift
       @handle
     end
   end
-  deprecate_class! :TSocket => Socket
-
-  class ServerSocket < ServerTransport
-    # call-seq: initialize(host = nil, port)
-    def initialize(host_or_port, port = nil)
-      if port
-        @host = host_or_port
-        @port = port
-      else
-        @host = nil
-        @port = host_or_port
-      end
-      @handle = nil
-    end
-
-    attr_reader :handle
-
-    def listen
-      @handle = TCPServer.new(@host, @port)
-    end
-
-    def accept
-      unless @handle.nil?
-        sock = @handle.accept
-        trans = Socket.new
-        trans.handle = sock
-        trans
-      end
-    end
-
-    def close
-     @handle.close unless @handle.nil? or @handle.closed?
-     @handle = nil
-    end
-
-    def closed?
-      @handle.nil? or @handle.closed?
-    end
-
-    alias to_io handle
-  end
-  deprecate_class! :TServerSocket => ServerSocket
 end

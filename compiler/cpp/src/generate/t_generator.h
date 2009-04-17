@@ -1,14 +1,28 @@
-// Copyright (c) 2006- Facebook
-// Distributed under the Thrift Software License
-//
-// See accompanying file LICENSE or visit the Thrift site at:
-// http://developers.facebook.com/thrift/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 
 #ifndef T_GENERATOR_H
 #define T_GENERATOR_H
 
 #include <string>
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include "parse/t_program.h"
 #include "globals.h"
@@ -18,7 +32,6 @@
  * routines for code generation and contains the top level method that
  * dispatches code generation across various components.
  *
- * @author Mark Slee <mcslee@facebook.com>
  */
 class t_generator {
  public:
@@ -27,6 +40,11 @@ class t_generator {
     indent_ = 0;
     program_ = program;
     program_name_ = get_program_name(program);
+    escape_['\n'] = "\\n";
+    escape_['\r'] = "\\r";
+    escape_['\t'] = "\\t";
+    escape_['"']  = "\\\"";
+    escape_['\\'] = "\\\\";
   }
 
   virtual ~t_generator() {}
@@ -39,6 +57,21 @@ class t_generator {
   virtual void generate_program();
 
   const t_program* get_program() const { return program_; }
+
+  void generate_docstring_comment(std::ofstream& out,
+                                  const std::string& comment_start,
+                                  const std::string& line_prefix,
+                                  const std::string& contents,
+                                  const std::string& comment_end);
+
+  /**
+   * Escape string to use one in generated sources.
+   */
+  virtual std::string escape_string(const std::string &in) const;
+
+  std::string get_escaped_string(t_const_value* constval) {
+    return escape_string(constval->get_string());
+  }
 
  protected:
 
@@ -145,6 +178,16 @@ class t_generator {
     }
     return in;
   }
+  std::string underscore(std::string in) {
+    in[0] = tolower(in[0]);
+    for (size_t i = 1; i < in.size(); ++i) {
+      if (isupper(in[i])) {
+        in[i] = tolower(in[i]);
+        in.insert(i, "_");
+      }
+    }
+    return in;
+  }
 
   /**
    * Get the true type behind a series of typedefs.
@@ -178,6 +221,11 @@ class t_generator {
    * Output type-specifc directory name ("gen-*")
    */
   std::string out_dir_base_;
+
+  /**
+   * Map of characters to escape in string literals.
+   */
+  std::map<char, std::string> escape_;
 
  private:
   /**

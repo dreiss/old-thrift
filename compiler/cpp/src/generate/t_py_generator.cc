@@ -1,8 +1,21 @@
-// Copyright (c) 2006- Facebook
-// Distributed under the Thrift Software License
-//
-// See accompanying file LICENSE or visit the Thrift site at:
-// http://developers.facebook.com/thrift/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 
 #include <string>
 #include <fstream>
@@ -22,7 +35,6 @@ using namespace std;
 /**
  * Python code generator.
  *
- * @author Mark Slee <mcslee@facebook.com>
  */
 class t_py_generator : public t_generator {
  public:
@@ -137,6 +149,20 @@ class t_py_generator : public t_generator {
   void generate_serialize_list_element   (std::ofstream &out,
                                           t_list*     tlist,
                                           std::string iter);
+
+  void generate_python_docstring         (std::ofstream& out,
+                                          t_struct* tstruct);
+
+  void generate_python_docstring         (std::ofstream& out,
+                                          t_function* tfunction);
+
+  void generate_python_docstring         (std::ofstream& out,
+                                          t_doc*    tdoc,
+                                          t_struct* tstruct,
+                                          const char* subheader);
+
+  void generate_python_docstring         (std::ofstream& out,
+                                          t_doc* tdoc);
 
   /**
    * Helper rendering functions
@@ -329,6 +355,7 @@ void t_py_generator::generate_enum(t_enum* tenum) {
     (gen_newstyle_ ? "(object)" : "") <<
     ":" << endl;
   indent_up();
+  generate_python_docstring(f_types_, tenum);
 
   vector<t_enum_value*> constants = tenum->get_constants();
   vector<t_enum_value*>::iterator c_iter;
@@ -373,7 +400,7 @@ string t_py_generator::render_const_value(t_type* type, t_const_value* value) {
     t_base_type::t_base tbase = ((t_base_type*)type)->get_base();
     switch (tbase) {
     case t_base_type::TYPE_STRING:
-      out << "'" << value->get_string() << "'";
+      out << '"' << get_escaped_string(value) << '"';
       break;
     case t_base_type::TYPE_BOOL:
       out << (value->get_integer() > 0 ? "True" : "False");
@@ -494,19 +521,6 @@ void t_py_generator::generate_py_struct(t_struct* tstruct,
 }
 
 /**
- * Comparator to sort fields in ascending order by key.
- * Make this a functor instead of a function to help GCC inline it.
- * The arguments are (const) references to const pointers to const t_fields.
- * Unfortunately, we cannot declare it within the function.  Boo!
- * http://www.open-std.org/jtc1/sc22/open/n2356/ (paragraph 9).
- */
-struct FieldKeyCompare {
-  bool operator()(t_field const * const & a, t_field const * const & b) {
-    return a->get_key() < b->get_key();
-  }
-};
-
-/**
  * Generates a struct definition for a thrift data type.
  *
  * @param tstruct The struct definition
@@ -518,8 +532,6 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
 
   const vector<t_field*>& members = tstruct->get_members();
   vector<t_field*>::const_iterator m_iter;
-  vector<t_field*> sorted_members(members);
-  std::sort(sorted_members.begin(), sorted_members.end(), FieldKeyCompare());
 
   out <<
     "class " << tstruct->get_name();
@@ -531,6 +543,7 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
   out <<
     ":" << endl;
   indent_up();
+  generate_python_docstring(out, tstruct);
 
   out << endl;
 
@@ -558,12 +571,12 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
   // for structures with no members.
   // TODO(dreiss): Test encoding of structs where some inner structs
   // don't have thrift_spec.
-  if (sorted_members.empty() || (sorted_members[0]->get_key() >= 0)) {
+  if (members.empty() || (members[0]->get_key() >= 0)) {
     indent(out) << "thrift_spec = (" << endl;
     indent_up();
 
     int sorted_keys_pos = 0;
-    for (m_iter = sorted_members.begin(); m_iter != sorted_members.end(); ++m_iter) {
+    for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
 
       for (; sorted_keys_pos != (*m_iter)->get_key(); sorted_keys_pos++) {
         indent(out) << "None, # " << sorted_keys_pos << endl;
@@ -744,7 +757,7 @@ void t_py_generator::generate_py_struct_reader(ofstream& out,
 void t_py_generator::generate_py_struct_writer(ofstream& out,
                                                t_struct* tstruct) {
   string name = tstruct->get_name();
-  const vector<t_field*>& fields = tstruct->get_members();
+  const vector<t_field*>& fields = tstruct->get_sorted_members();
   vector<t_field*>::const_iterator f_iter;
 
   indent(out) <<
@@ -867,7 +880,7 @@ void t_py_generator::generate_service_helpers(t_service* tservice) {
  * @param tfunction The function
  */
 void t_py_generator::generate_py_function_helpers(t_function* tfunction) {
-  if (!tfunction->is_async()) {
+  if (!tfunction->is_oneway()) {
     t_struct result(program_, tfunction->get_name() + "_result");
     t_field success(tfunction->get_returntype(), "success", 0);
     if (!tfunction->get_returntype()->is_void()) {
@@ -904,6 +917,7 @@ void t_py_generator::generate_service_interface(t_service* tservice) {
   f_service_ <<
     "class Iface" << extends_if << ":" << endl;
   indent_up();
+  generate_python_docstring(f_service_, tservice);
   vector<t_function*> functions = tservice->get_functions();
   if (functions.empty()) {
     f_service_ <<
@@ -912,8 +926,12 @@ void t_py_generator::generate_service_interface(t_service* tservice) {
     vector<t_function*>::iterator f_iter;
     for (f_iter = functions.begin(); f_iter != functions.end(); ++f_iter) {
       f_service_ <<
-        indent() << "def " << function_signature_if(*f_iter) << ":" << endl <<
-        indent() << "  pass" << endl << endl;
+        indent() << "def " << function_signature_if(*f_iter) << ":" << endl;
+      indent_up();
+      generate_python_docstring(f_service_, (*f_iter));
+      f_service_ <<
+        indent() << "pass" << endl << endl;
+      indent_down();
     }
   }
 
@@ -952,6 +970,7 @@ void t_py_generator::generate_service_client(t_service* tservice) {
       "class Client(" << extends_client << "Iface):" << endl;
   }
   indent_up();
+  generate_python_docstring(f_service_, tservice);
 
   // Constructor function
   if (gen_twisted_) {
@@ -1002,9 +1021,10 @@ void t_py_generator::generate_service_client(t_service* tservice) {
     indent(f_service_) <<
       "def " << function_signature(*f_iter) << ":" << endl;
     indent_up();
+    generate_python_docstring(f_service_, (*f_iter));
     if (gen_twisted_) {
       indent(f_service_) << "self._seqid += 1" << endl;
-      if (!(*f_iter)->is_async()) {
+      if (!(*f_iter)->is_oneway()) {
         indent(f_service_) <<
           "d = self._reqs[self._seqid] = defer.Deferred()" << endl;
       }
@@ -1024,7 +1044,7 @@ void t_py_generator::generate_service_client(t_service* tservice) {
     }
     f_service_ << ")" << endl;
 
-    if (!(*f_iter)->is_async()) {
+    if (!(*f_iter)->is_oneway()) {
       f_service_ << indent();
       if (gen_twisted_) {
         f_service_ << "return d" << endl;
@@ -1086,7 +1106,7 @@ void t_py_generator::generate_service_client(t_service* tservice) {
 
     indent_down();
 
-    if (!(*f_iter)->is_async()) {
+    if (!(*f_iter)->is_oneway()) {
       std::string resultname = (*f_iter)->get_name() + "_result";
       // Open function
       f_service_ <<
@@ -1495,8 +1515,8 @@ void t_py_generator::generate_process_function(t_service* tservice,
   const std::vector<t_field*>& xceptions = xs->get_members();
   vector<t_field*>::const_iterator x_iter;
 
-  // Declare result for non async function
-  if (!tfunction->is_async()) {
+  // Declare result for non oneway function
+  if (!tfunction->is_oneway()) {
     f_service_ <<
       indent() << "result = " << resultname << "()" << endl;
   }
@@ -1521,8 +1541,8 @@ void t_py_generator::generate_process_function(t_service* tservice,
     }
     f_service_ << ")" << endl;
 
-    // Shortcut out here for async functions
-    if (tfunction->is_async()) {
+    // Shortcut out here for oneway functions
+    if (tfunction->is_oneway()) {
       f_service_ <<
         indent() << "return d" << endl;
       indent_down();
@@ -1563,7 +1583,7 @@ void t_py_generator::generate_process_function(t_service* tservice,
     f_service_ << endl;
 
     // Try block for a function with exceptions
-    if (!tfunction->is_async() && xceptions.size() > 0) {
+    if (!tfunction->is_oneway() && xceptions.size() > 0) {
       indent(f_service_) <<
         "def write_results_exception_" << tfunction->get_name() <<
         "(self, error, result, seqid, oprot):" << endl;
@@ -1577,7 +1597,7 @@ void t_py_generator::generate_process_function(t_service* tservice,
       for (x_iter = xceptions.begin(); x_iter != xceptions.end(); ++x_iter) {
         f_service_ <<
           indent() << "except " << type_name((*x_iter)->get_type()) << ", " << (*x_iter)->get_name() << ":" << endl;
-        if (!tfunction->is_async()) {
+        if (!tfunction->is_oneway()) {
           indent_up();
           f_service_ <<
             indent() << "result." << (*x_iter)->get_name() << " = " << (*x_iter)->get_name() << endl;
@@ -1611,7 +1631,7 @@ void t_py_generator::generate_process_function(t_service* tservice,
     vector<t_field*>::const_iterator f_iter;
 
     f_service_ << indent();
-    if (!tfunction->is_async() && !tfunction->get_returntype()->is_void()) {
+    if (!tfunction->is_oneway() && !tfunction->get_returntype()->is_void()) {
       f_service_ << "result.success = ";
     }
     f_service_ <<
@@ -1627,12 +1647,12 @@ void t_py_generator::generate_process_function(t_service* tservice,
     }
     f_service_ << ")" << endl;
 
-    if (!tfunction->is_async() && xceptions.size() > 0) {
+    if (!tfunction->is_oneway() && xceptions.size() > 0) {
       indent_down();
       for (x_iter = xceptions.begin(); x_iter != xceptions.end(); ++x_iter) {
         f_service_ <<
           indent() << "except " << type_name((*x_iter)->get_type()) << ", " << (*x_iter)->get_name() << ":" << endl;
-        if (!tfunction->is_async()) {
+        if (!tfunction->is_oneway()) {
           indent_up();
           f_service_ <<
             indent() << "result." << (*x_iter)->get_name() << " = " << (*x_iter)->get_name() << endl;
@@ -1644,8 +1664,8 @@ void t_py_generator::generate_process_function(t_service* tservice,
       }
     }
 
-    // Shortcut out here for async functions
-    if (tfunction->is_async()) {
+    // Shortcut out here for oneway functions
+    if (tfunction->is_oneway()) {
       f_service_ <<
         indent() << "return" << endl;
       indent_down();
@@ -2031,6 +2051,76 @@ void t_py_generator::generate_serialize_list_element(ofstream &out,
                                                       string iter) {
   t_field efield(tlist->get_elem_type(), iter);
   generate_serialize_field(out, &efield, "");
+}
+
+/**
+ * Generates the docstring for a given struct.
+ */
+void t_py_generator::generate_python_docstring(ofstream& out,
+                                               t_struct* tstruct) {
+  generate_python_docstring(out, tstruct, tstruct, "Attributes");
+}
+
+/**
+ * Generates the docstring for a given function.
+ */
+void t_py_generator::generate_python_docstring(ofstream& out,
+                                               t_function* tfunction) {
+  generate_python_docstring(out, tfunction, tfunction->get_arglist(), "Parameters");
+}
+
+/**
+ * Generates the docstring for a struct or function.
+ */
+void t_py_generator::generate_python_docstring(ofstream& out,
+                                               t_doc*    tdoc,
+                                               t_struct* tstruct,
+                                               const char* subheader) {
+  bool has_doc = false;
+  stringstream ss;
+  if (tdoc->has_doc()) {
+    has_doc = true;
+    ss << tdoc->get_doc();
+  }
+
+  const vector<t_field*>& fields = tstruct->get_members();
+  if (fields.size() > 0) {
+    if (has_doc) {
+      ss << endl;
+    }
+    has_doc = true;
+    ss << subheader << ":\n";
+    vector<t_field*>::const_iterator p_iter;
+    for (p_iter = fields.begin(); p_iter != fields.end(); ++p_iter) {
+      t_field* p = *p_iter;
+      ss << " - " << p->get_name();
+      if (p->has_doc()) {
+        ss << ": " << p->get_doc();
+      } else {
+        ss << endl;
+      }
+    }
+  }
+
+  if (has_doc) {
+    generate_docstring_comment(out,
+      "\"\"\"\n",
+      "", ss.str(),
+      "\"\"\"\n");
+  }
+}
+
+/**
+ * Generates the docstring for a generic object.
+ */
+void t_py_generator::generate_python_docstring(ofstream& out,
+                                               t_doc* tdoc) {
+  if (tdoc->has_doc()) {
+    generate_docstring_comment(out,
+      "\"\"\"\n",
+      "", tdoc->get_doc(),
+      "\"\"\"\n");
+  }
 }
 
 /**

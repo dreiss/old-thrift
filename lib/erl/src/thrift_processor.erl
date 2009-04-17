@@ -1,13 +1,23 @@
-%%%-------------------------------------------------------------------
-%%% File    : thrift_processor.erl
-%%% Author  :  <todd@lipcon.org>
-%%% Description :
-%%%
-%%% Created : 28 Jan 2008 by  <todd@lipcon.org>
-%%%-------------------------------------------------------------------
+%%
+%% Licensed to the Apache Software Foundation (ASF) under one
+%% or more contributor license agreements. See the NOTICE file
+%% distributed with this work for additional information
+%% regarding copyright ownership. The ASF licenses this file
+%% to you under the Apache License, Version 2.0 (the
+%% "License"); you may not use this file except in compliance
+%% with the License. You may obtain a copy of the License at
+%%
+%%   http://www.apache.org/licenses/LICENSE-2.0
+%%
+%% Unless required by applicable law or agreed to in writing,
+%% software distributed under the License is distributed on an
+%% "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+%% KIND, either express or implied. See the License for the
+%% specific language governing permissions and limitations
+%% under the License.
+%%
+
 -module(thrift_processor).
--author('todd@lipcon.org').
--author('eletuchy@facebook.com').
 
 -export([init/1]).
 
@@ -28,6 +38,10 @@ loop(State = #thrift_processor{in_protocol  = IProto,
     case thrift_protocol:read(IProto, message_begin) of
         #protocol_message_begin{name = Function,
                                 type = ?tMessageType_CALL} ->
+            ok = handle_function(State, list_to_atom(Function)),
+            loop(State);
+        #protocol_message_begin{name = Function,
+                                type = ?tMessageType_ONEWAY} ->
             ok = handle_function(State, list_to_atom(Function)),
             loop(State);
         {error, timeout} ->
@@ -62,13 +76,13 @@ handle_function(State=#thrift_processor{in_protocol = IProto,
 
 handle_function_catch(State = #thrift_processor{service = Service},
                       Function, ErrType, ErrData) ->
-    IsAsync = Service:function_info(Function, reply_type) =:= async_void,
+    IsOneway = Service:function_info(Function, reply_type) =:= oneway_void,
 
     case {ErrType, ErrData} of
-        _ when IsAsync ->
+        _ when IsOneway ->
             Stack = erlang:get_stacktrace(),
             error_logger:warning_msg(
-              "async void ~p threw error which must be ignored: ~p",
+              "oneway void ~p threw error which must be ignored: ~p",
               [Function, {ErrType, ErrData, Stack}]),
             ok;
 
@@ -96,8 +110,8 @@ handle_success(State = #thrift_processor{out_protocol = OProto,
              ok when ReplyType == {struct, []} ->
                  send_reply(OProto, Function, ?tMessageType_REPLY, {ReplyType, {StructName}});
 
-             ok when ReplyType == async_void ->
-                 %% no reply for async void
+             ok when ReplyType == oneway_void ->
+                 %% no reply for oneway void
                  ok
          end.
 

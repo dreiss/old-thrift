@@ -1,10 +1,25 @@
-// Copyright (c) 2006- Facebook
-// Distributed under the Thrift Software License
-//
-// See accompanying file LICENSE or visit the Thrift site at:
-// http://developers.facebook.com/thrift/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 
 package org.apache.thrift.transport;
+
+import org.apache.log4j.Logger;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -12,13 +27,10 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Socket implementation of the TTransport interface. To be commented soon!
  *
- * @author Mark Slee <mcslee@facebook.com>
  */
 public class TSocket extends TIOStreamTransport {
 
@@ -56,7 +68,7 @@ public class TSocket extends TIOStreamTransport {
       socket_.setSoLinger(false, 0);
       socket_.setTcpNoDelay(true);
     } catch (SocketException sx) {
-      LOGGER.log(Level.WARNING, "Could not configure socket.", sx);
+      LOGGER.warn("Could not configure socket.", sx);
     }
 
     if (isOpen()) {
@@ -106,7 +118,7 @@ public class TSocket extends TIOStreamTransport {
       socket_.setTcpNoDelay(true);
       socket_.setSoTimeout(timeout_);
     } catch (SocketException sx) {
-      LOGGER.log(Level.WARNING, "Could not configure socket.", sx);
+      LOGGER.error("Could not configure socket.", sx);
     }
   }
 
@@ -120,7 +132,7 @@ public class TSocket extends TIOStreamTransport {
     try {
       socket_.setSoTimeout(timeout);
     } catch (SocketException sx) {
-      LOGGER.log(Level.WARNING, "Could not set socket timeout.", sx);
+      LOGGER.warn("Could not set socket timeout.", sx);
     }
   }
 
@@ -185,7 +197,7 @@ public class TSocket extends TIOStreamTransport {
       try {
         socket_.close();
       } catch (IOException iox) {
-        LOGGER.log(Level.WARNING, "Could not close socket.", iox);
+        LOGGER.warn("Could not close socket.", iox);
       }
       socket_ = null;
     }

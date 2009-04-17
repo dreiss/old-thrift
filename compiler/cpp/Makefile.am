@@ -1,3 +1,22 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements. See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership. The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License. You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
 AM_YFLAGS = -d
 BUILT_SOURCES =
 
@@ -10,9 +29,6 @@ thrift_SOURCES = src/thrifty.yy \
                  src/main.cc \
                  src/md5.c \
                  src/generate/t_generator.cc \
-                 src/generate/t_php_generator.cc \
-                 src/generate/t_xsd_generator.cc \
-                 src/generate/t_erl_generator.cc \
                  src/globals.h \
                  src/main.h \
                  src/platform.h \
@@ -36,10 +52,7 @@ thrift_SOURCES = src/thrifty.yy \
                  src/parse/t_const.h \
                  src/parse/t_const_value.h \
                  src/generate/t_generator.h \
-                 src/generate/t_oop_generator.h \
-                 src/generate/t_php_generator.h \
-                 src/generate/t_xsd_generator.h \
-                 src/generate/t_erl_generator.h
+                 src/generate/t_oop_generator.h
 
 if THRIFT_GEN_cpp
 thrift_SOURCES += src/generate/t_cpp_generator.cc
@@ -62,6 +75,12 @@ endif
 if THRIFT_GEN_perl
 thrift_SOURCES += src/generate/t_perl_generator.cc
 endif
+if THRIFT_GEN_php
+thrift_SOURCES += src/generate/t_php_generator.cc
+endif
+if THRIFT_GEN_erl
+thrift_SOURCES += src/generate/t_erl_generator.cc
+endif
 if THRIFT_GEN_cocoa
 thrift_SOURCES += src/generate/t_cocoa_generator.cc
 endif
@@ -73,6 +92,9 @@ thrift_SOURCES += src/generate/t_ocaml_generator.cc
 endif
 if THRIFT_GEN_hs
 thrift_SOURCES += src/generate/t_hs_generator.cc
+endif
+if THRIFT_GEN_xsd
+thrift_SOURCES += src/generate/t_xsd_generator.cc
 endif
 if THRIFT_GEN_html
 thrift_SOURCES += src/generate/t_html_generator.cc

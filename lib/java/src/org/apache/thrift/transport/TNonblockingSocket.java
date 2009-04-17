@@ -1,17 +1,32 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 
 package org.apache.thrift.transport;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
-
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
 
 /**
  * Socket implementation of the TTransport interface. To be commented soon!
@@ -62,45 +77,7 @@ public class TNonblockingSocket extends TNonblockingTransport {
     } catch (SocketException sx) {
       sx.printStackTrace();
     }
-
-    // if (isOpen()) {
-    //   try {
-    //     // inputStream_ = new BufferedInputStream(socket_.getInputStream(), 1024);
-    //     // outputStream_ = new BufferedOutputStream(socket_.getOutputStream(), 1024);
-    //   } catch (IOException iox) {
-    //     close();
-    //     throw new TTransportException(TTransportException.NOT_OPEN, iox);
-    //   }
-    // }
   }
-
-  // This is all for the clientside stuff. Not sure that we'll actually be supporting that yet.
-  // /**
-  //  * Creates a new unconnected socket that will connect to the given host
-  //  * on the given port.
-  //  *
-  //  * @param host Remote host
-  //  * @param port Remote port
-  //  */
-  // public TNonblockingSocket(String host, int port) {
-  //   this(host, port, 0);
-  // }
-  //
-  // /**
-  //  * Creates a new unconnected socket that will connect to the given host
-  //  * on the given port.
-  //  *
-  //  * @param host    Remote host
-  //  * @param port    Remote port
-  //  * @param timeout Socket timeout
-  //  */
-  // public TSocket(String host, int port, int timeout) {
-  //   host_ = host;
-  //   port_ = port;
-  //   timeout_ = timeout;
-  //   initSocket();
-  // }
-
 
   /**
    * Register this socket with the specified selector for both read and write
@@ -168,29 +145,6 @@ public class TNonblockingSocket extends TNonblockingTransport {
    */
   public void open() throws TTransportException {
     throw new RuntimeException("Not implemented yet");
-    // if (isOpen()) {
-    //   throw new TTransportException(TTransportException.ALREADY_OPEN, "Socket already connected.");
-    // }
-    //
-    // if (host_.length() == 0) {
-    //   throw new TTransportException(TTransportException.NOT_OPEN, "Cannot open null host.");
-    // }
-    // if (port_ <= 0) {
-    //   throw new TTransportException(TTransportException.NOT_OPEN, "Cannot open without port.");
-    // }
-    //
-    // if (socket_ == null) {
-    //   initSocket();
-    // }
-    //
-    // try {
-    //   socket_.connect(new InetSocketAddress(host_, port_));
-    //   inputStream_ = new BufferedInputStream(socket_.getInputStream(), 1024);
-    //   outputStream_ = new BufferedOutputStream(socket_.getOutputStream(), 1024);
-    // } catch (IOException iox) {
-    //   close();
-    //   throw new TTransportException(TTransportException.NOT_OPEN, iox);
-    // }
   }
 
   /**
