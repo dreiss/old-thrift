@@ -223,7 +223,7 @@ class TBinaryProtocol(TProtocolBase):
     return str
 
   def fastRead(self, struct):
-    fastbinary.decode_binary(self, self.trans,
+    fastbinary.decode_binary(struct, self.trans,
         (struct.__class__, struct.thrift_spec))
 
   def fastWrite(self, struct):
@@ -232,9 +232,10 @@ class TBinaryProtocol(TProtocolBase):
 
 try:
   import fastbinary
-except ImportError:
   TBinaryProtocol.read = TBinaryProtocol.fastRead
   TBinaryProtocol.write = TBinaryProtocol.fastWrite
+except ImportError:
+  pass
 
 class TBinaryProtocolFactory:
   def __init__(self, strictRead=False, strictWrite=True):
