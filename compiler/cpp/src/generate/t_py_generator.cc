@@ -666,7 +666,7 @@ void t_py_generator::generate_py_struct_reader(ofstream& out,
   indent(out) <<
     "def read(self, iprot):" << endl;
   indent_up();
-  indent(out) << "iprot.write(self)" << endl;
+  indent(out) << "iprot.read(self)" << endl;
 
   indent_down();
   out << endl;
