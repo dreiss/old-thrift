@@ -130,6 +130,27 @@ class AbstractTest(unittest.TestCase):
     self.assertTrue(end - start < 0.2,
                     "oneway sleep took %f sec" % (end - start))
 
+  def testList(self):
+    self.client.testList([1, 2, 3])
+
+  def testSet(self):
+    self.client.testSet(set([1, 2, 3]))
+  
+  def testMap(self):
+    self.client.testMap({1:2, 2:3})
+
+  def testInsanity(self):
+    x = Xtruct()
+    x.string_thing = "Zero"
+    x.byte_thing = 1
+    x.i32_thing = -3
+    x.i64_thing = -5
+
+    y = self.client.testInsanity(Insanity(userMap={1:2}, xtructs=[x]))
+    z = y[1][Numberz.ONE]
+    assert z.xtructs[0] == x
+    assert z.userMap == {1:2}
+
 class NormalBinaryTest(AbstractTest):
   protocol_factory = TBinaryProtocol.TBinaryProtocolFactory()
 

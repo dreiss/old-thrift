@@ -141,6 +141,7 @@ typedef struct {
 typedef struct {
   PyObject* klass;
   PyObject* spec;
+  long offset;
 } StructTypeArgs;
 
 /**
@@ -164,10 +165,10 @@ typedef struct {
   PyObject* refill_callable;
 } DecodeBuffer;
 
-/** Pointer to interned string to speed up attribute lookup. */
+/** Pointers to interned string to speed up attribute lookup. */
 static PyObject* INTERN_STRING(cstringio_buf);
-/** Pointer to interned string to speed up attribute lookup. */
 static PyObject* INTERN_STRING(cstringio_refill);
+static PyObject* INTERN_STRING(thrift_offset);
 
 static inline bool
 check_ssize_t_32(Py_ssize_t len) {
@@ -251,6 +252,18 @@ parse_struct_args(StructTypeArgs* dest, PyObject* typeargs) {
   dest->klass = PyTuple_GET_ITEM(typeargs, 0);
   dest->spec = PyTuple_GET_ITEM(typeargs, 1);
 
+  if (PyObject_HasAttr(dest->klass, INTERN_STRING(thrift_offset))) {
+    PyObject *offset = PyObject_GetAttr(dest->klass, INTERN_STRING(thrift_offset));
+    long result = PyInt_AsLong(offset);
+    if (result == -1 && PyErr_Occurred()) {
+      Py_DECREF(offset);
+      return false;
+    }
+    dest->offset = result;
+    Py_DECREF(offset);
+  } else {
+    dest->offset = 0;
+  }
   return true;
 }
 
@@ -856,7 +869,7 @@ static PyObject*
 decode_val(DecodeBuffer* input, TType type, PyObject* typeargs);
 
 static bool
-decode_struct(DecodeBuffer* input, PyObject* output, PyObject* spec_seq) {
+decode_struct(DecodeBuffer* input, PyObject* output, PyObject* spec_seq, const long offset) {
   int spec_seq_len = PyTuple_Size(spec_seq);
   if (spec_seq_len == -1) {
     return false;
@@ -880,8 +893,8 @@ decode_struct(DecodeBuffer* input, PyObject* output, PyObject* spec_seq) {
     if (INT_CONV_ERROR_OCCURRED(tag)) {
       return false;
     }
-    if (tag >= 0 && tag < spec_seq_len) {
-      item_spec = PyTuple_GET_ITEM(spec_seq, tag);
+    if (tag >= offset && tag < (spec_seq_len + offset)) {
+      item_spec = PyTuple_GET_ITEM(spec_seq, tag - offset);
     } else {
       item_spec = Py_None;
     }
@@ -895,6 +908,12 @@ decode_struct(DecodeBuffer* input, PyObject* output, PyObject* spec_seq) {
     }
 
     if (!parse_struct_item_spec(&parsedspec, item_spec)) {
+      return false;
+    }
+
+    /* a little paranoic check: ensure that tag is correct */
+    if (parsedspec.tag != tag) {
+      PyErr_SetString(PyExc_TypeError, "thrift_offset has incorrect value or memory is corrupted");
       return false;
     }
     if (parsedspec.type != type) {
@@ -1119,7 +1138,7 @@ decode_val(DecodeBuffer* input, TType type, PyObject* typeargs) {
       return NULL;
     }
 
-    if (!decode_struct(input, ret, parsedargs.spec)) {
+    if (!decode_struct(input, ret, parsedargs.spec, parsedargs.offset)) {
       Py_DECREF(ret);
       return NULL;
     }
@@ -1161,7 +1180,7 @@ decode_binary(PyObject *self, PyObject *args) {
     return NULL;
   }
 
-  if (!decode_struct(&input, output_obj, parsedargs.spec)) {
+  if (!decode_struct(&input, output_obj, parsedargs.spec, parsedargs.offset)) {
     free_decodebuf(&input);
     return NULL;
   }
@@ -1194,6 +1213,7 @@ initfastbinary(void) {
 
   INIT_INTERN_STRING(cstringio_buf);
   INIT_INTERN_STRING(cstringio_refill);
+  INIT_INTERN_STRING(thrift_offset);
 #undef INIT_INTERN_STRING
 
   PycString_IMPORT;

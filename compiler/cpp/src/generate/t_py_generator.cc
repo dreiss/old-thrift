@@ -170,7 +170,9 @@ class t_py_generator : public t_generator {
 
   std::string py_autogen_comment();
   std::string py_imports();
+  std::string py_default();
   std::string render_includes();
+  bool can_default(t_field* field);
   std::string declare_argument(t_field* tfield);
   std::string render_field_default_value(t_field* tfield);
   std::string type_name(t_type* ttype);
@@ -267,6 +269,7 @@ void t_py_generator::init_generator() {
   f_types_ <<
     py_autogen_comment() << endl <<
     py_imports() << endl <<
+    py_default() << endl <<
     render_includes() << endl <<
     endl << endl;
 
@@ -302,6 +305,10 @@ string t_py_generator::py_autogen_comment() {
     "#\n" +
     "# DO NOT EDIT UNLESS YOU ARE SURE THAT YOU KNOW WHAT YOU ARE DOING\n" +
     "#\n";
+}
+
+string t_py_generator::py_default() {
+  return "default = object()\n";
 }
 
 /**
@@ -548,19 +555,16 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
                 | (class_name, spec_args_ptr) # For struct/exception
      class_name -> identifier  # Basically a pointer to the class
      spec_args_ptr -> expression  # just class_name.spec_args
-
-     TODO(dreiss): Consider making this work for structs with negative tags.
   */
 
-  // TODO(dreiss): Look into generating an empty tuple instead of None
-  // for structures with no members.
   // TODO(dreiss): Test encoding of structs where some inner structs
   // don't have thrift_spec.
-  if (members.empty() || (members[0]->get_key() >= 0)) {
+  if (!members.empty()) {
+    int sorted_keys_pos = members[0]->get_key();
+    indent(out) << "thrift_offset = " << sorted_keys_pos << endl;
     indent(out) << "thrift_spec = (" << endl;
     indent_up();
 
-    int sorted_keys_pos = 0;
     for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
 
       for (; sorted_keys_pos != (*m_iter)->get_key(); sorted_keys_pos++) {
@@ -582,17 +586,17 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
     indent_down();
     indent(out) << ")" << endl << endl;
   } else {
-    indent(out) << "thrift_spec = None" << endl;
+    indent(out) << "thrift_offset = 0" << endl;
+    indent(out) << "thrift_spec = ()" << endl;
   }
-
 
   if (members.size() > 0) {
     out <<
-      indent() << "def __init__(self,";
+      indent() << "def __init__(self";
 
     for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
       // This fills in default values, as opposed to nulls
-      out << " " << declare_argument(*m_iter) << ",";
+      out << ", " << declare_argument(*m_iter);
     }
 
     out << "):" << endl;
@@ -601,16 +605,16 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
 
     for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
       // Initialize fields
-      t_type* type = (*m_iter)->get_type();
-      if (!type->is_base_type() && !type->is_enum() && (*m_iter)->get_value() != NULL) {
+      if (!can_default(*m_iter) && (*m_iter)->get_value() != NULL) {
         indent(out) <<
-          "if " << (*m_iter)->get_name() << " is " << "self.thrift_spec[" <<
-            (*m_iter)->get_key() << "][4]:" << endl;
-        indent(out) << "  " << (*m_iter)->get_name() << " = " <<
+          "if " << (*m_iter)->get_name() << " is default:" << endl;
+        indent_up();
+        indent(out) << (*m_iter)->get_name() << " = " <<
           render_field_default_value(*m_iter) << endl;
+        indent_down();
       }
-      indent(out) <<
-        "self." << (*m_iter)->get_name() << " = " << (*m_iter)->get_name() << endl;
+      indent(out) << "self." << (*m_iter)->get_name() << " = " 
+                  << (*m_iter)->get_name() << endl;
     }
 
     indent_down();
@@ -693,6 +697,7 @@ void t_py_generator::generate_service(t_service* tservice) {
 
   f_service_ <<
     py_autogen_comment() << endl <<
+    py_default() << endl <<
     py_imports() << endl;
 
   if (tservice->get_extends() != NULL) {
@@ -1925,6 +1930,16 @@ void t_py_generator::generate_serialize_list_element(ofstream &out,
 }
 
 /**
+ * Returns if field default value can be used in param of function.
+ *
+ * @param tfield The field
+ */
+bool t_py_generator::can_default(t_field* tfield) {
+  t_type* type = tfield->get_type();
+  return type->is_base_type() && !type->is_enum();
+}
+
+/**
  * Generates the docstring for a given struct.
  */
 void t_py_generator::generate_python_docstring(ofstream& out,
@@ -2002,11 +2017,15 @@ void t_py_generator::generate_python_docstring(ofstream& out,
 string t_py_generator::declare_argument(t_field* tfield) {
   std::ostringstream result;
   result << tfield->get_name() << "=";
-  if (tfield->get_value() != NULL) {
-    result << "thrift_spec[" <<
-      tfield->get_key() << "][4]";
-  } else {
+  if (tfield->get_value() == NULL) {
     result << "None";
+    return result.str();
+  }
+
+  if (can_default(tfield)) {
+    result << render_field_default_value(tfield);
+  } else {
+    result << "default";
   }
   return result.str();
 }
