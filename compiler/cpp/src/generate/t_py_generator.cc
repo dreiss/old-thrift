@@ -522,7 +522,7 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
                                                    bool is_exception,
                                                    bool is_result) {
 
-  const vector<t_field*>& members = tstruct->get_members();
+  const vector<t_field*>& members = tstruct->get_sorted_members();
   vector<t_field*>::const_iterator m_iter;
 
   out <<
