@@ -19,6 +19,97 @@
 
 from thrift.Thrift import *
 
+__all__ = ['TProtocolException', 'TProtocolBase', 'TProtocolFactory']
+
+def write_helper(oprot, ftype, value):
+  # copy-paste from TProtocol.skip
+  if ftype == TType.STOP:
+    raise "XXX"
+  elif ftype == TType.BOOL:
+    oprot.writeBool(value)
+  elif ftype == TType.BYTE:
+    oprot.writeByte(value)
+  elif ftype == TType.I16:
+    oprot.writeI16(value)
+  elif ftype == TType.I32:
+    oprot.writeI32(value)
+  elif ftype == TType.I64:
+    oprot.writeI64(value)
+  elif ftype == TType.DOUBLE:
+    oprot.writeDouble(value)
+  elif ftype == TType.STRING:
+    oprot.writeString(value)
+  else:
+    raise "XXX: hey, it's %d type" % ftype
+
+def reader_helper(iprot, ftype):
+  # copy-paste from TProtocol.skip
+  if ftype == TType.STOP:
+    raise "XXX"
+  elif ftype == TType.BOOL:
+    return iprot.readBool()
+  elif ftype == TType.BYTE:
+    return iprot.readByte()
+  elif ftype == TType.I16:
+    return iprot.readI16()
+  elif ftype == TType.I32:
+    return iprot.readI32()
+  elif ftype == TType.I64:
+    return iprot.readI64()
+  elif ftype == TType.DOUBLE:
+    return iprot.readDouble()
+  elif ftype == TType.STRING:
+    return iprot.readString()
+  elif ftype == TType.MAP:
+    # XXX TODO: support complex types
+    ktype, vtype, size = iprot.readMapBegin()
+    result = {}
+    for i in range(size):
+      key = iprot.skip(ktype)
+      value = iprot.skip(vtype)
+      result[key] = value
+    iprot.readMapEnd()
+    return result
+  elif ftype == TType.SET:
+    etype, size = iprot.readSetBegin()
+    result = set()
+    for i in xrange(size):
+      result.update([reader_helper(iprot, etype)])
+    iprot.readSetEnd()
+    return result
+  elif ftype == TType.LIST:
+    etype, size = iprot.readListBegin()
+    result = []
+    for i in xrange(size):
+      result.append(reader_helper(iprot, etype))
+    iprot.readListEnd()
+    return result
+  raise "XXX"
+
+def write_adv_helper(oprot, ftype, type_args, value):
+  if ftype == TType.MAP:
+    # XXX TODO handle complex type
+    ktype, _, vtype, _ = type_args
+    oprot.writeMapBegin(ktype, vtype, len(value))
+    for k, v in value.items():
+      write_helper(oprot, ktype, k)
+      write_helper(oprot, vtype, v)
+    oprot.writeMapEnd()
+  elif ftype in (TType.LIST, TType.SET):
+    if ftype == TType.LIST:
+      begin = oprot.writeListBegin
+      end = oprot.writeListEnd
+    else:
+      begin = oprot.writeSetBegin
+      end = oprot.writeSetEnd
+    xtype, _ = type_args
+    begin(xtype, len(value))
+    for k in value:
+      write_helper(oprot, xtype, k)
+    end()
+  else:
+    raise "XXX"
+
 class TProtocolException(TException):
 
   """Custom Protocol Exception class"""
@@ -199,6 +290,46 @@ class TProtocolBase:
       for i in range(size):
         self.skip(etype)
       self.readListEnd()
+
+  def read(self, struct):
+    struct.readStructBegin()
+    while True:
+      fname, ftype, fid = struct.readFieldBegin()
+      if ftype == TType.STOP:
+        break
+      else:
+        stype, sname, type_args, default = self.cached[fid]
+        if stype == ftype:
+          if ftype == TType.STRUCT:
+            class_, spec = type_args
+            result = class_()
+            result.read()
+            setattr(self, sname, result)
+          else:
+            setattr(self, sname, reader_helper(struct, stype))
+        else:
+          struct.skip(ftype)
+    struct.readFieldEnd()
+    struct.readStructEnd()
+
+  def write(self, struct):
+    struct.writeStructBegin(self.__class__.__name__)
+    for spec in self.thrift_spec:
+      if spec is None:
+        continue
+      fid, ftype, fname, type_args, default = spec
+      value = getattr(self, fname, default)
+      if value is not None: # it's bad idea to skip [] as None
+        struct.writeFieldBegin(fname, ftype, fid)
+        if ftype in (TType.SET, TType.MAP, TType.LIST):
+          write_adv_helper(struct, ftype, type_args, value)
+        elif ftype == TType.STRUCT:
+          value.write(struct)
+        else:
+          write_helper(struct, ftype, value)
+        struct.writeFieldEnd()
+    struct.writeFieldStop()
+    struct.writeStructEnd()
 
 class TProtocolFactory:
   def getProtocol(self, trans):

@@ -171,7 +171,6 @@ class t_py_generator : public t_generator {
   std::string py_autogen_comment();
   std::string py_imports();
   std::string render_includes();
-  std::string render_fastbinary_includes();
   std::string declare_argument(t_field* tfield);
   std::string render_field_default_value(t_field* tfield);
   std::string type_name(t_type* ttype);
@@ -269,7 +268,6 @@ void t_py_generator::init_generator() {
     py_autogen_comment() << endl <<
     py_imports() << endl <<
     render_includes() << endl <<
-    render_fastbinary_includes() <<
     endl << endl;
 
   f_consts_ <<
@@ -292,19 +290,6 @@ string t_py_generator::render_includes() {
     result += "\n";
   }
   return result;
-}
-
-/**
- * Renders all the imports necessary to use the accelerated TBinaryProtocol
- */
-string t_py_generator::render_fastbinary_includes() {
-  return
-    "from thrift.transport import TTransport\n"
-    "from thrift.protocol import TBinaryProtocol\n"
-    "try:\n"
-    "  from thrift.protocol import fastbinary\n"
-    "except:\n"
-    "  fastbinary = None\n";
 }
 
 /**
@@ -677,80 +662,9 @@ void t_py_generator::generate_py_struct_reader(ofstream& out,
   indent(out) <<
     "def read(self, iprot):" << endl;
   indent_up();
+  indent(out) << "iprot.write(self)" << endl;
 
-  indent(out) <<
-    "if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated "
-    "and isinstance(iprot.trans, TTransport.CReadableTransport) "
-    "and self.thrift_spec is not None "
-    "and fastbinary is not None:" << endl;
-  indent_up();
-
-  indent(out) <<
-    "fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))" << endl;
-  indent(out) <<
-    "return" << endl;
   indent_down();
-
-  indent(out) <<
-    "iprot.readStructBegin()" << endl;
-
-  // Loop over reading in fields
-  indent(out) <<
-    "while True:" << endl;
-    indent_up();
-
-    // Read beginning field marker
-    indent(out) <<
-      "(fname, ftype, fid) = iprot.readFieldBegin()" << endl;
-
-    // Check for field STOP marker and break
-    indent(out) <<
-      "if ftype == TType.STOP:" << endl;
-    indent_up();
-    indent(out) <<
-      "break" << endl;
-    indent_down();
-
-    // Switch statement on the field we are reading
-    bool first = true;
-
-    // Generate deserialization code for known cases
-    for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
-      if (first) {
-        first = false;
-        out <<
-          indent() << "if ";
-      } else {
-        out <<
-          indent() << "elif ";
-      }
-      out << "fid == " << (*f_iter)->get_key() << ":" << endl;
-      indent_up();
-      indent(out) << "if ftype == " << type_to_enum((*f_iter)->get_type()) << ":" << endl;
-      indent_up();
-      generate_deserialize_field(out, *f_iter, "self.");
-      indent_down();
-      out <<
-        indent() << "else:" << endl <<
-        indent() << "  iprot.skip(ftype)" << endl;
-      indent_down();
-    }
-
-    // In the default case we skip the field
-    out <<
-      indent() <<  "else:" << endl <<
-      indent() <<  "  iprot.skip(ftype)" << endl;
-
-    // Read field end marker
-    indent(out) <<
-      "iprot.readFieldEnd()" << endl;
-
-    indent_down();
-
-    indent(out) <<
-      "iprot.readStructEnd()" << endl;
-
-    indent_down();
   out << endl;
 }
 
@@ -763,51 +677,9 @@ void t_py_generator::generate_py_struct_writer(ofstream& out,
   indent(out) <<
     "def write(self, oprot):" << endl;
   indent_up();
-
-  indent(out) <<
-    "if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated "
-    "and self.thrift_spec is not None "
-    "and fastbinary is not None:" << endl;
-  indent_up();
-
-  indent(out) <<
-    "oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))" << endl;
-  indent(out) <<
-    "return" << endl;
+  indent(out) << "oprot.write(self)" << endl;
   indent_down();
-
-  indent(out) <<
-    "oprot.writeStructBegin('" << name << "')" << endl;
-
-  for (f_iter = fields.begin(); f_iter != fields.end(); ++f_iter) {
-    // Write field header
-    indent(out) <<
-      "if self." << (*f_iter)->get_name() << " != None:" << endl;
-    indent_up();
-    indent(out) <<
-      "oprot.writeFieldBegin(" <<
-      "'" << (*f_iter)->get_name() << "', " <<
-      type_to_enum((*f_iter)->get_type()) << ", " <<
-      (*f_iter)->get_key() << ")" << endl;
-
-    // Write field contents
-    generate_serialize_field(out, *f_iter, "self.");
-
-    // Write field closer
-    indent(out) <<
-      "oprot.writeFieldEnd()" << endl;
-
-    indent_down();
-  }
-
-  // Write the struct map
-  out <<
-    indent() << "oprot.writeFieldStop()" << endl <<
-    indent() << "oprot.writeStructEnd()" << endl;
-
-  indent_down();
-  out <<
-    endl;
+  out << endl;
 }
 
 /**
@@ -831,8 +703,7 @@ void t_py_generator::generate_service(t_service* tservice) {
 
   f_service_ <<
     "from ttypes import *" << endl <<
-    "from thrift.Thrift import TProcessor" << endl <<
-    render_fastbinary_includes() << endl;
+    "from thrift.Thrift import TProcessor" << endl;
 
   if (gen_twisted_) {
     f_service_ <<

@@ -20,6 +20,9 @@
 from TProtocol import *
 from struct import pack, unpack
 
+__all__ = ['TBinaryProtocol', 'TBinaryProtocolFactory',
+           'TBinaryProtocolAccelerated', 'TBinaryProtocolAcceleratedFactory']
+
 class TBinaryProtocol(TProtocolBase):
 
   """Binary implementation of the Thrift protocol driver."""
@@ -219,6 +222,19 @@ class TBinaryProtocol(TProtocolBase):
     str = self.trans.readAll(len)
     return str
 
+  def fastRead(self, struct):
+    fastbinary.decode_binary(self, self.trans,
+        (struct.__class__, struct.thrift_spec))
+
+  def fastWrite(self, struct):
+    self.trans.write(fastbinary.encode_binary(struct, 
+        (struct.__class__, struct.thrift_spec)))
+
+try:
+  import fastbinary
+except ImportError:
+  TBinaryProtocol.read = TBinaryProtocol.fastRead
+  TBinaryProtocol.write = TBinaryProtocol.fastWrite
 
 class TBinaryProtocolFactory:
   def __init__(self, strictRead=False, strictWrite=True):
