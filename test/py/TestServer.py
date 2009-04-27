@@ -20,6 +20,7 @@
 #
 
 import sys, glob, time
+import logging
 sys.path.insert(0, './gen-py')
 sys.path.insert(0, glob.glob('../../lib/py/build/lib.*')[0])
 
@@ -33,42 +34,38 @@ from thrift.server import TServer, TNonblockingServer, THttpServer
 class TestHandler:
 
   def testVoid(self):
-    print 'testVoid()'
+    logging.debug('testVoid()')
 
   def testString(self, str):
-    print 'testString(%s)' % str
+    logging.debug('testString(%s)' % str)
     return str
 
   def testByte(self, byte):
-    print 'testByte(%d)' % byte
+    logging.debug('testByte(%d)' % byte)
     return byte
 
   def testI16(self, i16):
-    print 'testI16(%d)' % i16
+    logging.debug('testI16(%d)' % i16)
     return i16
 
   def testI32(self, i32):
-    print 'testI32(%d)' % i32
+    logging.debug('testI32(%d)' % i32)
     return i32
 
   def testI64(self, i64):
-    print 'testI64(%d)' % i64
+    logging.debug('testI64(%d)' % i64)
     return i64
 
   def testDouble(self, dub):
-    print 'testDouble(%f)' % dub
+    logging.debug('testDouble(%f)' % dub)
     return dub
 
-  def testInsanity(self, x):
-    n = Numberz.ONE
-    return {1: {n: x}}
-
   def testStruct(self, thing):
-    print 'testStruct({%s, %d, %d, %d})' % (thing.string_thing, thing.byte_thing, thing.i32_thing, thing.i64_thing)
+    logging.debug('testStruct({%s, %d, %d, %d})' % (thing.string_thing, thing.byte_thing, thing.i32_thing, thing.i64_thing))
     return thing
 
   def testException(self, str):
-    print 'testException(%s)' % str
+    logging.debug('testException(%s)' % str)
     if str == 'Xception':
       x = Xception()
       x.errorCode = 1001
@@ -78,9 +75,9 @@ class TestHandler:
       raise ValueError("foo")
 
   def testOneway(self, seconds):
-    print 'testOneway(%d) => sleeping...' % seconds
+    logging.debug('testOneway(%d) => sleeping...' % seconds)
     time.sleep(seconds)
-    print 'done sleeping'
+    logging.debug('done sleeping')
 
   def testNest(self, thing):
     return thing

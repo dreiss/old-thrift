@@ -174,4 +174,4 @@ class OwnArgsTestProgram(unittest.TestProgram):
         self.createTests()
 
 if __name__ == "__main__":
-  OwnArgsTestProgram(defaultTest="suite", testRunner=unittest.TextTestRunner(verbosity=2))
+  OwnArgsTestProgram(defaultTest="suite", testRunner=unittest.TextTestRunner())
