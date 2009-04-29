@@ -63,7 +63,7 @@ build-indep-stamp: configure-stamp
 
 	# Java
 	cd $(CURDIR)/lib/java && \
-		JAVA_HOME=/usr/lib/jvm/java-6-sun ant -Dthrift.extra.cpath=/usr/share/java/log4j-1.2.jar
+		JAVA_HOME=/usr/lib/jvm/java-6-sun ant
 
 	# Erlang
 	$(MAKE) -C $(CURDIR)/lib/erl

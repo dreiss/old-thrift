@@ -1,3 +1,9 @@
+thrift (0.2009.04.29~cloudera.1) intrepid; urgency=low
+
+  * Update to f08c0a34dc461034b2374bdd5fe6c8706c658f26
+
+ -- Todd Lipcon <todd@cloudera.com>  Wed, 29 Apr 2009 16:30:48 -0700
+
 thrift (0.2009.04.17~cloudera.1) intrepid; urgency=low
 
   * 
