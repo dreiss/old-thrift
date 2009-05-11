@@ -137,7 +137,7 @@ class AbstractTest(unittest.TestCase):
     self.client.testSet(set([1, 2, 3]))
   
   def testMap(self):
-    self.client.testMap({1:2, 2:3})
+    self.assert_(self.client.testMap({1:2, 2:3}) == {1:2, 2:3})
 
   def xtestInsanity(self):
     x = Xtruct()

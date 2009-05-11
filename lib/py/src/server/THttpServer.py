@@ -50,8 +50,8 @@ class THttpServer(TServer.TServer):
         self.send_header("content-type", "application/x-thrift")
         self.end_headers()
 
-        itrans = TTransport.TBufferedTransport(TTransport.TFileObjectTransport(self.rfile))
-        otrans = TTransport.TBufferedTransport(TTransport.TFileObjectTransport(self.wfile))
+        itrans = TTransport.TFileObjectTransport(self.rfile)
+        otrans = TTransport.TFileObjectTransport(self.wfile)
         iprot = thttpserver.inputProtocolFactory.getProtocol(itrans)
         oprot = thttpserver.outputProtocolFactory.getProtocol(otrans)
         thttpserver.processor.process(iprot, oprot)

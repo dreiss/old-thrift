@@ -61,12 +61,11 @@ def reader_helper(iprot, ftype):
   elif ftype == TType.STRING:
     return iprot.readString()
   elif ftype == TType.MAP:
-    # XXX TODO: support complex types
     ktype, vtype, size = iprot.readMapBegin()
     result = {}
-    for i in range(size):
-      key = iprot.skip(ktype)
-      value = iprot.skip(vtype)
+    for i in xrange(size):
+      key = reader_helper(iprot, ktype)
+      value = reader_helper(iprot, vtype)
       result[key] = value
     iprot.readMapEnd()
     return result
@@ -308,7 +307,7 @@ class TProtocolBase:
             result.read(self)
             setattr(struct, sname, result)
           else:
-            setattr(struct, sname, reader_helper(self.prot, stype))
+            setattr(struct, sname, reader_helper(self, stype))
         else:
           self.skip(ftype)
     self.readFieldEnd()
@@ -322,14 +321,18 @@ class TProtocolBase:
       fid, ftype, fname, type_args, default = spec
       value = getattr(struct, fname, default)
       if value is not None: # it's bad idea to skip [] as None
-        self.writeFieldBegin(fname, ftype, fid)
-        if ftype in (TType.SET, TType.MAP, TType.LIST):
-          write_adv_helper(self.trans, ftype, type_args, value)
-        elif ftype == TType.STRUCT:
-          value.write(self)
-        else:
-          write_helper(seld.trans, ftype, value)
-        self.writeFieldEnd()
+        try:
+          self.writeFieldBegin(fname, ftype, fid)
+          if ftype in (TType.SET, TType.MAP, TType.LIST):
+            write_adv_helper(self, ftype, type_args, value)
+          elif ftype == TType.STRUCT:
+            value.write(self)
+          else:
+            write_helper(self, ftype, value)
+          self.writeFieldEnd()
+        except Exception, err:
+            raise TProtocolException(TProtocolException.INVALID_DATA, 
+                "Can't serialize field '%s' (value: %s)" % (fname, repr(value)))
     self.writeFieldStop()
     self.writeStructEnd()
 

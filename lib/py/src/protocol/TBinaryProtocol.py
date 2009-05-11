@@ -232,12 +232,8 @@ class TBinaryProtocol(TProtocolBase):
 
   def fastWrite(self, struct):
     if hasattr(self.trans, 'cstringio_buf'):
-      import sys
-      sys.stderr.write("write: %s %s\n" % (repr(struct), type(struct)))
-      class_ = struct.__class__
-      spec = struct.thrift_spec
-      self.trans.write(fastbinary.encode_binary(struct, (class_, spec)))
-          #(struct.__class__, struct.thrift_spec)))
+      self.trans.write(fastbinary.encode_binary(struct,
+          (struct.__class__, struct.thrift_spec)))
     else:
       TProtocolBase.write(self, struct)
 
