@@ -671,9 +671,6 @@ void t_py_generator::generate_py_struct_definition(ofstream& out,
  */
 void t_py_generator::generate_py_struct_reader(ofstream& out,
                                                 t_struct* tstruct) {
-  const vector<t_field*>& fields = tstruct->get_members();
-  vector<t_field*>::const_iterator f_iter;
-
   indent(out) <<
     "def read(self, iprot):" << endl;
   indent_up();
@@ -686,8 +683,6 @@ void t_py_generator::generate_py_struct_reader(ofstream& out,
 void t_py_generator::generate_py_struct_writer(ofstream& out,
                                                t_struct* tstruct) {
   string name = tstruct->get_name();
-  const vector<t_field*>& fields = tstruct->get_sorted_members();
-  vector<t_field*>::const_iterator f_iter;
 
   indent(out) <<
     "def write(self, oprot):" << endl;
