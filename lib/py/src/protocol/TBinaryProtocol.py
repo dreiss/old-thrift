@@ -17,6 +17,7 @@
 # under the License.
 #
 
+from thrift.Thrift import *
 from TProtocol import *
 from struct import pack, unpack
 
@@ -223,12 +224,22 @@ class TBinaryProtocol(TProtocolBase):
     return str
 
   def fastRead(self, struct):
-    fastbinary.decode_binary(struct, self.trans,
-        (struct.__class__, struct.thrift_spec))
+    if hasattr(self.trans, 'cstringio_buf'):
+      fastbinary.decode_binary(struct, self.trans,
+          (struct.__class__, struct.thrift_spec))
+    else:
+      TProtocolBase.read(self, struct)
 
   def fastWrite(self, struct):
-    self.trans.write(fastbinary.encode_binary(struct, 
-        (struct.__class__, struct.thrift_spec)))
+    if hasattr(self.trans, 'cstringio_buf'):
+      import sys
+      sys.stderr.write("write: %s %s\n" % (repr(struct), type(struct)))
+      class_ = struct.__class__
+      spec = struct.thrift_spec
+      self.trans.write(fastbinary.encode_binary(struct, (class_, spec)))
+          #(struct.__class__, struct.thrift_spec)))
+    else:
+      TProtocolBase.write(self, struct)
 
 try:
   import fastbinary

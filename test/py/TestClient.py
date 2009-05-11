@@ -139,7 +139,7 @@ class AbstractTest(unittest.TestCase):
   def testMap(self):
     self.client.testMap({1:2, 2:3})
 
-  def testInsanity(self):
+  def xtestInsanity(self):
     x = Xtruct()
     x.string_thing = "Zero"
     x.byte_thing = 1

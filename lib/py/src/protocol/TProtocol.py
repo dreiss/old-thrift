@@ -292,44 +292,46 @@ class TProtocolBase:
       self.readListEnd()
 
   def read(self, struct):
-    struct.readStructBegin()
+    self.readStructBegin()
+    spec = struct.thrift_spec
+    offset = struct.thrift_offset
     while True:
-      fname, ftype, fid = struct.readFieldBegin()
+      fname, ftype, fid = self.readFieldBegin()
       if ftype == TType.STOP:
         break
       else:
-        stype, sname, type_args, default = self.cached[fid]
+        sid, stype, sname, type_args, default = spec[fid - offset]
         if stype == ftype:
           if ftype == TType.STRUCT:
-            class_, spec = type_args
+            class_, _ = type_args
             result = class_()
-            result.read()
-            setattr(self, sname, result)
+            result.read(self)
+            setattr(struct, sname, result)
           else:
-            setattr(self, sname, reader_helper(struct, stype))
+            setattr(struct, sname, reader_helper(self.prot, stype))
         else:
-          struct.skip(ftype)
-    struct.readFieldEnd()
-    struct.readStructEnd()
+          self.skip(ftype)
+    self.readFieldEnd()
+    self.readStructEnd()
 
   def write(self, struct):
-    struct.writeStructBegin(self.__class__.__name__)
-    for spec in self.thrift_spec:
+    self.writeStructBegin(self.__class__.__name__)
+    for spec in struct.thrift_spec:
       if spec is None:
         continue
       fid, ftype, fname, type_args, default = spec
-      value = getattr(self, fname, default)
+      value = getattr(struct, fname, default)
       if value is not None: # it's bad idea to skip [] as None
-        struct.writeFieldBegin(fname, ftype, fid)
+        self.writeFieldBegin(fname, ftype, fid)
         if ftype in (TType.SET, TType.MAP, TType.LIST):
-          write_adv_helper(struct, ftype, type_args, value)
+          write_adv_helper(self.trans, ftype, type_args, value)
         elif ftype == TType.STRUCT:
-          value.write(struct)
+          value.write(self)
         else:
-          write_helper(struct, ftype, value)
-        struct.writeFieldEnd()
-    struct.writeFieldStop()
-    struct.writeStructEnd()
+          write_helper(seld.trans, ftype, value)
+        self.writeFieldEnd()
+    self.writeFieldStop()
+    self.writeStructEnd()
 
 class TProtocolFactory:
   def getProtocol(self, trans):

@@ -97,6 +97,9 @@ class TestHandler:
   def testTypedef(self, thing):
     return thing
 
+  def testInsanity(self, thing):
+    return thing
+
 pfactory = TBinaryProtocol.TBinaryProtocolFactory()
 handler = TestHandler()
 processor = ThriftTest.Processor(handler)
