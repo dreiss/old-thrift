@@ -76,7 +76,6 @@ class THttpClient(TTransportBase):
     self.__wbuf.write(buf)
 
   def flush(self):
-    print "flush"
     if self.isOpen():
       self.close()
     self.open();

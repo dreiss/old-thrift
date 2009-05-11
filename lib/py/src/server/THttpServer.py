@@ -55,7 +55,6 @@ class THttpServer(TServer.TServer):
         iprot = thttpserver.inputProtocolFactory.getProtocol(itrans)
         oprot = thttpserver.outputProtocolFactory.getProtocol(otrans)
         thttpserver.processor.process(iprot, oprot)
-        print " here we are"
         otrans.flush()
 
     self.httpd = BaseHTTPServer.HTTPServer(server_address, RequestHander)
