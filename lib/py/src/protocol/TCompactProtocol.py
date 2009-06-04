@@ -100,11 +100,11 @@ class TCompactProtocol(TProtocolBase):
   VERSION = 1
   VERSION_MASK = 0x1f
   TYPE_MASK = 0xe0
-  SHIFT_AMOUNT = 5
+  TYPE_SHIFT_AMOUNT = 5
 
   state = CLEAR
-  __last = 0
-  __fid = 0
+  __last_fid = 0
+  __bool_fid = 0
   def __init__(self, trans):
     TProtocolBase.__init__(self, trans)
     self.__structs = []
@@ -115,7 +115,7 @@ class TCompactProtocol(TProtocolBase):
   def writeMessageBegin(self, name, type, seqid):
     assert self.state == CLEAR
     self.__writeUByte(self.PROTOCOL_ID)
-    self.__writeUByte(self.VERSION | (type << self.SHIFT_AMOUNT))
+    self.__writeUByte(self.VERSION | (type << self.TYPE_SHIFT_AMOUNT))
     self.__writeVarint(seqid)
     self.__writeString(name)
     self.state = WRITE
@@ -127,13 +127,13 @@ class TCompactProtocol(TProtocolBase):
   def writeStructBegin(self, name):
     assert self.state == CLEAR or self.state == WRITE or \
           self.state == CONTAINER_WRITE or self.state == VALUE_WRITE, self.state
-    self.__structs.append((self.state, self.__last))
+    self.__structs.append((self.state, self.__last_fid))
     self.state = WRITE
-    self.__last = 0
+    self.__last_fid = 0
 
   def writeStructEnd(self):
     assert self.state == WRITE
-    self.state, self.__last = self.__structs.pop()
+    self.state, self.__last_fid = self.__structs.pop()
     if self.state == VALUE_WRITE:
       self.state = WRITE
 
@@ -146,21 +146,21 @@ class TCompactProtocol(TProtocolBase):
 
   def __writeFieldHeader(self, type, fid):
     try:
-      if self.__last and fid > self.__last:
-        delta = fid - self.__last
+      if self.__last_fid and fid > self.__last_fid:
+        delta = fid - self.__last_fid
         if delta < 16:
           self.__writeUByte(delta << 4 | type)
           return
       self.__writeByte(type)
       self.__writeI16(fid)
     finally:
-      self.__last = fid
+      self.__last_fid = fid
 
   def writeFieldBegin(self, name, type, fid):
     assert self.state == WRITE, self.state
     if type == TType.BOOL:
       self.state = BOOL_WRITE
-      self.__fid = fid
+      self.__bool_fid = fid
     else:
       self.state = VALUE_WRITE
       self.__writeFieldHeader(CTYPES[type], fid)
@@ -188,8 +188,8 @@ class TCompactProtocol(TProtocolBase):
     if delta == 0:
       fid = self.__readI16()
     else:
-      fid = self.__last + delta
-    self.__last = fid
+      fid = self.__last_fid + delta
+    self.__last_fid = fid
     type = type & 0x0f
     if type == CompactType.TRUE:
       self.state = TRUE_READ
@@ -221,7 +221,7 @@ class TCompactProtocol(TProtocolBase):
 
   def writeBool(self, bool):
     if self.state == BOOL_WRITE:
-      self.__writeFieldHeader(types[bool], self.__fid)
+      self.__writeFieldHeader(types[bool], self.__bool_fid)
     elif self.state == VALUE_WRITE:
       self.__writeByte(int(bool))
     else:
@@ -288,7 +288,7 @@ class TCompactProtocol(TProtocolBase):
       raise TProtocolException(TProtocolException.BAD_VERSION,
           'Bad protocol id in the message: %d' % proto_id)
     ver_type = self.__readUByte()
-    type = (ver_type & self.TYPE_MASK) >> self.SHIFT_AMOUNT
+    type = (ver_type & self.TYPE_MASK) >> self.TYPE_SHIFT_AMOUNT
     version = ver_type & self.VERSION_MASK
     if version != self.VERSION:
       raise TProtocolException(TProtocolException.BAD_VERSION,
@@ -307,13 +307,13 @@ class TCompactProtocol(TProtocolBase):
           self.state == READ or \
           self.state == CONTAINER_READ or \
           self.state == VALUE_READ, self.state
-    self.__structs.append((self.state, self.__last))
+    self.__structs.append((self.state, self.__last_fid))
     self.state = READ
-    self.__last = 0
+    self.__last_fid = 0
 
   def readStructEnd(self):
     assert self.state == READ
-    self.state, self.__last = self.__structs.pop()
+    self.state, self.__last_fid = self.__structs.pop()
     if self.state == VALUE_READ:
       self.state = READ
 
