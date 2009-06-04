@@ -26,7 +26,7 @@ sys.path.insert(0, glob.glob('../../lib/py/build/lib.*')[0])
 from ThriftTest.ttypes import *
 from thrift.transport import TTransport
 from thrift.transport import TSocket
-from thrift.protocol import TBinaryProtocol
+from thrift.protocol import TBinaryProtocol, TCompactProtocol
 import unittest
 import time
 
@@ -83,6 +83,8 @@ class NormalBinaryTest(AbstractTest):
 class AcceleratedBinaryTest(AbstractTest):
   protocol_factory = TBinaryProtocol.TBinaryProtocolAcceleratedFactory()
 
+class CompactProtocolTest(AbstractTest):
+  protocol_factory = TCompactProtocol.TCompactProtocolFactory()
 
 class AcceleratedFramedTest(unittest.TestCase):
   def testSplit(self):
@@ -126,6 +128,7 @@ def suite():
 
   suite.addTest(loader.loadTestsFromTestCase(NormalBinaryTest))
   suite.addTest(loader.loadTestsFromTestCase(AcceleratedBinaryTest))
+  suite.addTest(loader.loadTestsFromTestCase(CompactProtocolTest))
   suite.addTest(loader.loadTestsFromTestCase(AcceleratedFramedTest))
   return suite
 
