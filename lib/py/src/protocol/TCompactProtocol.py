@@ -99,11 +99,11 @@ class TCompactProtocol(TProtocolBase):
   TYPE_MASK = 0xe0
   TYPE_SHIFT_AMOUNT = 5
 
-  state = CLEAR
-  __last_fid = 0
-  __bool_fid = 0
   def __init__(self, trans):
     TProtocolBase.__init__(self, trans)
+    self.state = CLEAR
+    self.__last_fid = 0
+    self.__bool_fid = None
     self.__structs = []
 
   def __writeVarint(self, n):
