@@ -168,8 +168,6 @@ class TCompactProtocol(TProtocolBase):
     self.__writeVarint(makeZigZag(i16, 16))
 
   def __writeSize(self, i32):
-    if i32 > 0x7fff:
-      raise TException("thrift can't handle strings longer 0x7FFF")
     self.__writeVarint(i32)
 
   def readFieldBegin(self):
