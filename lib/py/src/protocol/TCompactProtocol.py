@@ -278,7 +278,7 @@ class TCompactProtocol(TProtocolBase):
           'Bad version: %d (expect %d)' % (version, self.VERSION))
     seqid = self.__readVarint()
     name = self.__readString()
-    return name, type, seqid
+    return (name, type, seqid)
 
   def readMessageEnd(self):
     assert self.state == READ
