@@ -260,9 +260,7 @@ class TCompactProtocol(TProtocolBase):
 
   def __readSize(self):
     result = self.__readVarint()
-    if result > 0x7fff:
-      raise TException("Length is too long")
-    elif result < 0:
+    if result < 0:
       raise TException("Length < 0")
     return result
 
