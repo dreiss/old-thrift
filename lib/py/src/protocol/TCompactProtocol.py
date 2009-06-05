@@ -324,20 +324,19 @@ class TCompactProtocol(TProtocolBase):
 
   def readCollectionEnd(self):
     assert self.state == CONTAINER_READ
-    self.state = READ
+    self.state = self.__containers.pop()
   readSetEnd = readCollectionEnd
   readListEnd = readCollectionEnd
   readMapEnd = readCollectionEnd
 
   def readBool(self):
     if self.state == TRUE_READ:
-      self.state = READ
+      self.state = FIELD_READ
       return True
     elif self.state == FALSE_READ:
-      self.state = READ
+      self.state = FIELD_READ
       return False
     elif self.state == CONTAINER_READ:
-      self.state = CONTAINER_READ
       return bool(self.__readByte())
     else:
       raise AssertionError, "Invalid state in compact protocol: %d" % self.state
