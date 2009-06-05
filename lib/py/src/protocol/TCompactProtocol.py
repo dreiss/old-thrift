@@ -166,7 +166,7 @@ class TCompactProtocol(TProtocolBase):
     self.__writeVarint(i32)
 
   def writeCollectionBegin(self, etype, size):
-    assert self.state in (VALUE_WRITE, CONTAINER_WRITE)
+    assert self.state in (VALUE_WRITE, CONTAINER_WRITE), self.state
     if size <= 14:
       self.__writeUByte(size << 4 | CTYPES[etype])
     else:
@@ -178,7 +178,7 @@ class TCompactProtocol(TProtocolBase):
   writeListBegin = writeCollectionBegin
 
   def writeMapBegin(self, ktype, vtype, size):
-    assert self.state in (VALUE_WRITE, CONTAINER_WRITE)
+    assert self.state in (VALUE_WRITE, CONTAINER_WRITE), self.state
     if size == 0:
       self.__writeByte(0)
     else:
@@ -188,7 +188,7 @@ class TCompactProtocol(TProtocolBase):
     self.state = CONTAINER_WRITE
 
   def writeCollectionEnd(self):
-    assert self.state == CONTAINER_WRITE
+    assert self.state == CONTAINER_WRITE, self.state
     self.state = self.__containers.pop()
   writeMapEnd = writeCollectionEnd
   writeSetEnd = writeCollectionEnd
@@ -245,7 +245,7 @@ class TCompactProtocol(TProtocolBase):
     return (None, self.__getTType(type), fid)
 
   def readFieldEnd(self):
-    assert self.state in (VALUE_READ, BOOL_READ) self.state
+    assert self.state in (VALUE_READ, BOOL_READ), self.state
     self.state = FIELD_READ
 
   def __readUByte(self):
@@ -300,22 +300,20 @@ class TCompactProtocol(TProtocolBase):
     self.state, self.__last_fid = self.__structs.pop()
 
   def readCollectionBegin(self):
-    assert self.state in (VALUE_READ, CONTAINER_READ)
+    assert self.state in (VALUE_READ, CONTAINER_READ), self.state
     size_type = self.__readUByte()
     size = size_type >> 4
     type = self.__getTType(size_type)
     if size == 15:
-      return type, self.__readSize()
-    else:
-      return type, size
+      size = self.__readSize()
     self.__containers.append(self.state)
     self.state = CONTAINER_READ
+    return type, size
   readSetBegin = readCollectionBegin
   readListBegin = readCollectionBegin
 
   def readMapBegin(self):
-    assert self.state in (VALUE_READ, CONTAINER_READ)
-    self.state = CONTAINER_READ
+    assert self.state in (VALUE_READ, CONTAINER_READ), self.state
     size = self.__readSize()
     types = 0
     if size > 0:
@@ -327,7 +325,7 @@ class TCompactProtocol(TProtocolBase):
     return (ktype, vtype, size)
 
   def readCollectionEnd(self):
-    assert self.state == CONTAINER_READ
+    assert self.state == CONTAINER_READ, self.state
     self.state = self.__containers.pop()
   readSetEnd = readCollectionEnd
   readListEnd = readCollectionEnd
