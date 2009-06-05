@@ -8,7 +8,7 @@ FIELD_WRITE = 1
 BOOL_WRITE = 2
 VALUE_WRITE = 3
 CONTAINER_WRITE = 7
-READ = 4
+FIELD_READ = 4
 VALUE_READ = 6
 CONTAINER_READ = 8
 TRUE_READ = 9
@@ -26,7 +26,7 @@ def make_helper(v_from, v_to, container):
     return nested
   return helper
 writer = make_helper(VALUE_WRITE, FIELD_WRITE, CONTAINER_WRITE)
-reader = make_helper(VALUE_READ, READ, CONTAINER_READ)
+reader = make_helper(VALUE_READ, FIELD_READ, CONTAINER_READ)
 
 def makeZigZag(n, bits):
   return (n << 1) ^ (n >> (bits - 1))
@@ -224,7 +224,7 @@ class TCompactProtocol(TProtocolBase):
   writeString = writer(__writeString)
 
   def readFieldBegin(self):
-    assert self.state == READ, self.state
+    assert self.state == FIELD_READ, self.state
     type = self.__readUByte()
     if type & 0x0f == TType.STOP:
       return (None, 0, 0)
@@ -281,39 +281,36 @@ class TCompactProtocol(TProtocolBase):
     return (name, type, seqid)
 
   def readMessageEnd(self):
-    assert self.state == READ
+    assert self.state == VALUE_READ
     assert len(self.__structs) == 0
     self.state = CLEAR
 
   def readStructBegin(self):
-    assert self.state == CLEAR or \
-          self.state == READ or \
-          self.state == CONTAINER_READ or \
-          self.state == VALUE_READ, self.state
+    assert self.state in (CLEAR, CONTAINER_READ, VALUE_READ), self.state
     self.__structs.append((self.state, self.__last_fid))
-    self.state = READ
+    self.state = FIELD_READ
     self.__last_fid = 0
 
   def readStructEnd(self):
-    assert self.state == READ
+    assert self.state == FIELD_READ
     self.state, self.__last_fid = self.__structs.pop()
-    if self.state == VALUE_READ:
-      self.state = READ
 
   def readCollectionBegin(self):
-    assert self.state == VALUE_READ
-    self.state = CONTAINER_READ
+    assert self.state in (VALUE_READ, CONTAINER_READ)
     size_type = self.__readUByte()
+    size = size_type >> 4
     type = self.__getTType(size_type)
-    if size_type >> 4 == 15:
+    if size == 15:
       return type, self.__readSize()
     else:
-      return type, size_type >> 4
+      return type, size
+    self.__containers.append(self.state)
+    self.state = CONTAINER_READ
   readSetBegin = readCollectionBegin
   readListBegin = readCollectionBegin
 
   def readMapBegin(self):
-    assert self.state == VALUE_READ
+    assert self.state in (VALUE_READ, CONTAINER_READ)
     self.state = CONTAINER_READ
     size = self.__readSize()
     types = 0
@@ -321,6 +318,8 @@ class TCompactProtocol(TProtocolBase):
       types = self.__readUByte()
     vtype = self.__getTType(types)
     ktype = self.__getTType(types >> 4)
+    self.__containers.append(self.state)
+    self.state = CONTAINER_READ
     return ktype, vtype, size
 
   def readCollectionEnd(self):
