@@ -320,7 +320,7 @@ class TCompactProtocol(TProtocolBase):
     ktype = self.__getTType(types >> 4)
     self.__containers.append(self.state)
     self.state = CONTAINER_READ
-    return ktype, vtype, size
+    return (ktype, vtype, size)
 
   def readCollectionEnd(self):
     assert self.state == CONTAINER_READ
