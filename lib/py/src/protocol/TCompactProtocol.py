@@ -11,22 +11,17 @@ CONTAINER_WRITE = 7
 FIELD_READ = 4
 VALUE_READ = 6
 CONTAINER_READ = 8
-TRUE_READ = 9
-FALSE_READ = 10
+BOOL_READ = 9
 
-def make_helper(v_from, v_to, container):
+def make_helper(v_from, container):
   def helper(func):
     def nested(self, *args, **kwargs):
-      assert self.state == v_from or self.state == container, (v_from, container, self.state)
-      try:
-        return func(self, *args, **kwargs)
-      finally:
-        if self.state == v_from:
-          self.state = v_to
+      assert self.state in (v_from, container), (self.state, v_from, container)
+      return func(self, *args, **kwargs)
     return nested
   return helper
-writer = make_helper(VALUE_WRITE, FIELD_WRITE, CONTAINER_WRITE)
-reader = make_helper(VALUE_READ, FIELD_READ, CONTAINER_READ)
+writer = make_helper(VALUE_WRITE, CONTAINER_WRITE)
+reader = make_helper(VALUE_READ, CONTAINER_READ)
 
 def makeZigZag(n, bits):
   return (n << 1) ^ (n >> (bits - 1))
@@ -104,6 +99,7 @@ class TCompactProtocol(TProtocolBase):
     self.state = CLEAR
     self.__last_fid = 0
     self.__bool_fid = None
+    self.__bool_value = None
     self.__structs = []
     self.__containers = []
 
@@ -153,6 +149,10 @@ class TCompactProtocol(TProtocolBase):
       self.state = VALUE_WRITE
       self.__writeFieldHeader(CTYPES[type], fid)
 
+  def writeFieldEnd(self):
+    assert self.state in (VALUE_WRITE, BOOL_WRITE), self.state
+    self.state = FIELD_WRITE
+
   def __writeUByte(self, byte):
     self.trans.write(pack('!B', byte))
 
@@ -197,7 +197,6 @@ class TCompactProtocol(TProtocolBase):
   def writeBool(self, bool):
     if self.state == BOOL_WRITE:
       self.__writeFieldHeader(types[bool], self.__bool_fid)
-      self.state = FIELD_WRITE
     elif self.state == CONTAINER_WRITE:
       self.__writeByte(int(bool))
     else:
@@ -236,13 +235,18 @@ class TCompactProtocol(TProtocolBase):
     self.__last_fid = fid
     type = type & 0x0f
     if type == CompactType.TRUE:
-      self.state = TRUE_READ
+      self.state = BOOL_READ
+      self.__bool_value = True
     elif type == CompactType.FALSE:
-      self.state = FALSE_READ
+      self.state = BOOL_READ
+      self.__bool_value = False
     else:
       self.state = VALUE_READ
     return (None, self.__getTType(type), fid)
 
+  def readFieldEnd(self):
+    assert self.state in (VALUE_READ, BOOL_READ) self.state
+    self.state = FIELD_READ
 
   def __readUByte(self):
     result, = unpack('!B', self.trans.readAll(1))
@@ -330,12 +334,8 @@ class TCompactProtocol(TProtocolBase):
   readMapEnd = readCollectionEnd
 
   def readBool(self):
-    if self.state == TRUE_READ:
-      self.state = FIELD_READ
-      return True
-    elif self.state == FALSE_READ:
-      self.state = FIELD_READ
-      return False
+    if self.state == BOOL_READ:
+      return self.__bool_value
     elif self.state == CONTAINER_READ:
       return bool(self.__readByte())
     else:
