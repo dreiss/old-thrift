@@ -35,7 +35,6 @@ def fromZigZag(n):
   return (n >> 1) ^ -(n & 1)
 
 def writeVarint(trans, n):
-  sn = n
   out = []
   while True:
     if n & ~0x7f == 0:
@@ -50,10 +49,8 @@ def readVarint(trans):
   result = 0
   shift = 0
   while True:
-    x = trans.read(1)
-    if len(x) != 1:
-      raise EOFError
-    byte = unpack('!B', x)[0]
+    x = trans.readAll(1)
+    byte = ord(x)
     result |= (byte & 0x7f) << shift
     if byte >> 7 == 0:
       return result
