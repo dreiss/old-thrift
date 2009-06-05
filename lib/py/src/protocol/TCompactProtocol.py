@@ -141,16 +141,13 @@ class TCompactProtocol(TProtocolBase):
   writeListEnd = writeCollectionEnd
 
   def __writeFieldHeader(self, type, fid):
-    try:
-      if self.__last_fid and fid > self.__last_fid:
-        delta = fid - self.__last_fid
-        if delta < 16:
-          self.__writeUByte(delta << 4 | type)
-          return
+    delta = fid - self.__last_fid
+    if 0 < delta <= 15:
+      self.__writeUByte(delta << 4 | type)
+    else:
       self.__writeByte(type)
       self.__writeI16(fid)
-    finally:
-      self.__last_fid = fid
+    self.__last_fid = fid
 
   def writeFieldBegin(self, name, type, fid):
     assert self.state == WRITE, self.state
