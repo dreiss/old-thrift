@@ -254,14 +254,6 @@ class TCompactProtocol(TProtocolBase):
 
   def __readVarint(self):
     return readVarint(self.trans)
-    result = 0
-    shift = 0
-    while True:
-      byte = self.__readUByte()
-      result |= (byte & 0xf7) << shift
-      if byte >> 7 == 0:
-        return result
-      shift += 7
 
   def __readZigZag(self):
     return fromZigZag(self.__readVarint())
