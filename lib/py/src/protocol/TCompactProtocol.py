@@ -4,7 +4,7 @@ from struct import pack, unpack
 __all__ = ['TCompactProtocol', 'TCompactProtocolFactory']
 
 CLEAR = 0
-WRITE = 1
+FIELD_WRITE = 1
 BOOL_WRITE = 2
 VALUE_WRITE = 3
 CONTAINER_WRITE = 7
@@ -25,7 +25,7 @@ def make_helper(v_from, v_to, container):
           self.state = v_to
     return nested
   return helper
-writer = make_helper(VALUE_WRITE, WRITE, CONTAINER_WRITE)
+writer = make_helper(VALUE_WRITE, FIELD_WRITE, CONTAINER_WRITE)
 reader = make_helper(VALUE_READ, READ, CONTAINER_READ)
 
 def makeZigZag(n, bits):
@@ -105,6 +105,7 @@ class TCompactProtocol(TProtocolBase):
     self.__last_fid = 0
     self.__bool_fid = None
     self.__structs = []
+    self.__containers = []
 
   def __writeVarint(self, n):
     writeVarint(self.trans, n)
@@ -115,23 +116,21 @@ class TCompactProtocol(TProtocolBase):
     self.__writeUByte(self.VERSION | (type << self.TYPE_SHIFT_AMOUNT))
     self.__writeVarint(seqid)
     self.__writeString(name)
-    self.state = WRITE
+    self.state = VALUE_WRITE
 
   def writeMessageEnd(self):
-    assert self.state == WRITE
+    assert self.state == VALUE_WRITE
     self.state = CLEAR
 
   def writeStructBegin(self, name):
-    assert self.state in (CLEAR, WRITE, CONTAINER_WRITE, VALUE_WRITE), self.state
+    assert self.state in (CLEAR, CONTAINER_WRITE, VALUE_WRITE), self.state
     self.__structs.append((self.state, self.__last_fid))
-    self.state = WRITE
+    self.state = FIELD_WRITE
     self.__last_fid = 0
 
   def writeStructEnd(self):
-    assert self.state == WRITE
+    assert self.state == FIELD_WRITE
     self.state, self.__last_fid = self.__structs.pop()
-    if self.state == VALUE_WRITE:
-      self.state = WRITE
 
   def writeFieldStop(self):
     self.__writeByte(0)
@@ -146,7 +145,7 @@ class TCompactProtocol(TProtocolBase):
     self.__last_fid = fid
 
   def writeFieldBegin(self, name, type, fid):
-    assert self.state == WRITE, self.state
+    assert self.state == FIELD_WRITE, self.state
     if type == TType.BOOL:
       self.state = BOOL_WRITE
       self.__bool_fid = fid
@@ -167,28 +166,30 @@ class TCompactProtocol(TProtocolBase):
     self.__writeVarint(i32)
 
   def writeCollectionBegin(self, etype, size):
-    assert self.state == VALUE_WRITE
+    assert self.state in (VALUE_WRITE, CONTAINER_WRITE)
     if size <= 14:
       self.__writeUByte(size << 4 | CTYPES[etype])
     else:
       self.__writeUByte(0xf0 | CTYPES[etype])
       self.__writeSize(size)
+    self.__containers.append(self.state)
     self.state = CONTAINER_WRITE
   writeSetBegin = writeCollectionBegin
   writeListBegin = writeCollectionBegin
 
   def writeMapBegin(self, ktype, vtype, size):
-    assert self.state == VALUE_WRITE
+    assert self.state in (VALUE_WRITE, CONTAINER_WRITE)
     if size == 0:
       self.__writeByte(0)
     else:
       self.__writeSize(size)
       self.__writeUByte(CTYPES[ktype] << 4 | CTYPES[vtype])
+    self.__containers.append(self.state)
     self.state = CONTAINER_WRITE
 
   def writeCollectionEnd(self):
     assert self.state == CONTAINER_WRITE
-    self.state = WRITE
+    self.state = self.__containers.pop()
   writeMapEnd = writeCollectionEnd
   writeSetEnd = writeCollectionEnd
   writeListEnd = writeCollectionEnd
@@ -196,11 +197,11 @@ class TCompactProtocol(TProtocolBase):
   def writeBool(self, bool):
     if self.state == BOOL_WRITE:
       self.__writeFieldHeader(types[bool], self.__bool_fid)
-    elif self.state == VALUE_WRITE:
+      self.state = FIELD_WRITE
+    elif self.state == CONTAINER_WRITE:
       self.__writeByte(int(bool))
     else:
       raise AssertetionError, "Invalid state in compact protocol"
-    self.state = WRITE
 
   writeByte = writer(__writeByte)
   writeI16 = writer(__writeI16)
