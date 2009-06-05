@@ -227,7 +227,7 @@ class TCompactProtocol(TProtocolBase):
     assert self.state == READ, self.state
     type = self.__readUByte()
     if type & 0x0f == TType.STOP:
-      return None, 0, 0
+      return (None, 0, 0)
     delta = type >> 4
     if delta == 0:
       fid = self.__readI16()
@@ -241,7 +241,7 @@ class TCompactProtocol(TProtocolBase):
       self.state = FALSE_READ
     else:
       self.state = VALUE_READ
-    return None, self.__getTType(type), fid
+    return (None, self.__getTType(type), fid)
 
 
   def __readUByte(self):
