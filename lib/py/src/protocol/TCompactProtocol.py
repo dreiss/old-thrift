@@ -122,8 +122,7 @@ class TCompactProtocol(TProtocolBase):
     self.state = CLEAR
 
   def writeStructBegin(self, name):
-    assert self.state == CLEAR or self.state == WRITE or \
-          self.state == CONTAINER_WRITE or self.state == VALUE_WRITE, self.state
+    assert self.state in (CLEAR, WRITE, CONTAINER_WRITE, VALUE_WRITE), self.state
     self.__structs.append((self.state, self.__last_fid))
     self.state = WRITE
     self.__last_fid = 0
