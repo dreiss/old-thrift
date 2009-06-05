@@ -133,12 +133,8 @@ class TCompactProtocol(TProtocolBase):
     if self.state == VALUE_WRITE:
       self.state = WRITE
 
-  def writeCollectionEnd(self):
-    assert self.state == CONTAINER_WRITE
-    self.state = WRITE
-  writeMapEnd = writeCollectionEnd
-  writeSetEnd = writeCollectionEnd
-  writeListEnd = writeCollectionEnd
+  def writeFieldStop(self):
+    self.__writeByte(0)
 
   def __writeFieldHeader(self, type, fid):
     delta = fid - self.__last_fid
@@ -170,26 +166,6 @@ class TCompactProtocol(TProtocolBase):
   def __writeSize(self, i32):
     self.__writeVarint(i32)
 
-  def readFieldBegin(self):
-    assert self.state == READ, self.state
-    type = self.__readUByte()
-    if type & 0x0f == TType.STOP:
-      return None, 0, 0
-    delta = type >> 4
-    if delta == 0:
-      fid = self.__readI16()
-    else:
-      fid = self.__last_fid + delta
-    self.__last_fid = fid
-    type = type & 0x0f
-    if type == CompactType.TRUE:
-      self.state = TRUE_READ
-    elif type == CompactType.FALSE:
-      self.state = FALSE_READ
-    else:
-      self.state = VALUE_READ
-    return None, self.__getTType(type), fid
-
   def writeCollectionBegin(self, etype, size):
     assert self.state == VALUE_WRITE
     if size <= 14:
@@ -209,6 +185,13 @@ class TCompactProtocol(TProtocolBase):
       self.__writeSize(size)
       self.__writeUByte(CTYPES[ktype] << 4 | CTYPES[vtype])
     self.state = CONTAINER_WRITE
+
+  def writeCollectionEnd(self):
+    assert self.state == CONTAINER_WRITE
+    self.state = WRITE
+  writeMapEnd = writeCollectionEnd
+  writeSetEnd = writeCollectionEnd
+  writeListEnd = writeCollectionEnd
 
   def writeBool(self, bool):
     if self.state == BOOL_WRITE:
@@ -239,6 +222,27 @@ class TCompactProtocol(TProtocolBase):
     self.trans.write(s)
   writeString = writer(__writeString)
 
+  def readFieldBegin(self):
+    assert self.state == READ, self.state
+    type = self.__readUByte()
+    if type & 0x0f == TType.STOP:
+      return None, 0, 0
+    delta = type >> 4
+    if delta == 0:
+      fid = self.__readI16()
+    else:
+      fid = self.__last_fid + delta
+    self.__last_fid = fid
+    type = type & 0x0f
+    if type == CompactType.TRUE:
+      self.state = TRUE_READ
+    elif type == CompactType.FALSE:
+      self.state = FALSE_READ
+    else:
+      self.state = VALUE_READ
+    return None, self.__getTType(type), fid
+
+
   def __readUByte(self):
     result, = unpack('!B', self.trans.readAll(1))
     return result
@@ -260,9 +264,6 @@ class TCompactProtocol(TProtocolBase):
 
   def __readZigZag(self):
     return fromZigZag(self.__readVarint())
-
-  def __getTType(self, byte):
-    return TTYPES[byte & 0x0f]
 
   def __readSize(self):
     result = self.__readVarint()
@@ -368,8 +369,9 @@ class TCompactProtocol(TProtocolBase):
     return self.trans.readAll(len)
   readString = reader(__readString)
 
-  def writeFieldStop(self):
-    self.__writeByte(0)
+  def __getTType(self, byte):
+    return TTYPES[byte & 0x0f]
+
 
 class TCompactProtocolFactory:
   def __init__(self):
