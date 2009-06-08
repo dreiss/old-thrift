@@ -5,13 +5,13 @@ __all__ = ['TCompactProtocol', 'TCompactProtocolFactory']
 
 CLEAR = 0
 FIELD_WRITE = 1
-BOOL_WRITE = 2
-VALUE_WRITE = 3
-CONTAINER_WRITE = 7
-FIELD_READ = 4
-VALUE_READ = 6
-CONTAINER_READ = 8
-BOOL_READ = 9
+VALUE_WRITE = 2
+CONTAINER_WRITE = 3
+BOOL_WRITE = 4
+FIELD_READ = 5
+CONTAINER_READ = 6
+VALUE_READ = 7
+BOOL_READ = 8
 
 def make_helper(v_from, container):
   def helper(func):
