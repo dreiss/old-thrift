@@ -229,13 +229,10 @@ The following files contain some portions of code contributed under
 the Thrift Software License (see doc/old-thrift-license.txt), and relicensed
 under the Apache 2.0 License:
 
-  compiler/cpp/bootstrap.sh
-  compiler/cpp/configure.ac
   compiler/cpp/Makefile.am
   compiler/cpp/src/generate/t_cocoa_generator.cc
   compiler/cpp/src/generate/t_cpp_generator.cc
   compiler/cpp/src/generate/t_csharp_generator.cc
-  compiler/cpp/src/generate/t_csharp_generator.h
   compiler/cpp/src/generate/t_erl_generator.cc
   compiler/cpp/src/generate/t_hs_generator.cc
   compiler/cpp/src/generate/t_java_generator.cc
@@ -244,9 +241,7 @@ under the Apache 2.0 License:
   compiler/cpp/src/generate/t_php_generator.cc
   compiler/cpp/src/generate/t_py_generator.cc
   compiler/cpp/src/generate/t_rb_generator.cc
-  compiler/cpp/src/generate/t_rb_generator.h
   compiler/cpp/src/generate/t_st_generator.cc
-  compiler/cpp/src/generate/t_st_generator.h
   compiler/cpp/src/generate/t_xsd_generator.cc
   compiler/cpp/src/main.cc
   compiler/cpp/src/parse/t_field.h
@@ -284,15 +279,12 @@ under the Apache 2.0 License:
   lib/csharp/ThriftMSBuildTask/Properties/AssemblyInfo.cs
   lib/csharp/ThriftMSBuildTask/ThriftBuild.cs
   lib/csharp/ThriftMSBuildTask/ThriftMSBuildTask.csproj
-  lib/rb/lib/thrift/server/tserver.rb
-  lib/rb/lib/thrift/thrift.rb
+  lib/rb/lib/thrift.rb
   lib/st/README
   lib/st/thrift.st
   test/OptionalRequiredTest.cpp
   test/OptionalRequiredTest.thrift
   test/ThriftTest.thrift
-  thrift.el
-  thrift.vim
 
 --------------------------------------------------
 For the aclocal/ax_boost_base.m4 and contrib/fb303/aclocal/ax_boost_base.m4 components:
