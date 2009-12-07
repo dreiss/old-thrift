@@ -19,7 +19,7 @@
  * Contains some contributions under the Thrift Software License.
  * Please see doc/old-thrift-license.txt in the Thrift distribution for
  * details.
- */ 
+ */
 
 #include <string>
 #include <fstream>
