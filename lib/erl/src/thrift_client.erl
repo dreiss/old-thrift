@@ -80,8 +80,8 @@ send_function_call(Client = #tclient{protocol = Proto0,
             {Proto1, ok} = thrift_protocol:write(Proto0, Begin),
             {Proto2, ok} = thrift_protocol:write(Proto1, {Params, list_to_tuple([Function | Args])}),
             {Proto3, ok} = thrift_protocol:write(Proto2, message_end),
-            {Proto4, ok} = thrift_protocol:flush_transport(Proto3),
-            {Client#tclient{protocol = Proto4}, ok}
+            {Proto4, Result} = thrift_protocol:flush_transport(Proto3),
+            {Client#tclient{protocol = Proto4}, Result}
     end.
 
 -spec receive_function_result(#tclient{}, atom()) -> {#tclient{}, {ok, term()} | {error, term()}}.
