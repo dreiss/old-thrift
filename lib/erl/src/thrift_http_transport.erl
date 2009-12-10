@@ -75,30 +75,33 @@ write(State = #http_transport{write_buffer = WBuf}, Data) ->
     {State#http_transport{write_buffer = [WBuf, Data]}, ok}.
 
 %% Flushes the buffer, making a request
-flush(State = #http_transport{host = Host,
-                                 path = Path,
-                                 read_buffer = Rbuf,
-                                 write_buffer = Wbuf,
-                                 http_options = HttpOptions,
-                                 extra_headers = ExtraHeaders}) ->
+flush(State = #http_transport{write_buffer = Wbuf}) ->
     case iolist_to_binary(Wbuf) of
         <<>> ->
             %% Don't bother flushing empty buffers.
             {State, ok};
         WBinary ->
-            {ok, {{_Version, 200, _ReasonPhrase}, _Headers, Body}} =
-              http:request(post,
-                           {"http://" ++ Host ++ Path,
-                            [{"User-Agent", "Erlang/thrift_http_transport"} | ExtraHeaders],
-                            "application/x-thrift",
-                            WBinary},
-                           HttpOptions,
-                           [{body_format, binary}]),
-
-            State1 = State#http_transport{read_buffer = [Rbuf, Body],
-                                          write_buffer = []},
-            {State1, ok}
+          do_flush(State#http_options{write_buffer = WBinary})
     end.
+
+do_flush(State = #http_transport{host = Host,
+                                 path = Path,
+                                 read_buffer = Rbuf,
+                                 write_buffer = Wbuf,
+                                 http_options = HttpOptions,
+                                 extra_headers = ExtraHeaders}) ->
+    {ok, {{_Version, 200, _ReasonPhrase}, _Headers, Body}} =
+        http:request(post,
+                     {"http://" ++ Host ++ Path,
+                      [{"User-Agent", "Erlang/thrift_http_transport"} | ExtraHeaders],
+                      "application/x-thrift",
+                      Wbuf},
+                     HttpOptions,
+                     [{body_format, binary}]),
+
+    State1 = State#http_transport{read_buffer = [Rbuf, Body],
+                                  write_buffer = []},
+    {State1, ok}.
 
 close(State) ->
     {State, ok}.
