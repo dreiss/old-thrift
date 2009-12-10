@@ -90,18 +90,22 @@ do_flush(State = #http_transport{host = Host,
                                  write_buffer = Wbuf,
                                  http_options = HttpOptions,
                                  extra_headers = ExtraHeaders}) ->
-    {ok, {{_Version, 200, _ReasonPhrase}, _Headers, Body}} =
-        http:request(post,
-                     {"http://" ++ Host ++ Path,
-                      [{"User-Agent", "Erlang/thrift_http_transport"} | ExtraHeaders],
-                      "application/x-thrift",
-                      Wbuf},
-                     HttpOptions,
-                     [{body_format, binary}]),
-
-    State1 = State#http_transport{read_buffer = [Rbuf, Body],
-                                  write_buffer = []},
-    {State1, ok}.
+    case http:request(post,
+                      {"http://" ++ Host ++ Path,
+                       [{"User-Agent", "Erlang/thrift_http_transport"} | ExtraHeaders],
+                       "application/x-thrift",
+                       Wbuf},
+                      HttpOptions,
+                      [{body_format, binary}]) of
+        {ok, {{_Version, 200, _ReasonPhrase}, _Headers, Body}} ->
+            State1 = State#http_transport{read_buffer = [Rbuf, Body],
+                                          write_buffer = []},
+            {State1, ok};
+        {ok, {{_Version, Code, ReasonPhrase}, _Headers, _Body}} ->
+            {State, {error, {http_code, Code, ReasonPhrase}}};
+        Else ->
+            {State, Else}
+    end.
 
 close(State) ->
     {State, ok}.
