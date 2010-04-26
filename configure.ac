@@ -19,7 +19,7 @@
 
 AC_PREREQ(2.59)
 
-AC_INIT([thrift], [20080411])
+AC_INIT([thrift], [instant])
 
 AC_CONFIG_AUX_DIR([.])
 
