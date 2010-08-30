@@ -342,7 +342,8 @@ shared_ptr<TTransport> TServerSocket::acceptImpl() {
   if (recvTimeout_ > 0) {
     client->setRecvTimeout(recvTimeout_);
   }
-
+  client->setCachedAddress((sockaddr*) &clientAddress, size);
+  
   return client;
 }
 
