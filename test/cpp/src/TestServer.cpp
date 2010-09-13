@@ -353,7 +353,7 @@ int main(int argc, char **argv) {
     if (!args["workers"].empty()) {
       workerCount = atoi(args["workers"].c_str());
     }
-  } catch (exception& e) {
+  } catch (std::exception& e) {
     cerr << e.what() << endl;
     cerr << usage;
   }
